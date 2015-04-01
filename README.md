@@ -1,1 +1,1 @@
-# Python_GIS_SSURGO
+# geo-pit
