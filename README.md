@@ -2,4 +2,4 @@
 
 This repository contains spatial functions for soil survey.
 
-See the Wiki tab for examples.
+Help files can be found in the Wiki tab.
