@@ -1,0 +1,191 @@
+---
+title: "RSAGA function instructions"
+author: "Stephen Roecker"
+date: "Wednesday, October 08, 2014"
+output: word_document
+---
+
+This document displays some R batch functions for generating DEM derivatives using the RSAGA R package. It is assumes the reader has already compiled a series of DEM following the nedInstrucitons document.
+
+SAGA is an open-source GIS that was originally developed in 1996 as a terrain analysis toolbox, known as DiGem. Since then it has become a fully fledged GIS, with additional modules for vector geoprocessing, image analysis, and geostatistics. While not as well documented at GRASS or ArcGIS it offers an intuitive interface, and includes a range algorithms not found elsewhere. Through the use of the RSAGA package, SAGA modules can be called from R, and workflows developed. Unlike other GIS, SAGA utilizes significant RAM instead of using file caching. This makes SAGA fast, but it can also overwhelm a computer if to many large rasters are loaded. However I've noticed when using a solid state drive (SSD) I can process rasters than exceded my 16GB of RAM for certain SAGA modules that only use small local neighorhoods. 
+
+To begin, the necessary libaries must be loaded, as well as the custom batch functions.
+```{r, eval=FALSE}
+library(gdalUtils)
+library(RSAGA)
+
+source("C:/Users/Stephen/Documents/Github/geoprocessing/gdalUtilsFunctions.R")
+source("C:/Users/Stephen/Documents/Github/geoprocessing/rsagaFunctions.R")
+```
+
+Next the proper GDAL and RSAGA path has to be set. The first GDAL location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
+```{r, eval=FALSE}
+gdal_setInstallation(search_path="C:/ProgramData/QGIS/QGISDufour/bin", rescan=T)
+gdal_setInstallation(search_path="C:/OSGeo4W64/bin", rescan=T)
+myenv <- rsaga.env(path="C:/Program Files (x86)/SAGA-GIS")
+```
+
+
+Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "C:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
+```{r, eval=FALSE}
+setwd("E:/geodata/project_data")
+pd.p <- "D:/geodata/project_data/"
+office.l <- c("8VIC")
+sdat.p <- paste(pd.p, office.l, "/sdat/", sep="")
+state <- c("NV", "CA")
+nhdgdb <- paste("D:/geodata/hydrography/NHDH_", state, ".gdb", sep="")
+
+# Generater raster names
+dem10 <- paste(sdat.p, "ned10m_", office.l, ".sgrd", sep="")
+dem30 <- paste(sdat.p, "ned30m_", office.l, ".sgrd", sep="")
+radiusD <- 2
+radiusV <- round(1000/30/2-1, 0)
+
+res10 <- paste(strsplit(dem10, ".sgrd"), sep="")
+res30 <- paste(strsplit(dem30, ".sgrd"), sep="")
+g10 <- list(
+  slopeR=paste(res10, "_slopeR", 1+2*radiusD, sep=""),
+  slope=paste(res10, "_slope", 1+2*radiusD, sep=""),
+  slopeD=paste(res10, "_slopeD", 1+2*radiusD, sep=""),
+  aspect=paste(res10, "_aspect", 1+2*radiusD, sep=""),
+  cupro=paste(res10, "_cupro", 1+2*radiusD, sep=""),
+  cucon=paste(res10, "_cucon", 1+2*radiusD, sep=""),
+  cutan=paste(res10, "_cutan", 1+2*radiusD, sep=""),
+  cumax=paste(res10, "_cumax", 1+2*radiusD, sep=""),
+  cumin=paste(res10, "_cumin", 1+2*radiusD, sep="")
+  )
+g30 <- list(
+  elev=paste(res30, "_elev", 1+2*radiusD, sep=""),
+  slope=paste(res30, "_slope", 1+2*radiusD, sep=""),
+  slopeR=paste(res30, "_slopeR", 1+2*radiusD, sep=""),
+  slopeD=paste(res30, "_sloped", 1+2*radiusD, sep=""),
+  aspect=paste(res30, "_aspect", 1+2*radiusD, sep=""),
+  valleys=paste(res30, "_mvalleys", sep=""),
+  summits=paste(res30, "_summits", sep=""),
+  carea=paste(res30, "_carea", sep=""),
+  cheight=paste(res30, "_cheight", sep=""),
+  wetness=paste(res30, "_wetness", sep=""),
+  strahler=paste(res30, "_strahler", sep=""),
+  z2stream=paste(res30, "_z2stream", sep="")
+  )
+```
+
+```{r, eval=FALSE}
+# Convert GTiff to SAGA
+dem10.tif <- paste(pd.p, office.l, "/ned10m_", office.l, ".tif", sep="")
+dem30.tif <- paste(pd.p, office.l, "/ned30m_", office.l, ".tif", sep="")
+dem10.sdat <- paste(strsplit(dem10, ".sgrd"), ".sdat", sep="")
+dem30.sdat <- paste(strsplit(dem30, ".sgrd"), ".sdat", sep="")
+
+gdal_GTiff2SAGA(dem10.tif, dem10.sdat)
+gdal_GTiff2SAGA(dem30.tif, dem30.sdat)
+gdal_GTiff2SAGA("E:/geodata/project_data/11REGION/ned30m_R11.tif",
+                "E:/geodata/project_data/11REGION/sdat/ned30m_R11.sdat")
+```
+
+```{r, eval=FALSE}
+# Calculate local derivatives for 10-meter DEM
+attach(lapply(g10, function(x) paste(x, ".sgrd", sep="")))
+rsaga.d1(dem10, 2)
+rsaga.d2(dem10, 2)
+rsaga.d3(dem10, 2)
+# Converts to radians then percent, 57.29578=180/pi, degrees=radians*180/pi
+rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
+# Rescales curvatures so they can be exported as UInt16 to save file size
+rsaga.grid.calculus(cupro, cupro, cupro, "10000*a")
+rsaga.grid.calculus(cucon, cucon, cucon, "-10000*a")
+rsaga.grid.calculus(cumin, cumin, cumin, "10000*a")
+rsaga.grid.calculus(cumax, cumax, cumax, "10000*a")
+rsaga.grid.calculus(cucon, slopeD, cutan, "a*sin(b/57.29578)")
+
+
+# Calculate regional derivatives for 30-meter DEM
+attach(lapply(g30, function(x) paste(x, ".sgrd", sep="")))
+rsaga.d0(dem30, 2)
+rsaga.d1(dem30, 2)
+rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
+rsaga.grid.calculus(slopeD, slopeD, slopeR, "a*(1/57.29578)")
+rsaga.mrvbf(dem30, valleys, summits)
+
+# apply mask manually before
+elev.sdat <- paste(strsplit(elev, ".sgrd"), ".sdat", sep="")
+mosaicList(list(elev.sdat), "E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif")
+
+gdal_translate(
+  src_dataset="E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif",
+  dst_dataset="E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif",
+  overwrite=TRUE,
+  verbose=TRUE
+)
+
+
+nhdshp <- paste(strsplit(nhdgdb, ".gdb"), "_wb.shp", sep="")
+
+for(i in seq(nhdgdb)){
+  ogr2ogr(
+    src_datasource_name=nhdgdb[i],
+    dst_datasource_name=nhdshp[i],
+    layer="NHDWaterbody",
+    t_srs="EPSG:5070",
+    overwrite=TRUE,
+    verbose=TRUE,
+    progress=TRUE)
+}
+
+# Seems to take exceptionally long for the States touching the Great Lakes, particularly MI. Best to run these States separately from OSGeo4W Shell to monitor their progress or do manually in SAGA.
+for(i in seq(nhdshp)){
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "burning", nhdshp[i], "\n"))
+  gdal_rasterize(
+    src_datasource=paste("E:/geodata/hydrography", sep=""),
+    dst_filename="E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif",
+    l=paste("NHDH_", state[i], "_wb", sep=""),
+    where="AreaSqKm > 0.04047",
+    b=1,
+    burn=-99999,
+    verbose=TRUE
+  ) 
+}
+
+
+dem.sdat<- paste(strsplit(dem30, ".sgrd"), "_elev5_masked.sgrd", sep="")
+batchSubsetSAGA("E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif", dem.sdat, nlcdpath)
+
+dem.l<- paste(strsplit(dem30, ".sgrd"), "_elev5_masked.sgrd", sep="")
+rsaga.fill(dem.l)
+dem.l<- paste(strsplit(dem30, ".sgrd"), "_elev5_masked_filled.sgrd", sep="")
+rsaga.ca(dem.l)
+rsaga.twi(slopeR, carea)
+rsaga.strahler(dem.l,4)
+rsaga.reclassify(strahler, -3, -1)
+
+strahler.rc<- paste(strsplit(dem30, ".sgrd"), "_strahler_rc0.sgrd", sep="")
+rsaga.ofd(dem.l, 1)
+
+# Write SAGA to GTiff
+attach(lapply(g10, function(x) paste(x, ".sdat", sep="")))
+int16.sdat <- c(slope)
+int16.tif <- unlist(lapply(strsplit(int16.sdat, "/sdat"), paste, collapse="", sep=""))
+int16.tif <- paste(strsplit(int16.tif, ".sdat"), ".tif", sep="")
+gdal_SAGA2GTiff(int16.sdat, int16.tif, "Int16", -32768)
+
+slopeshape <- paste(pd.p, office.l, "/ned10m_11", office.l, "_slopeshape.tif", sep="")
+test <- list(cupro, cutan, slope)
+gdal.stack(test, slopeshape, "Int16", -32768)
+
+attach(lapply(g30, function(x) paste(x, ".sdat", sep="")))
+flt.sdat <- c(z2stream, valleys, wetness)
+flt.tif <- unlist(lapply(strsplit(flt.sdat, "/sdat"), paste, collapse="", sep=""))
+flt.tif <- paste(strsplit(flt.tif, ".sdat"), ".tif", sep="")
+gdal_SAGA2GTiff(flt.sdat, flt.tif, "Float32", -99999)
+
+office.l <- office.l[11]
+nlcd.p <- nlcd.p[11]
+t.l <- c("z2stream", "mvalleys")
+n30.l <- paste0(pd.p, office.l, "/sdat/ned", 30, "m_", office.l, "_", t.l, ".sdat")
+n10.l <- paste0(pd.p, office.l, "/ned", 10, "m_", office.l, "_", t.l, ".tif")
+co <- c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES")
+batchWarp(n30.l, n10.l, rep(nlcd.p, 2), 10, "cubicspline", crsarg, crsarg, "Float32", "-32768", co)
+
+mosaicList(list(slope), "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), -32768)
+
+```
