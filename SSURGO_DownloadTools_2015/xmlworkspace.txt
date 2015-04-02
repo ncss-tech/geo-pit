@@ -1,0 +1,16 @@
+This is a list of required xml files for the SSURGO Download tools. They are all used in the 'Create gSSURGO' part of the process.
+
+gSSURGO_Alaska_AlbersWGS1984.xml
+
+gSSURGO_CONUS_AlbersNAD1983.xml
+
+gSSURGO_Geographic_WGS1984.xml
+
+gSSURGO_Hawaii_AlbersWGS1984.xml
+
+gSSURGO_MapunitRaster.xml (metadata only)
+
+gSSURGO_PACBasin_AlbersWGS1984.xml
+
+gSSURGO_ValuTable.xml  (metadata only)
+

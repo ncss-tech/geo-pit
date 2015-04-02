@@ -1,0 +1,35 @@
+Any soil data exported from Web Soil Survey includes a file named “version.txt”.  The contents of this file is used to determine if the data a user is about to import into a SSURGO Template database is compatible with that database, and whether or not any accompanying metadata should be imported.
+
+File “version.txt” contains a single line in the form number.number.number.
+
+The first number is the SSURGO Version.  See section “SSURGO Version” in this same report for additional information.
+
+The second number is the Import Data Model Version.  See section “Import Data Model Version” in this same report for addition information.
+
+The third number is the Metadata Version.  See section “Base Metadata Version” in this same report for additional information.
+
+Every version of a SSURGO Template database where the SSURGO Template database version is greater than or equal to 36 “knows” what SSURGO Version and Import Data Model Version it is compatible with.
+
+No data will be imported unless both the SSURGO Version and the Import Data Model Version in file “version.txt” match what is expected.
+
+Metadata will not be imported unless the Metadata Version in file version.txt is greater than the Base Metadata Version of the SSURGO Template database in question.  This prevents obsolete metadata from being imported.
+
+For those of you responsible for creating and/or updating SSURGO Template databases, ExpectedSSURGOVersion, ExpectedImportDataModelVersion and BaseMetadataVersion are defined in the Declarations section of Module “Import Procedures”.
+
+SDP Notes Text file [version.txt] single line 2.3.2
+From the [SYSTEM Template Database Information] in a sample database. 
+[Fileversion.txt] = 2.3.1 and [SSURGO Version] is 2.2 and [Import Data Model Version] is 3
+End Notes
+
+
+VBA Code for verifying version.txt which contains the 'Version String' variable
+
+1. VersionString must be at least 5 characters or numbers
+2. VersionString must be "." delimited: LeftmostDecimalPosition = InStr(1, VersionString, ".", 	vbTextCompare); If IsNull(LeftmostDecimalPosition) Or LeftmostDecimalPosition < 2 Then 'Failed'
+
+3. SSURGOVersion is first number
+4. VersionString is the second number
+5. The VBA 'Import Procedures' Module has hardcoded constants:
+	Const ExpectedSSURGOVersion = 2
+	Const ExpectedImportDataModelVersion = 3
+	Const BaseMetadataVersion = 1

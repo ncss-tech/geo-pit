@@ -1,0 +1,81 @@
+' Steve Peaslee, Oct 2014, National Soil Survey Center
+'
+' 1. Append this following VBA Code to end of the "Mains and Miscellaneous" module
+'
+' 2. Add two new macros that will allow the ArcTool to call these functions:
+'     a. First macro is named "RestoreAuto" and uses RunCode on Restore_Auto()
+'     b. Second macro is named "BatchImport" and uses RunCode on Import_Auto()
+' 3. Rename the "Autoexec" macro to "AutoexecNOT"
+' 4. Change the catalog listing to display Tables and resize the application Window
+' 5. Exit MS Access
+' 6. When these steps are complete, rename the database by appending "_BatchImport" to 
+' the filename.
+'
+' **************************************************************************
+Function Restore_Auto() As Integer
+' Name of calling macro: RestoreAuto()
+' This macro restores the Autoexec macro back to its original name. Used 
+' at the end of the batch mode process.
+'
+DoCmd.RunCommand acCmdAppMinimize
+On Error Resume Next
+DoCmd.Rename "Autoexec", acMacro, "AutoexecNOT"
+
+Import_MainDone:
+DoCmd.Quit (acQuitSaveAll)
+
+End Function
+
+' **************************************************************************
+Function Import_Auto() As Integer
+' Name of calling macro: BatchImport()
+' Run tabular import if the database is located in the tabular folder.
+' This allows the database to load multiple surveys in a batch mode process.
+'
+Dim rcode As Variant
+Dim return_code As Integer
+Dim ImportMetadata As Boolean
+Dim import_dir_path As Variant
+Dim tab_path As Variant
+
+' minimize application window when this function is called
+DoCmd.RunCommand acCmdAppMinimize
+
+' Look for tabular folder
+import_dir_path = Application.CurrentProject.Path
+tab_path = Right$(import_dir_path, 8)
+
+If Not ((tab_path = "\tabular") Or (tab_path = "tabular\")) Then
+    ' if current path is not tabular then exit
+    GoTo Import_MainDone
+End If
+    
+ImportMetadata = False
+
+'Add a closing backslash to the import directory path specification if necessary.
+If Right(import_dir_path, 1) <> "\" Then
+    import_dir_path = import_dir_path & "\"
+End If
+
+Call Verify_Version_Info(import_dir_path, ImportMetadata, return_code)
+If return_code Then GoTo Import_MainDone:
+
+rcode = SysCmd(GenericSetStatus, "Importing to permanent database...")
+Call Import_Processed_Unload(import_dir_path, ImportMetadata, return_code)
+rcode = SysCmd(GenericClearStatus)
+
+If return_code Then
+    GoTo Import_MainDone
+End If
+
+'Sort any data that was imported.
+rcode = SysCmd(GenericSetStatus, "Sorting imported data...")
+rcode = SortAllMapunits()
+rcode = SortInterpsByDepth()
+rcode = SysCmd(GenericClearStatus)
+
+Import_MainDone:
+DoCmd.Quit (acQuitSaveAll)
+
+End Function
+

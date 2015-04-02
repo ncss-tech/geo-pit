@@ -1,0 +1,16 @@
+Steps for Updating gSSURGO-XML Workspace Documents. Normally this process is performed by the gSSURGO developers and the XML files are supplied along with the ArcToolbox and Python scripts. (Steve Peaslee, USDA-NRCS NSSC 2015). These XML workspace documents are used to create the gSSURGO database schema and spatial reference (Albers).
+
+1. There are currently 5 XML workspace documents plus two metadata files. One for each geographic region used by gSSURGO.
+	a. gSSURGO_Alaska_AlbersWGS1984.xml
+	b. gSSURGO_CONUS_AlbersNAD1983.xml
+	c. gSSURGO_Geographic_WGS1984.xml
+	d. gSSURGO_Hawaii_AlbersWGS1984.xml
+	e. gSSURGO_MapunitRaster.xml (metadata only)
+	f. gSSURGO_PACBasin_AlbersWGS1984.xml
+	g. gSSURGO_ValuTable.xml (metadata only)
+
+2. Copy each of these XML files to an empty folder.
+
+3. Using the Data Management\Workspace\Create File GDB ArcTool to create a corresponding empty ArcGIS 10.0 FGDB for each of the five XML Workspace documents (Alaska.gdb, Conus.gdb, Geographic.gdb, Hawaii.gdb, PacBasin.gdb). Make sure the geodatabase version is set to '10.0'. not 'Current'.
+
+4. Use the Data Management\Distributed Database\Import XML Workspace Document ArcTool to import the five XML files into the corresponding geodatabase. This will create the gSSURGO schema.
