@@ -14,6 +14,9 @@ out_xls = arcpy.GetParameterAsText (1) # Output Excel Name (add xls extension)
 #Dissolve Soils feature class
 
 dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY", "MUNAME"]
+#dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY_1", "MUNAME"]
+#dissolveFields = ["AREASYMBOL", "MUSYM", "Mapunit Key", "Mapunit Name"]
+
 #Dissolve Features
 arcpy.Dissolve_management (inFC, "outFCDISSOLVE", dissolveFields)
 
