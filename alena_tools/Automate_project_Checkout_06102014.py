@@ -1,6 +1,7 @@
 #Automate Project Checkout
 #02/27/2015
 #Alena Stephens
+#works best if the spatial data resides in TOC
 
 import arcpy
 import os
