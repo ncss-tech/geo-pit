@@ -78,8 +78,6 @@ dem30.sdat <- paste0(res30, ".sdat")
 
 gdal_GTiff2SAGA(dem10.tif, dem10.sdat)
 gdal_GTiff2SAGA(dem30.tif, dem30.sdat)
-gdal_GTiff2SAGA("E:/geodata/project_data/11REGION/ned30m_R11.tif",
-                "E:/geodata/project_data/11REGION/sdat/ned30m_R11.sdat")
 ```
 
 ## Calculate local derivatives
@@ -114,6 +112,7 @@ rsaga.mrvbf(dem30, valleys, summits)
 # Create a regional mosaic
 elev.sdat <- paste0(g30$elev, ".sdat")
 mosaicList(list(elev.sdat), "E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif")
+
 
 # Create a copy of elev5 to mask---------------------------------------------------------
 gdal_translate(
