@@ -88,9 +88,9 @@ attach(lapply(g10, paste0, ".sgrd"))
 rsaga.d1(dem10, 2)
 rsaga.d2(dem10, 2)
 rsaga.d3(dem10, 2)
-# Converts to radians then percent, 57.29578=180/pi, degrees=radians*180/pi
+# Convert radians to percent, degrees=radians*180/pi, 180/pi=57.29578 
 rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
-# Rescales curvatures so they can be exported as UInt16 to save file size
+# Rescale curvatures so they can be exported as UInt16 to save file size
 rsaga.grid.calculus(cupro, cupro, cupro, "10000*a")
 rsaga.grid.calculus(cucon, cucon, cucon, "-10000*a")
 rsaga.grid.calculus(cumin, cumin, cumin, "10000*a")
@@ -106,6 +106,7 @@ rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
 rsaga.grid.calculus(slopeD, slopeD, slopeR, "a*(1/57.29578)")
 rsaga.mrvbf(dem30, valleys, summits)
 ```
+
 
 ## Create a hydrologically correct DEM
 ```{r, eval=FALSE}
