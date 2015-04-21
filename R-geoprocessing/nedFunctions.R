@@ -2,9 +2,9 @@
 ############################################################################
 ### Generate list from intersection of SAPOLYGON and NED metadata layer
 ############################################################################
-makeNedList <- function(tiles, dsn, office){
+makeNedList <- function(ned_idx, dsn, office){
   ned.l <- list()
-  nedtiles <- readOGR(dsn=tiles, layer="ned_13arcsec_g")
+  nedtiles <- readOGR(dsn=ned_idx, layer="ned_13arcsec_g")
   nedtiles <- spTransform(nedtiles, CRS(crsarg))
   for(i in seq(office)){
     sapolygon <- readOGR(dsn=dsn[i], layer=layer)
@@ -14,6 +14,20 @@ makeNedList <- function(tiles, dsn, office){
   }
   return(ned.l=ned.l)
 }
+
+#########################################################################
+### Clean ned list of duplicates
+#########################################################################
+remove_dups <- function(tiles, ned.vector){
+  files <- list.files(tiles)
+  zips <- grep(".zip", files)
+  exists <- files[zips]
+  exists <- unlist(strsplit(exists, ".zip"))
+  exists <- match(ned.vector, exists)
+  exists <- ned.vector[!is.na(exists)]  
+}
+
+
 
 ########################################################################
 ### Download img NED tiles
