@@ -11,7 +11,7 @@ SAGA is an open-source GIS that was originally developed in 1996 as a terrain an
 
 To begin, the necessary libaries must be loaded, as well as the custom batch functions.
 
-```{r, eval=FALSE}
+```{r, eval = FALSE}
 library(gdalUtils)
 library(RSAGA)
 
@@ -21,16 +21,16 @@ source("C:/Users/Stephen/Documents/Github/geoprocessing/rsagaFunctions.R")
 
 Next the proper GDAL and RSAGA path has to be set. The first GDAL location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
 
-```{r, eval=FALSE}
+```{r, eval = FALSE}
 gdal_setInstallation(search_path = "C:/ProgramData/QGIS/QGISDufour/bin", rescan = TRUE)
 gdal_setInstallation(search_path = "C:/OSGeo4W64/bin", rescan = T)
-myenv <- rsaga.env(path="C:/Program Files (x86)/SAGA-GIS")
+myenv <- rsaga.env(path = "C:/Program Files (x86)/SAGA-GIS")
 ```
 
 
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "C:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
 
-```{r, eval=FALSE}
+```{r, eval = FALSE}
 office <- c("8VIC", "8PHO")
 sdat.p <- paste0("M:/geodata/project_data/", office, "/sdat/")
 
@@ -57,8 +57,8 @@ g30 <- list(
   slopeR   = paste0(res30, "_slopeR", 1+2*radiusD),
   slopeD   = paste0(res30, "_sloped", 1+2*radiusD),
   aspect   = paste0(res30, "_aspect", 1+2*radiusD),
-  mvalleys  = paste0(res30, "_mvalleys"),
-  msummits  = paste0(res30, "_msummits"),
+  mvalleys = paste0(res30, "_mvalleys"),
+  msummits = paste0(res30, "_msummits"),
   caarea   = paste0(res30, "_caarea"),
   caheight = paste0(res30, "_cheight"),
   wetness  = paste0(res30, "_wetness"),
@@ -68,10 +68,10 @@ g30 <- list(
 ```
 
 ## Convert GTiff to SAGA
-```{r, eval=FALSE}
-dem10.tif  <- lapply(strsplit(res10, "/sdat"), paste0, collapse="")
+```{r, eval = FALSE}
+dem10.tif  <- lapply(strsplit(res10, "/sdat"), paste0, collapse = "")
 dem10.tif  <- paste0(dem10.tif, ".tif")
-dem30.tif  <- lapply(strsplit(res30, "/sdat"), paste0, collapse="")
+dem30.tif  <- lapply(strsplit(res30, "/sdat"), paste0, collapse = "")
 dem30.tif  <- paste0(dem30.tif, ".tif")
 dem10.sdat <- paste0(res10, ".sdat")
 dem30.sdat <- paste0(res30, ".sdat")
@@ -81,14 +81,14 @@ gdal_GTiff2SAGA(dem30.tif, dem30.sdat)
 ```
 
 ## Calculate local derivatives
-```{r, eval=FALSE}
+```{r, eval = FALSE}
 dem10 <- paste0(res10, ".sgrd")
 attach(lapply(g10, paste0, ".sgrd"))
 
 rsaga.d1(dem10, 2)
 rsaga.d2(dem10, 2)
 rsaga.d3(dem10, 2)
-# Convert radians to percent, degrees=radians*180/pi, 180/pi=57.29578 
+# Convert radians to percent, degrees = radians*180/pi, 180/pi = 57.29578 
 rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
 # Rescale curvatures so they can be exported as UInt16 to save file size
 rsaga.grid.calculus(cupro, cupro, cupro, "10000*a")
@@ -109,7 +109,7 @@ rsaga.mrvbf(dem30, mvalleys, msummits)
 
 
 ## Create a hydrologically correct DEM
-```{r, eval=FALSE}
+```{r, eval = FALSE}
 # Create a regional mosaic
 elev.sdat <- paste0(g30$elev, ".sdat")
 mosaicList(list(elev.sdat), "E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif")
@@ -181,21 +181,22 @@ rsaga.ofd(dem, streams)
 
 # Write SAGA to GTiff--------------------------------------------------------------------------
 int16 <- c("slope", "aspect")
-in16.sdat <- lapply(g10[int16], paste0, ".sdat")
-int16.tif <- unlist(lapply(strsplit(int16.sdat, "/sdat"), paste0, collapse=""))
+int16.sdat <- sapply(g10[int16], paste0, ".sdat")
+int16.tif <- sapply(strsplit(int16.sdat, "/sdat"), paste0, collapse = "")
 int16.tif <- paste0(strsplit(int16.tif, ".sdat"), ".tif")
 gdal_SAGA2GTiff(int16.sdat, int16.tif, "Int16", -32768)
 
 slopeshape <- paste0("E:/geodata/project_data/ned10m_", office, "_slopeshape.tif")
 int16 <- c("cupro", "cutan", "slope")
 int16.sdat <- lapply(g10[int16], paste0, ".sdat")
-gdal.stack(int16.sdat, slopeshape, "Int16", -32768)
+gdal_stack(int16.sdat, slopeshape, "Int16", -32768)
 
 flt <- c("z2stream", "mvalleys", "wetness")
-flt.sdat <- lapply(g30[flt], paste0, ".sdat")
-flt.tif <- unlist(lapply(strsplit(flt.sdat, "/sdat"), paste0, collapse=""))
+flt.sdat <- sapply(g30[flt], paste0, ".sdat")
+flt.tif <- unlist(lapply(strsplit(flt.sdat, "/sdat"), paste0, collapse = ""))
 flt.tif <- paste0(strsplit(flt.tif, ".sdat"), ".tif")
 gdal_SAGA2GTiff(flt.sdat, flt.tif, "Float32", -99999)
 
-mosaicList(g10$slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), -32768)
+slope <- lapply(g10$slope, paste0, ".sdat")
+mosaicList(slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS = DEFLATE", "TILED = YES", "BIGTIFF = YES"), -32768)
 ```
