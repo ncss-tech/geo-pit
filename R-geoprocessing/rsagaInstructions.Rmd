@@ -57,8 +57,8 @@ g30 <- list(
   slopeR   = paste0(res30, "_slopeR", 1+2*radiusD),
   slopeD   = paste0(res30, "_sloped", 1+2*radiusD),
   aspect   = paste0(res30, "_aspect", 1+2*radiusD),
-  valleys  = paste0(res30, "_valleys"),
-  summits  = paste0(res30, "_summits"),
+  mvalleys  = paste0(res30, "_mvalleys"),
+  msummits  = paste0(res30, "_msummits"),
   caarea   = paste0(res30, "_caarea"),
   caheight = paste0(res30, "_cheight"),
   wetness  = paste0(res30, "_wetness"),
@@ -104,7 +104,7 @@ rsaga.d0(dem30, 2)
 rsaga.d1(dem30, 2)
 rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
 rsaga.grid.calculus(slopeD, slopeD, slopeR, "a*(1/57.29578)")
-rsaga.mrvbf(dem30, valleys, summits)
+rsaga.mrvbf(dem30, mvalleys, msummits)
 ```
 
 
@@ -191,7 +191,7 @@ int16 <- c("cupro", "cutan", "slope")
 int16.sdat <- lapply(g10[int16], paste0, ".sdat")
 gdal.stack(int16.sdat, slopeshape, "Int16", -32768)
 
-flt <- c("z2stream", "valleys", "wetness")
+flt <- c("z2stream", "mvalleys", "wetness")
 flt.sdat <- lapply(g30[flt], paste0, ".sdat")
 flt.tif <- unlist(lapply(strsplit(flt.sdat, "/sdat"), paste0, collapse=""))
 flt.tif <- paste0(strsplit(flt.tif, ".sdat"), ".tif")
