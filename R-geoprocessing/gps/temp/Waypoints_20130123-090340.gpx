@@ -1,0 +1,697 @@
+<?xml version="1.0"?>
+<gpx version="1.1" creator="GDAL 1.9.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ogr="http://osgeo.org/gdal" xmlns="http://www.topografix.com/GPX/1/1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<metadata><bounds minlat="35.044025740762805" minlon="-116.154669479440770" maxlat="35.134907482259834" maxlon="-116.009550343535210"/></metadata>              
+<wpt lat="35.099881876161113" lon="-116.12153042892722">
+  <ele>296.0</ele>
+  <name>SLS024SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.099881876161113</ogr:lat>
+    <ogr:lon>-116.12153042892722</ogr:lon>
+    <ogr:y_proj>3884472.0633778968</ogr:y_proj>
+    <ogr:x_proj>580066.42758314812</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.096241381941027" lon="-116.12026024667534">
+  <ele>296.0</ele>
+  <name>SLS027SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.096241381941027</ogr:lat>
+    <ogr:lon>-116.12026024667534</ogr:lon>
+    <ogr:y_proj>3884069.345110076</ogr:y_proj>
+    <ogr:x_proj>580185.76211879356</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.098954202731598" lon="-116.12234129020523">
+  <ele>295.0</ele>
+  <name>SLS025SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.098954202731598</ogr:lat>
+    <ogr:lon>-116.12234129020523</ogr:lon>
+    <ogr:y_proj>3884368.5308109694</ogr:y_proj>
+    <ogr:x_proj>579993.42845393368</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.096807432408205" lon="-116.12239779186406">
+  <ele>296.0</ele>
+  <name>SLS026SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.096807432408205</ogr:lat>
+    <ogr:lon>-116.12239779186406</ogr:lon>
+    <ogr:y_proj>3884130.4034163808</ogr:y_proj>
+    <ogr:x_proj>579990.37553861842</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.108175884977157" lon="-116.11852406405652">
+  <ele>309.0</ele>
+  <name>SLS018SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.108175884977157</ogr:lat>
+    <ogr:lon>-116.11852406405652</ogr:lon>
+    <ogr:y_proj>3885394.3103568885</ogr:y_proj>
+    <ogr:x_proj>580332.302053925</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.10730673621579" lon="-116.11635602446016">
+  <ele>326.0</ele>
+  <name>SLS019SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.10730673621579</ogr:lat>
+    <ogr:lon>-116.11635602446016</ogr:lon>
+    <ogr:y_proj>3885299.6699821162</ogr:y_proj>
+    <ogr:x_proj>580530.7415494154</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.105965784023731" lon="-116.117442431028">
+  <ele>303.0</ele>
+  <name>SLS020SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.105965784023731</ogr:lat>
+    <ogr:lon>-116.117442431028</ogr:lon>
+    <ogr:y_proj>3885150.0771316695</ogr:y_proj>
+    <ogr:x_proj>580433.04825932777</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.076855587998899" lon="-116.13675528168454">
+  <ele>304.0</ele>
+  <name>CH004SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.076855587998899</ogr:lat>
+    <ogr:lon>-116.13675528168454</ogr:lon>
+    <ogr:y_proj>3881906.27077176</ogr:y_proj>
+    <ogr:x_proj>578700.88884670078</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.065607130646086" lon="-116.14752362464512">
+  <ele>307.0</ele>
+  <name>CH005SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.065607130646086</ogr:lat>
+    <ogr:lon>-116.14752362464512</ogr:lon>
+    <ogr:y_proj>3880650.3498339928</ogr:y_proj>
+    <ogr:x_proj>577729.80746476434</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.058374975773312" lon="-116.1534642790463">
+  <ele>308.0</ele>
+  <name>CH007SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.058374975773312</ogr:lat>
+    <ogr:lon>-116.1534642790463</ogr:lon>
+    <ogr:y_proj>3879843.6787279686</ogr:y_proj>
+    <ogr:x_proj>577194.93367452221</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.057565682613905" lon="-116.15466947944077">
+  <ele>308.0</ele>
+  <name>CH008SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.057565682613905</ogr:lat>
+    <ogr:lon>-116.15466947944077</ogr:lon>
+    <ogr:y_proj>3879752.9948608605</ogr:y_proj>
+    <ogr:x_proj>577085.79188345547</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.048804965187188" lon="-116.15247176022488">
+  <ele>307.0</ele>
+  <name>CH010SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.048804965187188</ogr:lat>
+    <ogr:lon>-116.15247176022488</ogr:lon>
+    <ogr:y_proj>3878783.1204507519</ogr:y_proj>
+    <ogr:x_proj>577294.45916837011</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.064712975693816" lon="-116.14812380022632">
+  <ele>308.0</ele>
+  <name>CH006SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.064712975693816</ogr:lat>
+    <ogr:lon>-116.14812380022632</ogr:lon>
+    <ogr:y_proj>3880550.7189755193</ogr:y_proj>
+    <ogr:x_proj>577675.92923079745</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.046530843021714" lon="-116.10479470671353">
+  <ele>298.0</ele>
+  <name>SLS030SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.046530843021714</ogr:lat>
+    <ogr:lon>-116.10479470671353</ogr:lon>
+    <ogr:y_proj>3878568.8953629835</ogr:y_proj>
+    <ogr:x_proj>581644.91967181896</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.046309567162801" lon="-116.08132274451189">
+  <ele>294.0</ele>
+  <name>SLS033SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.046309567162801</ogr:lat>
+    <ogr:lon>-116.08132274451189</ogr:lon>
+    <ogr:y_proj>3878563.8158815354</ogr:y_proj>
+    <ogr:x_proj>583785.87970437948</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.052081823499776" lon="-116.0534774542672">
+  <ele>300.0</ele>
+  <name>SLS044SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.052081823499776</ogr:lat>
+    <ogr:lon>-116.0534774542672</ogr:lon>
+    <ogr:y_proj>3879227.7118665124</ogr:y_proj>
+    <ogr:x_proj>586319.41759649268</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.046199801621192" lon="-116.04087378827523">
+  <ele>307.0</ele>
+  <name>SLS048SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.046199801621192</ogr:lat>
+    <ogr:lon>-116.04087378827523</ogr:lon>
+    <ogr:y_proj>3878586.3605838097</ogr:y_proj>
+    <ogr:x_proj>587475.11990789731</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.044025740762805" lon="-116.02207520115759">
+  <ele>316.0</ele>
+  <name>SLS050SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.044025740762805</ogr:lat>
+    <ogr:lon>-116.02207520115759</ogr:lon>
+    <ogr:y_proj>3878361.8959909086</ogr:y_proj>
+    <ogr:x_proj>589192.00460619747</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.045604565337413" lon="-116.00955034353521">
+  <ele>325.0</ele>
+  <name>SLS051SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.045604565337413</ogr:lat>
+    <ogr:lon>-116.00955034353521</ogr:lon>
+    <ogr:y_proj>3878548.2605076097</ogr:y_proj>
+    <ogr:x_proj>590332.62562290882</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.054302505882085" lon="-116.05090085587976">
+  <ele>299.0</ele>
+  <name>SLS045SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.054302505882085</ogr:lat>
+    <ogr:lon>-116.05090085587976</ogr:lon>
+    <ogr:y_proj>3879476.2235203781</ogr:y_proj>
+    <ogr:x_proj>586552.0551134788</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.047012939643608" lon="-116.03298910572371">
+  <ele>311.0</ele>
+  <name>SLS049SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.047012939643608</ogr:lat>
+    <ogr:lon>-116.03298910572371</ogr:lon>
+    <ogr:y_proj>3878683.4813694167</ogr:y_proj>
+    <ogr:x_proj>588193.36632744281</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.073231831205746" lon="-116.0706178143006">
+  <ele>291.0</ele>
+  <name>SLS040SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.073231831205746</ogr:lat>
+    <ogr:lon>-116.0706178143006</ogr:lon>
+    <ogr:y_proj>3881558.5990995304</ogr:y_proj>
+    <ogr:x_proj>584734.3922508856</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.074065587224645" lon="-116.06687094478109">
+  <ele>290.0</ele>
+  <name>SLS039SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.074065587224645</ogr:lat>
+    <ogr:lon>-116.06687094478109</ogr:lon>
+    <ogr:y_proj>3881654.255673964</ogr:y_proj>
+    <ogr:x_proj>585075.14539376867</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.067237867580211" lon="-116.0640372122309">
+  <ele>290.0</ele>
+  <name>SLS038SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.067237867580211</ogr:lat>
+    <ogr:lon>-116.0640372122309</ogr:lon>
+    <ogr:y_proj>3880899.4659572141</ogr:y_proj>
+    <ogr:x_proj>585340.61473322508</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.050028306302522" lon="-116.14623007000765">
+  <ele>306.0</ele>
+  <name>CH011SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.050028306302522</ogr:lat>
+    <ogr:lon>-116.14623007000765</ogr:lon>
+    <ogr:y_proj>3878923.6444024541</ogr:y_proj>
+    <ogr:x_proj>577862.54573288676</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.048082672774406" lon="-116.15415455086161">
+  <ele>308.0</ele>
+  <name>CH009SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.048082672774406</ogr:lat>
+    <ogr:lon>-116.15415455086161</ogr:lon>
+    <ogr:y_proj>3878701.7148247515</ogr:y_proj>
+    <ogr:x_proj>577141.66638607776</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.053160046981141" lon="-116.0646321913833">
+  <ele>293.0</ele>
+  <name>SLS037SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.053160046981141</ogr:lat>
+    <ogr:lon>-116.0646321913833</ogr:lon>
+    <ogr:y_proj>3879337.6934184451</ogr:y_proj>
+    <ogr:x_proj>585301.00651380932</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.063769962056824" lon="-116.04544647862721">
+  <ele>300.0</ele>
+  <name>SLS047SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.063769962056824</ogr:lat>
+    <ogr:lon>-116.04544647862721</ogr:lon>
+    <ogr:y_proj>3880530.9350363081</ogr:y_proj>
+    <ogr:x_proj>587039.42147806787</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.064289543762918" lon="-116.04845629591678">
+  <ele>298.0</ele>
+  <name>SLS046SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.064289543762918</ogr:lat>
+    <ogr:lon>-116.04845629591678</ogr:lon>
+    <ogr:y_proj>3880585.9351110137</ogr:y_proj>
+    <ogr:x_proj>586764.42110453954</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.045405878232785" lon="-116.07498121544445">
+  <ele>295.0</ele>
+  <name>SLS035SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.045405878232785</ogr:lat>
+    <ogr:lon>-116.07498121544445</ogr:lon>
+    <ogr:y_proj>3878468.9391227458</ogr:y_proj>
+    <ogr:x_proj>584365.18336486677</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.045202244624818" lon="-116.06858196975399">
+  <ele>297.0</ele>
+  <name>SLS036SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.045202244624818</ogr:lat>
+    <ogr:lon>-116.06858196975399</ogr:lon>
+    <ogr:y_proj>3878451.7857329361</ogr:y_proj>
+    <ogr:x_proj>584949.03943746025</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.110508462169719" lon="-116.11534660685075">
+  <ele>331.0</ele>
+  <name>SLS017SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.110508462169719</ogr:lat>
+    <ogr:lon>-116.11534660685075</ogr:lon>
+    <ogr:y_proj>3885655.5665053925</ogr:y_proj>
+    <ogr:x_proj>580619.58247531939</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.111720351095109" lon="-116.11517926779887">
+  <ele>330.0</ele>
+  <name>SLS016SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.111720351095109</ogr:lat>
+    <ogr:lon>-116.11517926779887</ogr:lon>
+    <ogr:y_proj>3885790.103753069</ogr:y_proj>
+    <ogr:x_proj>580633.63860567368</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.119047062615103" lon="-116.11510548724274">
+  <ele>289.0</ele>
+  <name>SLS005SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.119047062615103</ogr:lat>
+    <ogr:lon>-116.11510548724274</ogr:lon>
+    <ogr:y_proj>3886602.7163927346</ogr:y_proj>
+    <ogr:x_proj>580633.14300958836</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.114882663727613" lon="-116.12046071575469">
+  <ele>293.0</ele>
+  <name>SLS004SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.114882663727613</ogr:lat>
+    <ogr:lon>-116.12046071575469</ogr:lon>
+    <ogr:y_proj>3886136.5500804815</ogr:y_proj>
+    <ogr:x_proj>580149.23735618487</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.112576748913213" lon="-116.10980465458115">
+  <ele>290.0</ele>
+  <name>SLS007SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.112576748913213</ogr:lat>
+    <ogr:lon>-116.10980465458115</ogr:lon>
+    <ogr:y_proj>3885889.4448225102</ogr:y_proj>
+    <ogr:x_proj>581122.58458915632</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.115024316620271" lon="-116.10597906626933">
+  <ele>288.0</ele>
+  <name>SLS008SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.115024316620271</ogr:lat>
+    <ogr:lon>-116.10597906626933</ogr:lon>
+    <ogr:y_proj>3886164.0096110487</ogr:y_proj>
+    <ogr:x_proj>581468.77497470449</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.117031768821121" lon="-116.1045161133212">
+  <ele>286.0</ele>
+  <name>SLS009SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.117031768821121</ogr:lat>
+    <ogr:lon>-116.1045161133212</ogr:lon>
+    <ogr:y_proj>3886387.8396017049</ogr:y_proj>
+    <ogr:x_proj>581600.08856922272</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.121009514575022" lon="-116.11342600413217">
+  <ele>288.0</ele>
+  <name>SLS006SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.121009514575022</ogr:lat>
+    <ogr:lon>-116.11342600413217</ogr:lon>
+    <ogr:y_proj>3886821.7191573619</ogr:y_proj>
+    <ogr:x_proj>580784.24496918207</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.123342671202138" lon="-116.12300907658543">
+  <ele>323.0</ele>
+  <name>SLS001SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.123342671202138</ogr:lat>
+    <ogr:lon>-116.12300907658543</ogr:lon>
+    <ogr:y_proj>3887072.7408071365</ogr:y_proj>
+    <ogr:x_proj>579908.74913007091</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.114597637203396" lon="-116.12577379925844">
+  <ele>293.0</ele>
+  <name>CH002SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.114597637203396</ogr:lat>
+    <ogr:lon>-116.12577379925844</ogr:lon>
+    <ogr:y_proj>3886100.6771787009</ogr:y_proj>
+    <ogr:x_proj>579665.34645799978</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.116428759001444" lon="-116.12593982726601">
+  <ele>296.0</ele>
+  <name>CH001SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.116428759001444</ogr:lat>
+    <ogr:lon>-116.12593982726601</ogr:lon>
+    <ogr:y_proj>3886303.6207504068</ogr:y_proj>
+    <ogr:x_proj>579648.43449369096</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.121807082513769" lon="-116.12227963592275">
+  <ele>307.0</ele>
+  <name>SLS002SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.121807082513769</ogr:lat>
+    <ogr:lon>-116.12227963592275</ogr:lon>
+    <ogr:y_proj>3886903.0252270489</ogr:y_proj>
+    <ogr:x_proj>579976.71548645617</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.122154502310202" lon="-116.12061953502136">
+  <ele>305.0</ele>
+  <name>SLS003SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.122154502310202</ogr:lat>
+    <ogr:lon>-116.12061953502136</ogr:lon>
+    <ogr:y_proj>3886942.8896317412</ogr:y_proj>
+    <ogr:x_proj>580127.64340690873</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.134907482259834" lon="-116.10717708721586">
+  <ele>291.0</ele>
+  <name>SLN001SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.134907482259834</ogr:lat>
+    <ogr:lon>-116.10717708721586</ogr:lon>
+    <ogr:y_proj>3888368.1343040438</ogr:y_proj>
+    <ogr:x_proj>581339.83027662593</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.102732141585832" lon="-116.12063322217907">
+  <ele>295.0</ele>
+  <name>SLS023SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.102732141585832</ogr:lat>
+    <ogr:lon>-116.12063322217907</ogr:lon>
+    <ogr:y_proj>3884788.886314543</ogr:y_proj>
+    <ogr:x_proj>580145.41289889964</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.104276980485352" lon="-116.1208594093156">
+  <ele>294.0</ele>
+  <name>SLS022SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.104276980485352</ogr:lat>
+    <ogr:lon>-116.1208594093156</ogr:lon>
+    <ogr:y_proj>3884960.0309404349</ogr:y_proj>
+    <ogr:x_proj>580123.2861084668</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.105838370901729" lon="-116.12208035602985">
+  <ele>295.0</ele>
+  <name>SLS021SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.105838370901729</ogr:lat>
+    <ogr:lon>-116.12208035602985</ogr:lon>
+    <ogr:y_proj>3885132.2118523368</ogr:y_proj>
+    <ogr:x_proj>580010.48379485426</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.096341040147912" lon="-116.11867929096601">
+  <ele>296.0</ele>
+  <name>SLS028SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.096341040147912</ogr:lat>
+    <ogr:lon>-116.11867929096601</ogr:lon>
+    <ogr:y_proj>3884081.6708282363</ogr:y_proj>
+    <ogr:x_proj>580329.76587080641</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.07717684343077" lon="-116.13575809667522">
+  <ele>304.0</ele>
+  <name>CH003SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.07717684343077</ogr:lat>
+    <ogr:lon>-116.13575809667522</ogr:lon>
+    <ogr:y_proj>3881942.6862885267</ogr:y_proj>
+    <ogr:x_proj>578791.49313221511</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.046963798672763" lon="-116.10276955777987">
+  <ele>299.0</ele>
+  <name>SLS032SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.046963798672763</ogr:lat>
+    <ogr:lon>-116.10276955777987</ogr:lon>
+    <ogr:y_proj>3878618.5700651575</ogr:y_proj>
+    <ogr:x_proj>581829.18911315582</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.047226580881308" lon="-116.10392503090235">
+  <ele>300.0</ele>
+  <name>SLS031SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.047226580881308</ogr:lat>
+    <ogr:lon>-116.10392503090235</ogr:lon>
+    <ogr:y_proj>3878646.765930925</ogr:y_proj>
+    <ogr:x_proj>581723.54438320559</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.046588862037289" lon="-116.1156101629231">
+  <ele>303.0</ele>
+  <name>SLS029SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.046588862037289</ogr:lat>
+    <ogr:lon>-116.1156101629231</ogr:lon>
+    <ogr:y_proj>3878566.5322873145</ogr:y_proj>
+    <ogr:x_proj>580658.45263636112</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.050915364173697" lon="-116.08013635745766">
+  <ele>294.0</ele>
+  <name>SLS034SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.050915364173697</ogr:lat>
+    <ogr:lon>-116.08013635745766</ogr:lon>
+    <ogr:y_proj>3879075.6049030558</ogr:y_proj>
+    <ogr:x_proj>583889.37343518937</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.054337165201225" lon="-116.0540960582732">
+  <ele>297.0</ele>
+  <name>SLS043SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.054337165201225</ogr:lat>
+    <ogr:lon>-116.0540960582732</ogr:lon>
+    <ogr:y_proj>3879477.2994226199</ogr:y_proj>
+    <ogr:x_proj>586260.63026959717</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.07814330694471" lon="-116.07004642381001">
+  <ele>291.0</ele>
+  <name>SLS042SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.07814330694471</ogr:lat>
+    <ogr:lon>-116.07004642381001</ogr:lon>
+    <ogr:y_proj>3882103.7801790209</ogr:y_proj>
+    <ogr:x_proj>584781.40750558034</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.099181887820542" lon="-116.07743500030826">
+  <ele>288.0</ele>
+  <name>SLS015SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.099181887820542</ogr:lat>
+    <ogr:lon>-116.07743500030826</ogr:lon>
+    <ogr:y_proj>3884430.7573360102</ogr:y_proj>
+    <ogr:x_proj>584086.20076382696</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.101184068457066" lon="-116.07786848638797">
+  <ele>288.0</ele>
+  <name>SLS014SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.101184068457066</ogr:lat>
+    <ogr:lon>-116.07786848638797</ogr:lon>
+    <ogr:y_proj>3884652.4392805225</ogr:y_proj>
+    <ogr:x_proj>584044.63539923099</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.102057733673774" lon="-116.07775730267956">
+  <ele>287.0</ele>
+  <name>SLS013SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.102057733673774</ogr:lat>
+    <ogr:lon>-116.07775730267956</ogr:lon>
+    <ogr:y_proj>3884749.4251312464</ogr:y_proj>
+    <ogr:x_proj>584053.8721469189</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.077056725196819" lon="-116.06863960025791">
+  <ele>290.0</ele>
+  <name>SLS041SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.077056725196819</ogr:lat>
+    <ogr:lon>-116.06863960025791</ogr:lon>
+    <ogr:y_proj>3881984.4727868722</ogr:y_proj>
+    <ogr:x_proj>584910.79192053701</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.112294101784428" lon="-116.08697103413698">
+  <ele>287.0</ele>
+  <name>SLS010SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.112294101784428</ogr:lat>
+    <ogr:lon>-116.08697103413698</ogr:lon>
+    <ogr:y_proj>3885876.934047163</ogr:y_proj>
+    <ogr:x_proj>583203.70752992784</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.110290056079016" lon="-116.08392815556464">
+  <ele>287.0</ele>
+  <name>SLS011SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.110290056079016</ogr:lat>
+    <ogr:lon>-116.08392815556464</ogr:lon>
+    <ogr:y_proj>3885657.2253586738</ogr:y_proj>
+    <ogr:x_proj>583483.05143386393</ogr:x_proj>
+  </extensions>
+</wpt>
+<wpt lat="35.107548337578045" lon="-116.08065263068943">
+  <ele>286.0</ele>
+  <name>SLS012SMR</name>
+  <type>WAYPOINT</type>
+  <extensions>
+    <ogr:lat>35.107548337578045</ogr:lat>
+    <ogr:lon>-116.08065263068943</ogr:lon>
+    <ogr:y_proj>3885355.9105858891</ogr:y_proj>
+    <ogr:x_proj>583784.36620664888</ogr:x_proj>
+  </extensions>
+</wpt>
+</gpx>
