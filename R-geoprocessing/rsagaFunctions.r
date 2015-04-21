@@ -147,7 +147,7 @@ rsaga.twi <- function(slopeR, carea){
 }
 
 
-rsaga.strahler <- function(x, threshold){
+rsaga.strahler <- function(x, strahler, threshold){
   for(i in seq(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", strahler[i],"\n"))
     rsaga.geoprocessor("ta_channels", 5, env=myenv, list(
@@ -160,20 +160,17 @@ rsaga.strahler <- function(x, threshold){
 }
 
 
-rsaga.ofd <- function(x){
+rsaga.ofd <- function(x, streams){
   for(i in seq(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", z2stream[i],"\n"))
     rsaga.geoprocessor("ta_channels", 4, env=myenv, list(
       ELEVATION=x[i],
-      CHANNELS=strahler.rc[i],
+      CHANNELS=streams[i],
       DISTVERT=z2stream[i]
       )
     )
   }
 }
-
-
-
 
 
 # SAGA Wetness Index
