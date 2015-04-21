@@ -21,8 +21,8 @@ for(i in seq(states)){
 img <- readOGR(dsn="I:/geodata/elevation/ned/tiles", layer="ned_meta_R11", encoding="ESRI_Shapefile")
 img <- sort(data.frame(img)$FILE_ID)
 
-url <- paste0("ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/13/IMG/", img, ".zip")
-dest <- paste0("I:/geodata/elevation/ned/tiles/img/", img, ".zip")
+url <- paste("ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/13/IMG/", img, ".zip", sep="")
+dest <- paste("I:/geodata/elevation/ned/tiles/img/", img, ".zip", sep="")
 
 for(i in seq(img)){
   download.file(url=url[i], destfile=dest[i])
@@ -130,8 +130,6 @@ for(i in seq(states)){
 for(i in seq(states)){
   unzip(zipfile=dest[i])
 }
-
-# http://www.gadm.org/
 
 
 # Hydrography

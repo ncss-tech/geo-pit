@@ -1,2 +1,0 @@
-type,ident,lat,long,y_proj,x_proj,comment,altitude,model,ltime
-WAYPOINT,13CA795001,35.20539695,-115.02426228,3897608.74859034,679850.786680351,10-OCT-12 12:21:01,1323,GPSMap60, 
