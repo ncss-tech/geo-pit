@@ -31,13 +31,8 @@ Next numerous parameters need to be set which get used later by many of the func
 # Set parameters
 source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
 source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-tile.p <- "M:/geodata/elevation/ned/tiles/img/"
 office <- c("6SPR", "6GLE")
-pd.p <- "M:/geodata/project_data/"
-layer <- "kevin"
-dsn <- rep(paste0(pd.p, "kevin.shp"), length(office))
-nlcd.p <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
-nlcd.p.l <- paste(pd.p, office,"/nlcd", 30, "m_", office, "_lulc2011.tif", sep="")
+pd.p <- paste0("M:/geodata/project_data/", office, "/")
 crsarg <- CRSargs(CRS("+init=epsg:5070"))
 ```
 
@@ -46,66 +41,73 @@ crsarg <- CRSargs(CRS("+init=epsg:5070"))
 To start you need to download the 10-meter NED tiles from the USGS. Because the USGS manages these tiles using an ftp server it's easy for R download them one at a time with the following function. For whatever reason the downloading fuction doesn't work from RStudio, when the Global Option "Use Internet Explorer library/proxy for HTTP" is selected under Packages. Either uncheck or run from the vanilla R console. Beware hiccups with your internet connection may terminate the downloading process.
 
 ```{r, eval=FALSE}
-ned_idx <- "M:/geodata/elevation/ned/tiles/ned_13arcsec_g.shp"
-ned.l<- makeNedList(ned_idx, dsn, office)
-ned <- sort(unique(unlist(ned.l)))
-tiles <- "M:/geodata/elevation/ned/tiles/img"
-ned <- remove_dups(tiles, ned)
+tile.p <- "M:/geodata/elevation/ned/tiles/img/"
+ned.dsn <- "M:/geodata/elevation/ned/tiles/ned_13arcsec_g.shp"
+dsn <- rep(paste0("M:/geodata/project_data/kevin.shp"), length(office))
+layer <- "kevin"
 
-batchDownload(ned[20])
-batchUnzip(ned.l)
+ned.l<- makeNedList(ned.dsn, dsn, office)
+ned <- sort(unique(unlist(ned.l)))
+ned <- remove_dups(tile.p, ned)
+
+batchDownload(ned)
+batchUnzip(ned)
 ```
 
 ## Subset NLCD by MLRA office
 The NLCD layer is used as a standard coordinate reference system from which to warp the NED mosaics too, and for subseting by MLRA office.
 ```{r, eval=FALSE}
-batchNlcdSubset(nlcd.p, nlcd.p.l)
+nlcd.in <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
+nlcd.out <- paste0(pd.p, "nlcd30m_", office, "_lulc2011.tif")
+
+batchNlcdSubset(nlcd.p, nlcd.l)
 ```
 
 ## Mosaic tile list. 
 ```{r, eval=FALSE}
-mo.l <- lapply(ned.l, function(x) paste0(tile.p, "img", x, "_13.img"))
-dst.p <- paste0(pd.p, office, "/ned09d_", office, ".tif")
+ned.in <- lapply(ned.l, function(x) paste0(tile.p, "img", x, "_13.img"))
+ned.out <- paste0(pd.p, "ned09d_", office, ".tif")
 
-mosaicList(mo.l, dst.p, "Float32", c("BIGTIFF=YES"), -99999)
+mosaicList(ned.in, ned.out, "Float32", c("BIGTIFF=YES"), -99999)
 ```
 
 
 ## Warp NED from a geographic to projected coordinate system 
 For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is my personal preference for some of the reasons discussed by Frank Warmerdam (http://courses.neteler.org/gdal-raster-data-tips-and-tricks/). For upscaling or aggregating the 10-meter to 30-meter DEM I use average resampling. Consequentially this makes the most sense and has been the approach used in several studies (Smith et al, 2006; Roecker and Thompson, 2010). Because DEM are later used for terrain analysis they are left uncompressed and untiled, which results in file sizes of approximately 10GB.
 ```{r, eval=FALSE}
-dem.l <- paste0(pd.p, office, "/ned09d_", office, ".tif")
-dem.w <- paste0(pd.p, office, "/ned10m_", office, ".tif")
+ned.in <- paste0(pd.p, "ned09d_", office, ".tif")
+ned.out <- paste0(pd.p, "ned10m_", office, ".tif")
 
-batchWarp(dem.l, dem.w, nlcd.p.l, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+batchWarp(ned.in, ned.out, nlcd.out, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
 
-dem.l <- paste0(pd.p, office, "/ned10m_", office, ".tif")
+ned.in <- paste0(pd.p, "ned10m_", office, ".tif")
 
-batchWarpAverage(dem.l, "10m", "30m")
-
-dem30.tif <- paste0(pd.p, office, "/ned30m_", office, ".tif")
+batchWarpAverage(ned.out, "10m", "30m")
 ```
 
 ## Calculate hillshade, slope, and aspect
 GDALs DEM tools use Horn'n (1981) algorithms as the default, as does ArcInfo and GRASS.
 ```{r, eval=FALSE}
-dem.l <- paste0(pd.p, office, "/ned10m_", office, ".tif")
+ned.in <- paste0(pd.p, "ned10m_", office, ".tif")
 
-batchDEM(dem.l)
+batchDEM(ned.in)
 ```
 
 ## Mosaic the 30-meter MLRA office mosaics into a Region office mosaic
 ```{r, eval=FALSE}
-nlcd.l <- list(nlcd.p)
-dst.p <- "D:/geodata/project_data/REGION11/nlcd30m_R11.tif"
-mosaicNlcdList(nlcd.l, dst.p)
+nlcd.in <- list(nlcd.p)
+nlcd.out <- "D:/geodata/project_data/REGION11/nlcd30m_R11.tif"
 
-dem.l <- list(paste0(pd.p, office, "/ned30m_11", office, ".tif"))
-dem.p <- "D:/geodata/project_data/Region11/ned30m_R11.tif"
-mosaicList(dem.l, dem.p)
-batchTerrain(dem.p)
+mosaicNlcdList(nlcd.in, nlcd.out)
 
-hil.p <- paste0(pd.p, office, "/")
-hil.p.l <- paste0(hil.p, "ned10m_11", office, "_hillshade.tif")
-mosaicList(list(hil.p.l), "E:/geodata/project_data/11REGION/ned10m_11R_hillshade.tif", "Byte", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), 0)
+ned.in <- list(paste0(pd.p, "ned30m_11", office, ".tif"))
+ned.out <- "M:/geodata/project_data/Region11/ned30m_R11.tif"
+
+mosaicList(ned.in, ned.out)
+batchTerrain(ned.out)
+
+hil.in <- list(paste0(pd.p, "ned10m_11", office, "_hillshade.tif"))
+hil.out <- "E:/geodata/project_data/11REGION/ned10m_11R_hillshade.tif"
+
+mosaicList(hil.in, hil.out, "Byte", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), 0)
 ```
