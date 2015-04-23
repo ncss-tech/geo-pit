@@ -104,13 +104,12 @@ For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is 
 ```{r, eval=FALSE}
 batch_warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
 
-batchWarpAverage(mo$ned10m.tif, "10m", "30m")
+batch_average(mo$ned10m.tif, "10m", "30m")
 ```
 
 ## Calculate hillshade, slope, and aspect
 GDALs DEM tools use Horn'n (1981) algorithms as the default, as does ArcInfo and GRASS.
 ```{r, eval=FALSE}
-
 batch_DEM(mo$ned10m.tif)
 ```
 

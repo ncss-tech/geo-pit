@@ -88,8 +88,13 @@ batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg){
       verbose = TRUE
     )
     file.remove(original_temp[i])
-    p <- paste0(getOption("gdalUtils_gdalPath")[[1]]$path, "gdaladdo.exe")
-    system(paste('\"', p, '\"', ' -ro -clean ', subsets[i], ' 2 4 8 16 --config COMPRESS_OVERVIEW DEFLATE', sep=""))
+    gdaladdo(
+      filename = subsets[i],
+      r = "nearest",
+      levels = c(2, 4, 8, 16),
+      clean = TRUE,
+      ro = TRUE
+    )
     gdalinfo(
       datasetname = subsets[i], 
       stats = TRUE,
@@ -116,8 +121,13 @@ batch_mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
       overwrite = TRUE,
       verbose = T
     )
-    p <- paste0(getOption("gdalUtils_gdalPath")[[1]]$path, "gdaladdo.exe")
-    system(paste('\"', p, '\"', ' -ro -clean ', dstpath[i], ' 2 4 8 16 --config COMPRESS_OVERVIEW DEFLATE', sep=""))
+    gdaladdo(
+      filename = dstpath[i],
+      r = "nearest",
+      levels = c(2, 4, 8, 16),
+      clean = TRUE,
+      ro = TRUE
+    )
     gdalinfo(
       datasetname = dstpath[i],
       stats = TRUE
@@ -165,7 +175,7 @@ batch_warp <- function(inlist, warplist, reflist, resto, r, s_srs, t_srs, dataty
     verbose = T
   )
   gdaladdo(
-    filename = warplist[i],
+    filename = dstpath[i],
     r = "nearest",
     levels = c(2, 4, 8, 16),
     clean = TRUE,
@@ -182,7 +192,7 @@ batch_warp <- function(inlist, warplist, reflist, resto, r, s_srs, t_srs, dataty
 #################################################################
 ### Warp 10m to 30m using -r average
 #################################################################
-batchWarpAverage <- function(demlist, resfrom, resto){
+batch_average <- function(demlist, resfrom, resto){
   res <- as.numeric(unlist(strsplit(resto, "m")))
   demwarp <- unlist(lapply(strsplit(demlist, resfrom), paste, collapse = resto, sep = ""))
   
