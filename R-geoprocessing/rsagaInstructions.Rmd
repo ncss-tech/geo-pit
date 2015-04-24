@@ -15,6 +15,7 @@ To begin, the necessary libaries must be loaded, as well as the custom batch fun
 library(gdalUtils)
 library(RSAGA)
 
+source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
 source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
 source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
 ```
@@ -113,29 +114,29 @@ rsaga.mrvbf(dem30, mvalleys, msummits)
 ```{r, eval = FALSE}
 # Create a regional mosaic
 elev.sdat <- paste0(g30$elev, ".sdat")
-mosaicList(list(elev.sdat), "E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif")
+batch_mosaic(list(elev.sdat), "M:/geodata/project_data/6REGION/ned30m_R6_elev5.tif", nodata = -99999, datatype = "Float32", co = c("BIGTIFF=NO"))
 
 
 # Create a copy of elev5 to mask---------------------------------------------------------
 gdal_translate(
-  src_dataset = "E:/geodata/project_data/REGION11/ned30m_R11_elev5.tif",
-  dst_dataset = "E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif",
+  src_dataset = "M:/geodata/project_data/6REGION/ned30m_R6_elev5.tif",
+  dst_dataset = "M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif",
   overwrite = TRUE,
   verbose = TRUE
 )
 
 
 # Extract the water bodies into shapefiles and reproject-----------------------------------
-state <- c("NV", "CA")
-nhd    <- paste0("D:/geodata/hydrography/NHDH_", state, ".gdb")
-nhd_wb <- paste0("D:/geodata/hydrography/NHDH_", state, "_wb.shp")
+state <- c("AR", "IL", "KS", "MO", "OK")
+nhd    <- paste0("M:/geodata/hydrography/NHDH_", state, ".gdb")
+nhd_wb <- paste0("M:/geodata/hydrography/NHDH_", state, "_wb.shp")
 
 for(i in seq(nhd)){
   ogr2ogr(
     src_datasource_name = nhd[i],
     dst_datasource_name = nhd_wb[i],
     layer = "NHDWaterbody",
-    t_srs = "EPSG:5070",
+    t_srs = CRSargs(CRS("+init=epsg:5070")),
     overwrite = TRUE,
     verbose = TRUE,
     progress = TRUE)
@@ -147,8 +148,8 @@ for(i in seq(nhd)){
 for(i in seq(nhd_wb)){
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "burning", nhd_wb[i], "\n"))
   gdal_rasterize(
-    src_datasource = paste0("E:/geodata/hydrography"),
-    dst_filename = "E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif",
+    src_datasource = paste0("M:/geodata/hydrography"),
+    dst_filename = "M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif",
     l = paste0("NHDH_", state[i], "_wb"),
     where = "AreaSqKm > 0.04047",
     b = 1,
@@ -159,8 +160,9 @@ for(i in seq(nhd_wb)){
 
 
 # Subset the masked Regional DEM into MLRA office subsets----------------------------------
-dem30.sdat<- paste0(res30, "_elev5_masked.sgrd")
-batchSubsetSAGA("E:/geodata/project_data/REGION11/ned30m_R11_elev5_masked.tif", dem30.sdat, nlcdpath)
+dem30.sdat<- paste0(res30, "_elev5_masked.sdat")
+nlcd30m.tif = paste0("M:/geodata/project_data/", office,  "/nlcd30m_", office, "_lulc2011.tif")
+batchSubsetSAGA("M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif", dem30.sdat, nlcd30m.tif)
 
 
 # Calculate hydrologcal derivatives (wetness index and relief above streams)---------------
@@ -170,8 +172,8 @@ rsaga.fill(dem)
 
 dem <- paste0(g30$elev, "_masked_filled.sgrd")
 
-rsaga.ca(dem)
-rsaga.twi(slopeR, caarea)
+rsaga.ca(dem, caarea, caheight)
+rsaga.twi(slopeR, caarea, wetness)
 rsaga.strahler(dem, strahler, 4)
 rsaga.reclassify(strahler, -3, -1)
 

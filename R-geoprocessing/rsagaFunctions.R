@@ -15,7 +15,7 @@ rsaga.mask <- function(grid, mask){
   
   # Fill DEM if the MINSLOPE is set to less than 0.025 it causing the STRAHLER module to fail, if it's set to higher than 0.025 if fills in low relief areas.
 rsaga.fill <- function(grid){
-  gridf <- paste(strsplit(grid, ".sgrd"), "_filled", ".sgrd", sep="")
+  gridf <- paste0(strsplit(grid, ".sgrd"), "_filled", ".sgrd")
   
   for(i in seq(grid)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"filling", grid[i],"\n"))
@@ -122,20 +122,20 @@ rsaga.rov <- function(dem, radius){
 
 
 # Catchment area, height, and wetness index
-rsaga.ca <- function(grid){
+rsaga.ca <- function(grid, caarea, caheight){
   for(i in seq(grid)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", grid[i],"\n"))
     rsaga.geoprocessor("ta_hydrology", 0, env=myenv, list(
       ELEVATION=grid[i],
-      CAREA=carea[i],
-      CHEIGHT=cheight[i],
+      CAREA=caarea[i],
+      CHEIGHT=caheight[i],
       Method=4)
       )
   }
 }
 
 
-rsaga.twi <- function(slopeR, carea){
+rsaga.twi <- function(slopeR, carea, wetness){
   for(i in seq(wetness)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", wetness[i],"\n"))
     rsaga.geoprocessor("ta_hydrology", 20, env=myenv, list(

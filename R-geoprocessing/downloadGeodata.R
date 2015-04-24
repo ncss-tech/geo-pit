@@ -135,20 +135,20 @@ for(i in seq(states)){
 # Hydrography
 # Download NHD by State
 # The FileGDB are to big to be read into R, so they need to be converted using ogr2ogr with gdalUtils. However these FileGDB first need to be upgrade to ArcGIS 10.0. The ESRI File Geodatabase driver doesn't work with 
-setwd("I:/geodata/hydrography/")
-states <- c("IA", "IL", "IN", "KS", "KY", "MI", "MN", "MO", "NE", "OH", "OK", "SD", 
+setwd("M:/geodata/hydrography/")
+states <- c("AR", "IA", "IL", "IN", "KS", "KY", "MI", "MN", "MO", "NE", "OH", "OK", "SD", 
             "WI")
-version <- c("v210", "v220", "v220", "V210", "v210", "v210", "v220", "v220", "v220", "v220", "v210", "v220", "v210")
-zipname <- paste("NHDH_", states, "_931", version, ".zip", sep="")
-url <- paste("ftp://nhdftp.usgs.gov/DataSets/Staged/States/FileGDB/HighResolution/", zipname, sep="")
-dest <- paste(getwd(), "/", zipname, sep="")
+version <- c("v220", "v210", "v220", "v220", "V210", "v210", "v210", "v220", "v220", "v220", "v220", "v210", "v220", "v210")
+zipname <- paste0("NHDH_", states, "_931", version, ".zip")
+url <- paste0("ftp://nhdftp.usgs.gov/DataSets/Staged/States/FileGDB/HighResolution/", zipname)
+dest <- paste0(getwd(), "/", zipname)
 
 for(i in seq(states)){
   download.file(url=url[i], destfile=dest[i])
 }
 
 for(i in seq(states)){
-  unzip(zipfile=dest[i])
+  unzip(zipfile = dest[i])
 }
 
 gdal_setInstallation(search_path="C:/ProgramData/QGIS/QGISDufour/bin", rescan=T)
