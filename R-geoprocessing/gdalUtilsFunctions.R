@@ -17,10 +17,11 @@ gdal_SAGA2GTiff <- function(x, copy, datatype, nodata){
       src_dataset = x[i],
       dst_dataset = copy[i], 
       ot = datatype, 
-      co = c("TILED = YES", "COMPRESS = DEFLATE, BIGTIFF = YES"),
+      co = c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"),
       stats = TRUE,
       a_nodata = nodata,
-      verbose = T
+      verbose = T,
+      overwrite = TRUE
     )
     gdaladdo(
       filename = copy[i],
@@ -89,7 +90,7 @@ gdal_stack <- function(x, fname, format, nodata){
       of = "GTiff",
       ot = format,
       a_nodata = nodata,
-      co = c("TILED = YES", "COMPRESS = DEFLATE", "BIGTIFF = YES"),
+      co = c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"),
       overwrite = TRUE,
       verbose = TRUE
       )

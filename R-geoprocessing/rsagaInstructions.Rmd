@@ -49,7 +49,8 @@ g10 <- list(
   cucon  = paste0(res10, "_cucon", 1+2*radiusD),
   cutan  = paste0(res10, "_cutan", 1+2*radiusD),
   cumax  = paste0(res10, "_cumax", 1+2*radiusD),
-  cumin  = paste0(res10, "_cumin", 1+2*radiusD)
+  cumin  = paste0(res10, "_cumin", 1+2*radiusD),
+  slpshp = paste0(res10, "_slopeshape", 1+2*radiusD)
   )
 g30 <- list(
   elev     = paste0(res30, "_elev", 1+2*radiusD),
@@ -186,7 +187,7 @@ int16.tif <- sapply(strsplit(int16.sdat, "/sdat"), paste0, collapse = "")
 int16.tif <- paste0(strsplit(int16.tif, ".sdat"), ".tif")
 gdal_SAGA2GTiff(int16.sdat, int16.tif, "Int16", -32768)
 
-slopeshape <- paste0("E:/geodata/project_data/ned10m_", office, "_slopeshape.tif")
+slopeshape <- paste0("M:/geodata/project_data/", office, "/ned10m_", office, "_slopeshape.tif")
 int16 <- c("cupro", "cutan", "slope")
 int16.sdat <- lapply(g10[int16], paste0, ".sdat")
 gdal_stack(int16.sdat, slopeshape, "Int16", -32768)
