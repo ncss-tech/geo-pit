@@ -1,0 +1,297 @@
+<esri:Workspace xmlns:esri='http://www.esri.com/schemas/ArcGIS/10.1' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+	<WorkspaceDefinition xsi:type='esri:WorkspaceDefinition'>
+		<WorkspaceType>esriLocalDatabaseWorkspace</WorkspaceType>
+		<Version/>
+		<Domains xsi:type='esri:ArrayOfDomain'/>
+		<DatasetDefinitions xsi:type='esri:ArrayOfDataElement'>
+			<DataElement xsi:type='esri:DETable'>
+				<CatalogPath>/OC=template_table</CatalogPath>
+				<Name>template_table</Name>
+				<DatasetType>esriDTTable</DatasetType>
+				<DSID>4</DSID>
+				<Versioned>false</Versioned>
+				<CanVersion>false</CanVersion>
+				<ConfigurationKeyword/>
+				<HasOID>true</HasOID>
+				<OIDFieldName>OBJECTID</OIDFieldName>
+				<Fields xsi:type='esri:Fields'>
+					<FieldArray xsi:type='esri:ArrayOfField'>
+						<Field xsi:type='esri:Field'>
+							<Name>OBJECTID</Name>
+							<Type>esriFieldTypeOID</Type>
+							<IsNullable>false</IsNullable>
+							<Length>4</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<Required>true</Required>
+							<Editable>false</Editable>
+							<DomainFixed>true</DomainFixed>
+							<AliasName>OBJECTID</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>mukey</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MUKEY</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>int_mukey</Name>
+							<Type>esriFieldTypeInteger</Type>
+							<IsNullable>true</IsNullable>
+							<Length>4</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MUKEY-Integer</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_rating</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Rating</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_class</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Class</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_type</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Type</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_kind</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Kind</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_rating</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Rating</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_class</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Class</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_type</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit  Type</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_kind</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Kind</AliasName>
+							<ModelName/>
+						</Field>
+					</FieldArray>
+				</Fields>
+				<Indexes xsi:type='esri:Indexes'>
+					<IndexArray xsi:type='esri:ArrayOfIndex'>
+						<Index xsi:type='esri:Index'>
+							<Name>FDO_OBJECTID</Name>
+							<IsUnique>true</IsUnique>
+							<IsAscending>true</IsAscending>
+							<Fields xsi:type='esri:Fields'>
+								<FieldArray xsi:type='esri:ArrayOfField'>
+									<Field xsi:type='esri:Field'>
+										<Name>OBJECTID</Name>
+										<Type>esriFieldTypeOID</Type>
+										<IsNullable>false</IsNullable>
+										<Length>4</Length>
+										<Precision>0</Precision>
+										<Scale>0</Scale>
+										<Required>true</Required>
+										<Editable>false</Editable>
+										<DomainFixed>true</DomainFixed>
+										<AliasName>OBJECTID</AliasName>
+										<ModelName/>
+									</Field>
+								</FieldArray>
+							</Fields>
+						</Index>
+					</IndexArray>
+				</Indexes>
+				<CLSID>{7A566981-C114-11D2-8A28-006097AFF44E}</CLSID>
+				<EXTCLSID/>
+				<RelationshipClassNames xsi:type='esri:Names'/>
+				<AliasName/>
+				<ModelName/>
+				<HasGlobalID>false</HasGlobalID>
+				<GlobalIDFieldName/>
+				<RasterFieldName/>
+				<ExtensionProperties xsi:type='esri:PropertySet'>
+					<PropertyArray xsi:type='esri:ArrayOfPropertySetProperty'/>
+				</ExtensionProperties>
+				<ControllerMemberships xsi:type='esri:ArrayOfControllerMembership'/>
+				<EditorTrackingEnabled>false</EditorTrackingEnabled>
+				<CreatorFieldName/>
+				<CreatedAtFieldName/>
+				<EditorFieldName/>
+				<EditedAtFieldName/>
+				<IsTimeInUTC>true</IsTimeInUTC>
+			</DataElement>
+		</DatasetDefinitions>
+	</WorkspaceDefinition>
+	<WorkspaceData xsi:type='esri:WorkspaceData'>
+		<DatasetData xsi:type='esri:TableData'>
+			<DatasetName>template_table</DatasetName>
+			<DatasetType>esriDTTable</DatasetType>
+			<Data xsi:type='esri:RecordSet'>
+				<Fields xsi:type='esri:Fields'>
+					<FieldArray xsi:type='esri:ArrayOfField'>
+						<Field xsi:type='esri:Field'>
+							<Name>OBJECTID</Name>
+							<Type>esriFieldTypeOID</Type>
+							<IsNullable>false</IsNullable>
+							<Length>4</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<Required>true</Required>
+							<Editable>false</Editable>
+							<DomainFixed>true</DomainFixed>
+							<AliasName>OBJECTID</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>mukey</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MUKEY</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_rating</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Rating</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_class</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Class</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_type</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Type</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>n_kind</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>Non-MLRA Mapunit Kind</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_rating</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Rating</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_class</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Class</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_type</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit  Type</AliasName>
+							<ModelName/>
+						</Field>
+						<Field xsi:type='esri:Field'>
+							<Name>m_kind</Name>
+							<Type>esriFieldTypeString</Type>
+							<IsNullable>true</IsNullable>
+							<Length>20</Length>
+							<Precision>0</Precision>
+							<Scale>0</Scale>
+							<AliasName>MLRA Mapunit Kind</AliasName>
+							<ModelName/>
+						</Field>
+					</FieldArray>
+				</Fields>
+				<Records xsi:type='esri:ArrayOfRecord'/>
+			</Data>
+		</DatasetData>
+	</WorkspaceData>
+</esri:Workspace>
