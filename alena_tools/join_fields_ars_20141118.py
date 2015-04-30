@@ -15,4 +15,5 @@ intable = arcpy.GetParameterAsText (1) #Input Table
 
 #Join muname Field
 
-arcpy.JoinField_management(inFC, "mukey", intable, "mukey", ["muname"])
+#arcpy.JoinField_management(inFC, "mukey", intable, "mukey", ["muname"])
+arcpy.JoinField_management(inFC, "MUKEY", intable, "MUKEY", ["muname"])
