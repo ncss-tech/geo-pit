@@ -170,16 +170,18 @@ dem <- paste0(g30$elev, "_masked.sgrd")
 
 rsaga.fill(dem)
 
-dem <- paste0(g30$elev, "_masked_filled.sgrd")
+demf <- paste0(g30$elev, "_masked_filled.sgrd")
 
-rsaga.ca(dem, caarea, caheight)
+rsaga.ca(demf, caarea, caheight)
 rsaga.twi(slopeR, caarea, wetness)
-rsaga.strahler(dem, strahler, 4)
+
+# Does this only work on SAGA 2.1 and above
+rsaga.strahler(demf, strahler, 4)
 rsaga.reclassify(strahler, -3, -1)
 
 streams <- paste0(g30$elev, "_strahler_rc0.sgrd")
 
-rsaga.ofd(dem, streams)
+rsaga.ofd(demf, streams)
 
 
 # Write SAGA to GTiff--------------------------------------------------------------------------
