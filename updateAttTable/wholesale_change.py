@@ -20,7 +20,7 @@ def errorMsg():
         pass
 
 
-import sys, os, traceback, arcpy
+import sys, os, traceback, time, arcpy
 
 changeTblParam = arcpy.GetParameterAsText(0)
 areaParam = arcpy.GetParameterAsText(1)
@@ -35,6 +35,8 @@ musymLst = str(musymParam).split(';')
 
 arcpy.AddMessage('\n\n')
 
+
+
 try:
 
     for musym in musymLst:
@@ -47,13 +49,22 @@ try:
 
     #for k,v in updateDict.iteritems():
         #arcpy.AddMessage(k + v)
+    aCnt = len(updateDict)
 
+    arcpy.SetProgressor("Step", "Initializing tool", 0, aCnt, 1)
+
+    c = 0
     for key in updateDict:
+        time.sleep(0.05)
+        c += 1
+        arcpy.SetProgressorLabel("Updating " + key + " (" + str(c) + " of " + str(aCnt) + ")")
         upVal = updateDict.get(key)
         if len(upVal) > 6:
-            arcpy.AddWarning('Illegal value for ' + key + ' greater than 6 characters (' + upVal + ')')
+            arcpy.AddWarning('Illegal value for ' + key + ', greater than 6 characters (' + upVal + ')')
+            arcpy.SetProgressorPosition()
         elif upVal == 'None':
             arcpy.AddWarning('No update value specified for ' + key)
+            arcpy.SetProgressorPosition()
         else:
             n=0
             wc = '"AREASYMBOL" = ' "'" + areaParam + "' AND \"MUSYM\" = '" + key + "'"
@@ -67,8 +78,10 @@ try:
 
             try:
                 del row, rows
+                arcpy.SetProgressorPosition()
             except:
                arcpy.AddMessage('No rows were found for ' + key)
+               arcpy.SetProgressorPosition()
 
     arcpy.AddMessage('\n\n')
 
