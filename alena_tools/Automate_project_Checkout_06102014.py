@@ -36,7 +36,7 @@ fdname = out_folder+'\\'+inprname+'.gdb'+'\\'+ prjname+'FD'
 inprname_topology = out_folder+'\\'+inprname+'.gdb'+ '\\'+ prjname+'FD'+ '\\' + prjname+'topology'
 
 #Create File Geodatabase
-arcpy.CreateFileGDB_management(out_folder, inprname, "CURRENT")
+arcpy.CreateFileGDB_management(out_folder, inprname, "10.0")
 
 #Create Feature Dataset
 arcpy.CreateFeatureDataset_management(out_folder+'\\'+inprname+'.gdb', prjname+'FD', incoord)
