@@ -20,6 +20,7 @@ def errorMsg():
         pass
 
 
+
 import sys, os, traceback, time, arcpy
 
 changeTblParam = arcpy.GetParameterAsText(0)
@@ -39,6 +40,20 @@ arcpy.AddMessage('\n\n')
 
 try:
 
+##    rav = False
+    cp = arcpy.Describe(spTblParam).catalogPath
+    bName = os.path.dirname(cp)
+
+    if cp.endswith('.shp'):
+        aWS = os.path.dirname(cp)
+
+    elif [any(ext) for ext in ('.gdb', '.mdb', '.sde') if ext in os.path.splitext(bName)]:
+        aWS =  bName
+
+    else:
+        aWS = os.path.dirname(bName)
+##        rav = True
+
     for musym in musymLst:
         wc = 'AREASYMBOL = ' "'" + areaParam + "' AND MUSYM = '" + musym + "'"
         #arcpy.AddMessage(wc)
@@ -54,6 +69,8 @@ try:
     arcpy.SetProgressor("Step", "Initializing tool", 0, aCnt, 1)
 
     c = 0
+
+
     for key in updateDict:
         time.sleep(0.05)
         c += 1
@@ -68,20 +85,48 @@ try:
         else:
             n=0
             wc = '"AREASYMBOL" = ' "'" + areaParam + "' AND \"MUSYM\" = '" + key + "'"
-            with arcpy.da.UpdateCursor(spTblParam, "MUSYM", where_clause=wc) as rows:
-                for row in rows:
-                    row[0] = str(upVal)
-                    rows.updateRow(row)
-                    n=n+1
-                if n > 0:
-                    arcpy.AddMessage('Successfully updated ' + key + ' to ' + upVal +  ", " + str(n) + " occurances")
 
-            try:
-                del row, rows
-                arcpy.SetProgressorPosition()
-            except:
-               arcpy.AddMessage('No rows were found for ' + key)
-               arcpy.SetProgressorPosition()
+            with arcpy.da.Editor(aWS) as edit:
+##
+
+                with arcpy.da.UpdateCursor(spTblParam, "MUSYM", where_clause=wc)as rows:
+
+                    for row in rows:
+                        row[0] = str(upVal)
+                        rows.updateRow(row)
+                        n=n+1
+                    if n > 0:
+                        arcpy.AddMessage('Successfully updated ' + key + ' to ' + upVal +  ", " + str(n) + " occurances")
+
+                try:
+                    del row, rows
+                    arcpy.SetProgressorPosition()
+                except:
+                   arcpy.AddMessage('No rows were found for ' + key)
+                   arcpy.SetProgressorPosition()
+
+##             try:
+##                edit = arcpy.da.Editor(aWS)
+##                edit.startEditing()
+##                edit.startOperation
+
+
+##                if rav == True:
+##
+##                    try:
+##                        arcpy.management.RegisterAsVersioned(aWS)
+##                    except:
+##                        pass
+
+##                #do some stuff
+
+##                edit.stopOperation()
+##                edit.stopEditing(True)
+
+##            except arcpy.ExecuteError:
+##                arcpy.AddMessage(arcpy.GetMessages(2))
+
+
 
     arcpy.AddMessage('\n\n')
 
