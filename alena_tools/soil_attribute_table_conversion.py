@@ -1,7 +1,7 @@
 #Create a Soil Acres Report in Excel
-#Dissolve soils, Add Acres, Sort, and add Table to Excel
+#Dissolve soils, Add New_MUSYM column, Sort, and add Table to Excel
 #A. Stephens
-#09/25/2014
+#05/26/2015
 
 import arcpy
 
@@ -21,11 +21,17 @@ arcpy.AddField_management("outFCDISSOLVE", "New_MUSYM", "TEXT", )
 
 #Sort
 
-arcpy.Sort_management ("outFCDISSOLVE", "outFCDISSOLVE_SORT", [["AREASYMBOL", "ASCENDING"]])
+arcpy.Sort_management ("outFCDISSOLVE", "outFCDISSOLVE_SORT", [["AREASYMBOL", "ASCENDING"], ["MUSYM", "ASCENDING"]])
+
+
 
 #outa_xls = "MLRA_INTERSECT.xls"
 #Table to Excel
 arcpy.TableToExcel_conversion("outFCDISSOLVE_SORT", out_xls)
+
+#dropFields = ["OBJECTID", "Shape_Area", "Shape_Length"]
+#arcpy.DeleteField_management(out_xls, dropFields)
+
 
 #Delete Feature Classes
 arcpy.Delete_management ("outFCDISSOLVE")
