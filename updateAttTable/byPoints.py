@@ -102,5 +102,4 @@ try:
     arcpy.AddMessage('\n')
 
 except:
-    pass
     errorMsg()
