@@ -15,9 +15,9 @@ To begin, the necessary libaries must be loaded, as well as the custom batch fun
 library(gdalUtils)
 library(RSAGA)
 
-source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
 ```
 
 Next the proper GDAL and RSAGA path has to be set. The first GDAL location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
@@ -32,7 +32,8 @@ myenv <- rsaga.env(path = "C:/Program Files (x86)/SAGA-GIS")
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "C:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
 
 ```{r, eval = FALSE}
-office <- c("6SPR", "6GLE")
+office <- c("11ATL", "11AUR", "11CAR", "11CLI", "11FIN", "11GAL", "11IND", "11JUE", "11SPR", "11UNI", "11WAV")
+region <- c("11REGION")
 sdat.p <- paste0("M:/geodata/project_data/", office, "/sdat/")
 
 # Generater raster names

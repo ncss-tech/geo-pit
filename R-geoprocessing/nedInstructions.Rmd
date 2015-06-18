@@ -22,17 +22,17 @@ library(raster)
 
 Next the proper GDAL path has to be set. The first location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use. 
 ```{r set gdal path, eval=FALSE}
-gdal_setInstallation(search_path="C:/Program Files/QGIS Dufour/bin", rescan=T)
+gdal_setInstallation(search_path="C:/Program Files/QGIS Wien/bin", rescan=T)
 gdal_setInstallation(search_path="C:/OSGeo4W64/bin", rescan=T)
 ```
 
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
 ```{r, eval=FALSE}
 # Set parameters
-source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/Users/stephen.roecker/Documents/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-office <- c("6SPR", "6GLE")
-region <- c("6REGION")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+office <- c("11ATL", "11AUR", "11CAR", "11CLI", "11FIN", "11GAL", "11JUE", "11IND", "11SPR", "11UNI", "11WAV")
+region <- c("11REGION")
 pd <- paste0("M:/geodata/project_data/", office, "/")
 rd <- paste0("M:/geodata/project_data/", region, "/")
 crsarg <- CRSargs(CRS("+init=epsg:5070"))
