@@ -205,4 +205,7 @@ gdal_SAGA2GTiff(flt.sdat, flt.tif, "Float32", -99999)
 
 slope <- lapply(g10$slope, paste0, ".sdat")
 mosaicList(slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS = DEFLATE", "TILED = YES", "BIGTIFF = YES"), -32768)
+
+
+gdal_GTiff2SAGA("M:/geodata/project_data/11REGION/ned30m_11R.tif", "M:/geodata/project_data/11REGION/ned30m_11R.sdat")
 ```

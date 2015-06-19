@@ -420,10 +420,13 @@ rsaga.reclassify <- function(x, min, max){
 }
 
 
-rsaga.mosaic <- function(input_list, output, overlap){
+rsaga.mosaic <- function(input_list, output, base, overlap){
+  r <- raster(base)
   rsaga.geoprocessor("grid_tools", 3, env = myenv, list(
     GRIDS = input_list,
     OVERLAP = "3",
-    GRID_GRID = output)
+    TARGET = "1",
+    GRID_GRID = base,
+    USER_GRID = output)
     )  
 }
