@@ -59,12 +59,21 @@ try:
 
     #get list of object ids to build query with
     oidSet = [x[0] for x in arcpy.da.SearchCursor(inPoints, "OID@")]
+    oidCnt = len(oidSet)
+
 
     #get oid field name
     oidFld = arcpy.Describe(inPoints).oidFieldName
 
+    arcpy.SetProgressor("step", "Reading " + oidFld + ":", 0, oidCnt, 1)
+
+    n = 0
+
     #iterate for every point in the update points layer
     for oid in oidSet:
+
+        n+=1
+        arcpy.SetProgressorLabel("Reading  " + oidFld + ": " + str(oid) + " (" + str(n) + " of " + str(oidCnt) +")")
 
         #start edit session
         #I think 'with' manager automatically kills the point feature layer as I don't
@@ -87,16 +96,17 @@ try:
                     with arcpy.da.UpdateCursor(arcpy.management.SelectLayerByLocation(spTbl, "", "ftrRow"), fields) as cursor:
                         for record in cursor:
                             if record[0] + record[1] == rows[0] + row[2]:
-                                arcpy.AddWarning("""{0} - the provided {1} already has musym = {2}, not updating the intersecting polygon. {3} = {4} """.format(record[0], row[2], record[1], oidFld, oid))
+                                arcpy.AddWarning("""The requested update already has musym of {0} WHERE POINT {1} = {2} """.format(record[1], oidFld, oid))
                             elif not record[0] + record[1] == rows[0] + row[1]:
-                                arcpy.AddWarning("""The AREASYMBOL and existing musym for update points {0} - {1} do not match the soil polygon at this location: {2} - {3}. {4} = {5}""".format(row[0], row[1], record[0], record[1], oidFld, oid))
+                                arcpy.AddWarning("""The AREASYMBOL/OLD_MUSYM pair [{0}/{1}] does not match the soil polygon [{2}/{3}] WHERE POINT {4} = {5}""".format(row[0], row[1], record[0], record[1], oidFld, oid))
                             elif record[0] + record[1] == rows[0] + row[1]:
                                 record[1] = row[2]
                                 cursor.updateRow(record)
-                                arcpy.AddMessage("""{0} - successfully updated the provided {1} to {2} for the intersecting polygon""".format(record[0], row[1], row[2]))
+                                arcpy.AddMessage("""Successfully updated the provided {0} to {1} for the intersecting polygon WHERE POINT {2} = {3} """.format(row[1], row[2], oidFld, oid))
 
 
         del row, rows, record, cursor
+        arcpy.SetProgressorPosition()
 
     arcpy.management.SelectLayerByAttribute(spTbl, "CLEAR_SELECTION")
     arcpy.AddMessage('\n')
