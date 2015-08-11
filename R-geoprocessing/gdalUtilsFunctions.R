@@ -10,14 +10,14 @@ gdal_GTiff2SAGA <- function(x, copy){
   }
 }
 
-gdal_SAGA2GTiff <- function(x, copy, datatype, nodata){
+gdal_SAGA2GTiff <- function(x, copy, datatype, nodata, co){
   for(i in seq(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy[i],"\n"))
     gdal_translate(
       src_dataset = x[i],
       dst_dataset = copy[i], 
       ot = datatype, 
-      co = c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"),
+      co = co,
       stats = TRUE,
       a_nodata = nodata,
       verbose = T,

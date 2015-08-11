@@ -402,19 +402,18 @@ rsaga.grid.calculus=function(grid.list,name.list,formula){
   }
 }
 
-rsaga.reclassify <- function(x, min, max){
-  x.rc <- paste(strsplit(x, ".sgrd"), "_rc", max+1, ".sgrd", sep="")
-  for(i in seq(x)) {
+rsaga.reclassify <- function(x, x2, min, new, na){
+  for (i in seq(x)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"reclassifying", x[i],"\n"))
     rsaga.geoprocessor("grid_tools",15, env=myenv, list(
       INPUT=x[i],
-      RESULT=x.rc[i],
-      METHOD="1",
-      MIN=min,
-      MAX=max,
-      RNEW=min,
+      RESULT=x2[i],
+      METHOD="0",
+      SOPERATOR = 1,
+      OLD=min,
+      NEW=new,
       NODATAOPT=TRUE,
-      NODATA=min)
+      NODATA=na)
       )
   }
 }

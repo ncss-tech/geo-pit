@@ -32,8 +32,8 @@ myenv <- rsaga.env(path = "C:/Program Files (x86)/SAGA-GIS")
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "C:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
 
 ```{r, eval = FALSE}
-office <- c("11ATL", "11AUR", "11CAR", "11CLI", "11FIN", "11GAL", "11IND", "11JUE", "11SPR", "11UNI", "11WAV")
-region <- c("11REGION")
+office <- c("8VIC")
+region <- c("8REGION")
 sdat.p <- paste0("M:/geodata/project_data/", office, "/sdat/")
 
 # Generater raster names
@@ -115,7 +115,7 @@ rsaga.mrvbf(dem30, mvalleys, msummits)
 ```{r, eval = FALSE}
 # Create a regional mosaic
 elev.sdat <- paste0(g30$elev, ".sdat")
-batch_mosaic(list(elev.sdat), "M:/geodata/project_data/6REGION/ned30m_R6_elev5.tif", nodata = -99999, datatype = "Float32", co = c("BIGTIFF=NO"))
+batch_mosaic(list(elev.sdat), "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif", nodata = -99999, datatype = "Float32", co = c("BIGTIFF=NO"))
 
 
 # Create a copy of elev5 to mask---------------------------------------------------------
