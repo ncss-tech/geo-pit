@@ -9,7 +9,11 @@
 # 608.662.4422 ext. 216
 #
 #
+# Chad - added parameter for the option to keep mukey if wanted.
+# parameter near line 704 and mukey to fields list near line 903
+#
 # Beginning of Functions
+#
 ## ===================================================================================
 class MyError(Exception):
     pass
@@ -693,9 +697,13 @@ regionChoice = arcpy.GetParameterAsText(0)  # User selects what region to create
 outputFolder = arcpy.GetParameterAsText(1)
 #outputFolder = r'C:\Temp\export'
 
-# Parameter # 2: (Required) Input Directory where the original SDM spatial and tabular data exist.
+# Parameter # 3: (Required) Input Directory where the original SDM spatial and tabular data exist.
 wssLibrary = arcpy.GetParameterAsText(2)
 #wssLibrary = r'K:\FY2014_SSURGO_R10_download'
+
+# Parameter # 4: (Optional) Option to keep MUKEY in the output MUPOLYGON
+mukeyBool = arcpy.GetParameterAsText(3)
+
 
 # Path to the Master Regional table that contains SSAs by region with extra extent
 #regionalTable = os.path.dirname(sys.argv[0]) + os.sep + "SSURGO_Soil_Survey_Area.gdb\junkTable"
@@ -891,8 +899,14 @@ try:
 
     try:
         for field in soilsFM.fields:
-            if field.name not in ["AREASYMBOL","MUSYM"]:
-                soilsFM.removeFieldMap(soilsFM.findFieldMapIndex(field.name))
+            #mukey option, add "MUKEY" to list below
+            if mukeyBool == "true":
+                if field.name not in ["AREASYMBOL","MUSYM", "MUKEY"]:
+                    soilsFM.removeFieldMap(soilsFM.findFieldMapIndex(field.name))
+            else:
+                if field.name not in ["AREASYMBOL","MUSYM"]:
+                    soilsFM.removeFieldMap(soilsFM.findFieldMapIndex(field.name))
+
 
         arcpy.Merge_management(soilShpList, os.path.join(FDpath, soilFC), soilsFM)
         #arcpy.Append_management(soilShpList, os.path.join(FDpath, soilFC), "NO_TEST", soilsFM)
