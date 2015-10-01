@@ -109,6 +109,10 @@ system(paste('"C:/Program Files/QGIS Dufour/bin/ogr2ogr.exe"', '-overwrite -t_sr
 system(paste('"C:/Program Files/QGIS Dufour/bin/ogr2ogr.exe"', '-overwrite -t_srs EPSG:5070 -clipdst -49675.0230520471 1329474.02694086 1175426.50953029 2591124.11923647 M:/geodata/project_data/11REGION/mlra_a_r11.shp M:/geodata/soils/mlra_a_mbr.shp'))
 
 system(paste('"C:/Program Files/QGIS Dufour/bin/ogr2ogr.exe"', '-overwrite -t_srs EPSG:5070 -clipdst -49675.0230520471 1329474.02694086 1175426.50953029 2591124.11923647 M:/geodata/project_data/11REGION/mlra_soil_survey_areas_nov14_r11.shp M:/geodata/soils/MLRA_Soil_Survey_Areas_Nov2014.shp'))
+
+gdalwarp -te -132881.4 1261747.7 1283445.0 2723055.0 -of GTiff M:/geodata/soils/gssurgo_fy15_30m.tif M:/geodata/soils/gssurgo_fy15_30m_sub.tif -overwrite # Shift to new grid system
+
+gdalwarp -r mode -of GTiff M:/geodata/soils/gssurgo_fy15_30m_sub.tif M:/geodata/soils/gssurgo_fy15_150m.tif -overwrite -tr 150 150 # resample to new resolution
 ```
 
 
