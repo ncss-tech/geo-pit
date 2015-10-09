@@ -161,6 +161,11 @@ ogr2ogr(
   verbose=T)
 
 
+
+# Landcover
+"http://pubs.usgs.gov/ds/844/downloads/ds844_national.zip"
+
+
 # Soils
 # OSDs
 "ftp://ftp-fc.sc.egov.usda.gov/NSSC/pub/OSD_QA_QC_Files/NASIS_designated_OSDS.zip"
