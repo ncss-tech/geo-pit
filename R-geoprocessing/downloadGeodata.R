@@ -166,6 +166,19 @@ ogr2ogr(
 "http://pubs.usgs.gov/ds/844/downloads/ds844_national.zip"
 
 
+## CropScape
+url <- getHTMLLinks("ftp://ftp.nass.usda.gov/download/res/index.htm")
+idx <- grep("ftp:", url)
+url <- links[idx]
+files <- strsplit(url, "res/")
+files <- sapply(files, function(x) x[2])
+dest <- paste0("M:/geodata/land_use_land_cover", "/", files)
+
+for(i in seq(links)){
+  download.file(url=url[i], destfile=dest[i])
+}
+
+
 # Soils
 # OSDs
 "ftp://ftp-fc.sc.egov.usda.gov/NSSC/pub/OSD_QA_QC_Files/NASIS_designated_OSDS.zip"
