@@ -14,6 +14,8 @@ for(i in seq(states)){
   unzip(zipfile=dest[i])
 }
 
+# Ecology
+ftp://ftp.epa.gov/wed/ecoregions/us/
 
 # Elevation
 # Download img NED tiles

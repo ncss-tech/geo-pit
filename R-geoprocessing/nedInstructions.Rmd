@@ -58,9 +58,9 @@ ro <- list(
 To start you need to download the 10-meter NED tiles from the USGS. Because the USGS manages these tiles using an ftp server it's easy for R download them one at a time with the following function. For whatever reason the downloading fuction doesn't work from RStudio, when the Global Option "Use Internet Explorer library/proxy for HTTP" is selected under Packages. Either uncheck or run from the vanilla R console. Beware hiccups with your internet connection may terminate the downloading process.
 
 ```{r, eval=FALSE}
-ned_dsn <- "M:/geodata/elevation/ned/tiles/ned_13arcsec_g.shp"
-mo_dsn <- paste0("M:/geodata/project_data/", office, "/", office, ".shp")
-mo_layer <- office
+ned_dsn <- "M:/geodata/elevation/ned/ned_13arcsec_g.shp"
+mo_dsn <- paste0("M:/geodata/project_data/", office, "/", "RTSD_Region_11_", sub("11", "", office), "_FY15.gdb")
+mo_layer <- "SAPOLYGON"
 mo_ned<- make_ned_list(ned_dsn, mo_dsn, mo_layer, crsarg)
 
 

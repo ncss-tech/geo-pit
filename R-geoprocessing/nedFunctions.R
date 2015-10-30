@@ -7,7 +7,7 @@ make_ned_list <- function(ned_dsn, mo_dsn, mo_layer, crsarg){
   ned_tiles <- readOGR(dsn = ned_dsn, layer = "ned_13arcsec_g")
   ned_tiles <- spTransform(ned_tiles, CRS(crsarg))
   for(i in seq(mo_dsn)){
-    mo_pol <- readOGR(dsn = mo_dsn[i], layer = mo_layer[i])
+    mo_pol <- readOGR(dsn = mo_dsn[i], layer = mo_layer)
     mo_pol <- spTransform(mo_pol, CRS(crsarg))
     int <- intersect(mo_pol, ned_tiles)
     ned_l[[i]] <- sort(unique(as.character(int@data$FILE_ID)))
@@ -158,13 +158,13 @@ mosaicNlcdList <- function(mosaiclist, dstpath){
 batch_warp <- function(inlist, warplist, reflist, resto, r, s_srs, t_srs, datatype, nodata, co){    
   for(i in seq(inlist)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"WARPING", inlist[i],"\n"))
-  te <- c(bbox(raster(reflist[i])))
+# te <- c(bbox(raster(reflist[i])))
   gdalwarp(
     srcfile = inlist[i],
     dstfile = warplist[i],
     s_srs = s_srs,
     t_srs = t_srs,
-    te = te,
+#    te = te,
     r = r,
     tr = c(resto,resto),
     of = "GTiff",
@@ -175,7 +175,7 @@ batch_warp <- function(inlist, warplist, reflist, resto, r, s_srs, t_srs, dataty
     verbose = T
   )
   gdaladdo(
-    filename = dstpath[i],
+    filename = warplist[i],
     r = "nearest",
     levels = c(2, 4, 8, 16),
     clean = TRUE,
