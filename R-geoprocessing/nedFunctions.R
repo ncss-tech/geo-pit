@@ -230,7 +230,7 @@ batch_average <- function(demlist, resfrom, resto){
 ### Calculating derivatives
 #################################################################
 # Notes the compression seems to be a problem calculating derivatives, when the file size is greater than say a gigabyte
-batch_DEM <- function(demlist){
+batch_DEM <- function(demlist, co){
   hillshade <- paste0(unlist(strsplit(demlist, ".tif")), "_hillshade.tif")
   slope <- paste0(unlist(strsplit(demlist, ".tif")), "_slope.tif")
   slope_temp <- paste0(unlist(strsplit(demlist, ".tif")), "_slope_temp.tif")
@@ -244,7 +244,7 @@ batch_DEM <- function(demlist){
       input_dem = demlist[i],
       output = hillshade[i],
       of = "GTiff",
-      co = c("TILED=YES", "COMPRESS=DEFLATE"),
+      co = co,
       verbose = T
       )    
     gdaladdo(
@@ -260,7 +260,6 @@ batch_DEM <- function(demlist){
       )
     
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating slope for", demlist[i],"\n"))
-    file.remove(slope_temp[i])
     gdaldem(
       mode = "slope",
       input_dem = demlist[i],

@@ -110,7 +110,7 @@ batch_average(mo$ned10m.tif, "10m", "30m")
 ## Calculate hillshade, slope, and aspect
 GDALs DEM tools use Horn'n (1981) algorithms as the default, as does ArcInfo and GRASS.
 ```{r, eval=FALSE}
-batch_DEM(mo$ned10m.tif)
+batch_DEM(mo$ned10m.tif, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 ```
 
 ## Mosaic the 30-meter MLRA office mosaics into a Region office mosaic
