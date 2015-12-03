@@ -1,16 +1,21 @@
-# ned_ftp <- getURL("ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/13/IMG/")
-# nedned_ftp <- strsplit(ned_ftp, "\r\n")[[1]]
-# ned_ftp <- strsplit(ned_ftp, " ")
-# 
-# trim <- function(x) {
-#   p <- nchar(x) != 0
-#   p2 <- x[p]
-# return(p2)
-# }
-# 
-# ned_ftp <- data.frame(do.call(rbind, lapply(ned_ftp, trim)))
-# names(ned_ftp) <- c("size", "month", "day", "year", "file")
-# test <- read.csv("ned_update.csv")
+options(stringsAsFactors = FALSE)
+
+library(RCurl)
+
+ned_url <- getURL("ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/13/IMG/")
+ned_ftp <- strsplit(ned_url, "\r\n")[[1]]
+ned_ftp <- strsplit(ned_ftp, " ")
+
+trim <- function(x) {
+  p <- nchar(x) != 0
+  p2 <- x[p]
+return(p2)
+}
+
+ned_ftp <- data.frame(do.call(rbind, lapply(ned_ftp, trim)))[5:9]
+names(ned_ftp) <- c("size", "month", "day", "year", "file")
+ned_ftp <- ned_ftp[grep(".zip", ned_ftp$file), ]
+write.csv(ned_ftp, paste0("M:/geodata/elevation/ned/ned_update", Sys.Date(), ".csv"))
 
 ned <- read.csv("M:/geodata/elevation/ned/ned_update_2015_10_28.csv", stringsAsFactors = FALSE)
 ned <- transform(ned, date = as.Date(date, format = "%m/%d/%Y"))
