@@ -31,8 +31,8 @@ Next numerous parameters need to be set which get used later by many of the func
 # Set parameters
 source("C:/workspace/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
 source("C:/workspace/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-office <- c("11ATL", "11AUR", "11CAR", "11CLI", "11FIN", "11GAL", "11JUE", "11IND", "11SPR", "11UNI", "11WAV")
-region <- c("11REGION")
+office <- c("8-VIC")
+region <- c("8REGION")
 pd <- paste0("M:/geodata/project_data/", office, "/")
 rd <- paste0("M:/geodata/project_data/", region, "/")
 crsarg <- CRSargs(CRS("+init=epsg:5070"))

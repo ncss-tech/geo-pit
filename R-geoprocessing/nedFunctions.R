@@ -34,7 +34,7 @@ remove_dups <- function(files, file_names){
 ########################################################################
 batch_download <- function(url, destfile){
     for(i in seq(url)){
-    download.file(url = url[i], destfile = destfile[i])
+    download.file(url = url[i], destfile = destfile[i], mode = "wb")
   }
 }
 

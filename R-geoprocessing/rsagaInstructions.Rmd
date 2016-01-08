@@ -25,7 +25,7 @@ Next the proper GDAL and RSAGA path has to be set. The first GDAL location is th
 ```{r, eval = FALSE}
 gdal_setInstallation(search_path = "C:/ProgramData/QGIS/QGISDufour/bin", rescan = TRUE)
 gdal_setInstallation(search_path = "C:/OSGeo4W64/bin", rescan = T)
-myenv <- rsaga.env(path = "C:/Program Files (x86)/SAGA-GIS")
+myenv <- rsaga.env(path = "C:/Program Files/QGIS Wien/apps/saga")
 ```
 
 
@@ -63,8 +63,11 @@ g30 <- list(
   mvalleys = paste0(res30, "_mvalleys"),
   msummits = paste0(res30, "_msummits"),
   caarea   = paste0(res30, "_caarea"),
+  caarea_mdinf = paste0(res30, "_caarea_mdinf"),
   caheight = paste0(res30, "_cheight"),
+  caheight_mdinf = paste0(res30, "_caheight_mdinf"),
   wetness  = paste0(res30, "_wetness"),
+  wetness_mdinf = paste0(res30, "_wetness_mdinf"),
   strahler = paste0(res30, "_strahler"),
   z2stream = paste0(res30, "_z2stream")
   )
@@ -107,6 +110,11 @@ rsaga.d0(dem30, 2)
 rsaga.d1(dem30, 2)
 rsaga.grid.calculus(slopeD, slopeD, slope, "tan(a*(1/57.29578))*100")
 rsaga.grid.calculus(slopeD, slopeD, slopeR, "a*(1/57.29578)")
+rsaga.grid.calculus(cupro, cupro, cupro, "10000*a")
+rsaga.grid.calculus(cucon, cucon, cucon, "-10000*a")
+rsaga.grid.calculus(cumin, cumin, cumin, "10000*a")
+rsaga.grid.calculus(cumax, cumax, cumax, "10000*a")
+rsaga.grid.calculus(cucon, slopeD, cutan, "a*sin(b/57.29578)")
 rsaga.mrvbf(dem30, mvalleys, msummits)
 ```
 
@@ -120,15 +128,15 @@ batch_mosaic(list(elev.sdat), "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.ti
 
 # Create a copy of elev5 to mask---------------------------------------------------------
 gdal_translate(
-  src_dataset = "M:/geodata/project_data/6REGION/ned30m_R6_elev5.tif",
-  dst_dataset = "M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif",
+  src_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif",
+  dst_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
   overwrite = TRUE,
   verbose = TRUE
 )
 
 
 # Extract the water bodies into shapefiles and reproject-----------------------------------
-state <- c("AR", "IL", "KS", "MO", "OK")
+state <- c("CA")
 nhd    <- paste0("M:/geodata/hydrography/NHDH_", state, ".gdb")
 nhd_wb <- paste0("M:/geodata/hydrography/NHDH_", state, "_wb.shp")
 
@@ -146,11 +154,11 @@ for(i in seq(nhd)){
 
 # Mask the water bodies from the Regional DEM------------------------------------------------
 # Seems to take exceptionally long for the States touching the Great Lakes. If done separately in OSGeo4W Shell or SAGA you can monitor their progress.
-for(i in seq(nhd_wb)){
+for(i in seq_along(nhd_wb)){
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "burning", nhd_wb[i], "\n"))
   gdal_rasterize(
     src_datasource = paste0("M:/geodata/hydrography"),
-    dst_filename = "M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif",
+    dst_filename = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
     l = paste0("NHDH_", state[i], "_wb"),
     where = "AreaSqKm > 0.04047",
     b = 1,
@@ -165,24 +173,44 @@ dem30.sdat<- paste0(res30, "_elev5_masked.sdat")
 nlcd30m.tif = paste0("M:/geodata/project_data/", office,  "/nlcd30m_", office, "_lulc2011.tif")
 batchSubsetSAGA("M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif", dem30.sdat, nlcd30m.tif)
 
+# gdal_translate(
+#   src_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
+#   dst_dataset = "M:/geodata/project_data/8VIC/sdat/ned30m_8VIC_elev5_masked.sdat",
+#   of = "SAGA",
+#   a_nodata = -99999,
+#   overwrite = TRUE,
+#   verbose = TRUE
+# )
 
 # Calculate hydrologcal derivatives (wetness index and relief above streams)---------------
 dem <- paste0(g30$elev, "_masked.sgrd")
 
-rsaga.fill(dem)
+rsaga_fill_slope(dem)
+#rsaga_fill_thr(paste0(g30$elev, ".sgrd"))
 
 demf <- paste0(g30$elev, "_masked_filled.sgrd")
 
-rsaga.ca(demf, caarea, caheight)
-rsaga.twi(slopeR, caarea, wetness)
+rsaga_ca(demf, caarea, caheight, "4")
+rsaga_twi(slopeR, caarea, wetness)
+
+rsaga_ca(demf, caarea_mdinf, caheight_mdinf, "5")
+rsaga_twi(slopeR, caarea_mdinf, wetness_mdinf)
 
 # Does this only work on SAGA 2.1 and above
 rsaga.strahler(demf, strahler, 4)
-rsaga.reclassify(strahler, -3, -1)
+rsaga_reclassify(strahler, -3, -1)
+
+channels <- paste0(g30$elev, "_channels.sgrd")
+rsaga_reclassify(caarea, channels, 300000, 1, -99999, 4)
+
+
+# channels <- paste0(g30$elev, "_channels.sgrd")
+# rsaga_channels(demf, channels, caarea, "300000")
 
 streams <- paste0(g30$elev, "_strahler_rc0.sgrd")
+streams <- paste0(g30$elev, "_strahler_rc0.sgrd")
 
-rsaga.ofd(demf, streams)
+rsaga_ofd(demf, channels)
 
 
 # Write SAGA to GTiff--------------------------------------------------------------------------
@@ -197,14 +225,17 @@ int16 <- c("cupro", "cutan", "slope")
 int16.sdat <- lapply(g10[int16], paste0, ".sdat")
 gdal_stack(int16.sdat, slopeshape, "Int16", -32768)
 
-flt <- c("z2stream", "mvalleys", "wetness")
-flt.sdat <- sapply(g30[flt], paste0, ".sdat")
-flt.tif <- unlist(lapply(strsplit(flt.sdat, "/sdat"), paste0, collapse = ""))
-flt.tif <- paste0(strsplit(flt.tif, ".sdat"), ".tif")
-gdal_SAGA2GTiff(flt.sdat, flt.tif, "Float32", -99999)
+flt <- c("caarea", "msummits", "mvalleys", "wetness", "wetness_mdinf", "caarea_mdinf", "wetness_mdinf", "caarea_mdinf")
+flt <- c("z2stream")
+
+flt.sdat <- paste0(g30[flt], ".sdat")
+flt.tif <- sub("\\.sdat", "\\.tif", flt.sdat)
+flt.tif <- sub("sdat/", "", flt.tif)
+
+gdal_SAGA2GTiff(flt.sdat, flt.tif, "Float32", -99999, "GTiff", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"))
 
 slope <- lapply(g10$slope, paste0, ".sdat")
-mosaicList(slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS = DEFLATE", "TILED = YES", "BIGTIFF = YES"), -32768)
+mosaicList(slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), -32768)
 
 
 gdal_GTiff2SAGA("M:/geodata/project_data/11REGION/ned30m_11R.tif", "M:/geodata/project_data/11REGION/ned30m_11R.sdat")

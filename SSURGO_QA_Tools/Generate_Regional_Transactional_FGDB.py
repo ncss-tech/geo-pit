@@ -737,11 +737,11 @@ try:
         raise MyError, "\nAll " + regionChoice + " SSURGO datasets are missing from " + os.path.basename(wssLibrary) + " directory \n\tThere must also not be duplicate SSURGO datasets"
 
     # There are some SSAs missing from local library
-    elif len(regionalASlist) != len(ssurgoDatasetDict):
-        AddMsgAndPrint("\n" + regionChoice + " is assigned " + str(len(regionalASlist)) + " SSAs --- Missing " + str(len(regionalASlist) - len(ssurgoDatasetDict)) + " SSAs" ,2)
-        AddMsgAndPrint("\nALL SSURGO datasets assigned to " + regionChoice + " must be present to continue",2)
-        raise MyError, "Download missing SSURGO Datasets using the 'Download SSURGO by Region' tool"
-        #AddMsgAndPrint("Only " + str(len(ssurgoDatasetDict)) + " out of " + str(len(regionalASlist)) + " surveys will be imported to create the " + regionChoice + " Transactional Spatial Database",2)
+    # elif len(regionalASlist) != len(ssurgoDatasetDict):
+        # AddMsgAndPrint("\n" + regionChoice + " is assigned " + str(len(regionalASlist)) + " SSAs --- Missing " + str(len(regionalASlist) - len(ssurgoDatasetDict)) + " SSAs" ,2)
+        # AddMsgAndPrint("\nALL SSURGO datasets assigned to " + regionChoice + " must be present to continue",2)
+        # raise MyError, "Download missing SSURGO Datasets using the 'Download SSURGO by Region' tool"
+        AddMsgAndPrint("Only " + str(len(ssurgoDatasetDict)) + " out of " + str(len(regionalASlist)) + " surveys will be imported to create the " + regionChoice + " Transactional Spatial Database",2)
 
     else:
         AddMsgAndPrint("\n" + str(len(regionalASlist)) + " surveys will be merged to create the " + regionChoice + " Transactional Spatial Database", 0)

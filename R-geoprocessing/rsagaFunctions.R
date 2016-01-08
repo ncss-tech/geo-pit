@@ -2,7 +2,7 @@
 rsaga.mask <- function(grid, mask){
   gridm=paste(strsplit(grid, ".sgrd"), "_mask", ".sgrd", sep="")
   
-  for(i in seq(grid)){
+  for (i in seq(grid)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"masking", grid[i],"\n"))
     
     rsaga.geoprocessor("grid_tools", 24, env=myenv, list(
@@ -14,10 +14,10 @@ rsaga.mask <- function(grid, mask){
 }
   
   # Fill DEM if the MINSLOPE is set to less than 0.025 it causing the STRAHLER module to fail, if it's set to higher than 0.025 if fills in low relief areas.
-rsaga.fill <- function(grid){
-  gridf <- paste0(strsplit(grid, ".sgrd"), "_filled", ".sgrd")
+rsaga_fill_slope <- function(grid){
+  gridf <- sub(".sgrd", "_filled.sgrd", grid)
   
-  for(i in seq(grid)){
+  for (i in seq(grid)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"filling", grid[i],"\n"))
     rsaga.geoprocessor("ta_preprocessor", 5, env=myenv, list(
       ELEV=grid[i],
@@ -28,9 +28,34 @@ rsaga.fill <- function(grid){
   }
 }
 
+rsaga_fill_thr <- function(grid){
+  gridr <- sub(".sgrd", "_route.sgrd", grid)
+  gridf <- sub(".sgrd", "_filled.sgrd", grid)
+  
+  for (i in seq_along(grid)){
+    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"routing", grid[i],"\n"))
+    rsaga.geoprocessor("ta_preprocessor", 1, env = myenv, list(
+      ELEVATION = grid[i],
+      SINKROUTE = gridr[i],
+      #THRESHOLD = 1,
+      THRSHEIGHT = "10"
+    )
+    )
+    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"filling", grid[i],"\n"))
+    rsaga.geoprocessor("ta_preprocessor", 2, env = myenv, list(
+      DEM = grid[i],
+      SINKROUTE = gridr[i],
+      DEM_PREPROC = gridf[i],
+      METHOD = "1",
+      THRSHEIGHT = "10"
+    )
+    )
+  }
+}
+
 # Local morphometry
 rsaga.d0 <- function(dem, radiusD){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", elev[i],"\n"))
     rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
       DEM=dem[i],
@@ -40,7 +65,7 @@ rsaga.d0 <- function(dem, radiusD){
 }
 
 rsaga.d1 <- function(dem, radiusD){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 1st derivatives for", dem[i],"\n"))
     rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
       DEM=dem[i],
@@ -51,7 +76,7 @@ rsaga.d1 <- function(dem, radiusD){
 }
 
 rsaga.d2 <- function(dem, radiusD){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives for", dem[i],"\n"))
     rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
       DEM=dem[i],
@@ -63,7 +88,7 @@ rsaga.d2 <- function(dem, radiusD){
 }
 
 rsaga.d3 <- function(dem, radiusD){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives for", dem[i],"\n"))
     rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
       DEM=dem[i],
@@ -75,7 +100,7 @@ rsaga.d3 <- function(dem, radiusD){
 
 
 rsaga.grid.calculus <- function(a.list, b.list, output.list, formula){
-  for(i in seq(a.list)) {
+  for (i in seq(a.list)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", output.list[i],"\n"))
     rsaga.geoprocessor("grid_calculus", 1, env=myenv, list(
       GRIDS=paste(c(a.list[i],b.list[i]),collapse=";"),
@@ -86,7 +111,7 @@ rsaga.grid.calculus <- function(a.list, b.list, output.list, formula){
 
 
 rsaga.residual <- function(x, radius){
-  for(i in seq(x)){
+  for (i in seq(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", relief[i],"\n"))
     rsaga.geoprocessor("geostatistics_grid", 1,  env=myenv, list(
       GRID=x[i],
@@ -97,7 +122,7 @@ rsaga.residual <- function(x, radius){
 
 # Multiresolution Index of Valley Bottom Flatness (if grid system is large crop data or must do manually using file caching)
 rsaga.mrvbf <- function(dem, valleys, summits){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating mrvbf for", dem[i],"\n"))
     
     rsaga.geoprocessor("ta_morphometry", 8, env=myenv, list(
@@ -111,7 +136,7 @@ rsaga.mrvbf <- function(dem, valleys, summits){
 
 # Radius of variance, 1000m seems to be the best radius threshold, after than the rovar starts taking on weird shapes 
 rsaga.rov <- function(dem, radius){
-  for(i in seq(dem)){
+  for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating rov for", dem[i],"\n"))
     rsaga.geoprocessor("geostatistics_grid", 3,  env=myenv, list(
       INPUT=dem[i],
@@ -122,21 +147,21 @@ rsaga.rov <- function(dem, radius){
 
 
 # Catchment area, height, and wetness index
-rsaga.ca <- function(grid, caarea, caheight){
-  for(i in seq(grid)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", grid[i],"\n"))
+rsaga_ca <- function(dem, caarea, caheight, method){
+  for (i in seq_along(dem)){
+    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", dem[i],"\n"))
     rsaga.geoprocessor("ta_hydrology", 0, env=myenv, list(
-      ELEVATION=grid[i],
-      CAREA=caarea[i],
-      CHEIGHT=caheight[i],
-      Method=4)
+      ELEVATION = dem[i],
+      CAREA = caarea[i],
+      CHEIGHT = caheight[i],
+      Method = method)
       )
   }
 }
 
 
-rsaga.twi <- function(slopeR, carea, wetness){
-  for(i in seq(wetness)){
+rsaga_twi <- function(slopeR, carea, wetness){
+  for (i in seq_along(wetness)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", wetness[i],"\n"))
     rsaga.geoprocessor("ta_hydrology", 20, env=myenv, list(
       SLOPE=slopeR[i],
@@ -148,25 +173,37 @@ rsaga.twi <- function(slopeR, carea, wetness){
 
 
 rsaga.strahler <- function(x, strahler, threshold){
-  for(i in seq(x)){
+  for (i in seq_along(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", strahler[i],"\n"))
-    rsaga.geoprocessor("ta_channels", 5, env=myenv, list(
+    rsaga.geoprocessor("ta_channels", 5, env = myenv, list(
       DEM=x[i],
       ORDER=strahler[i],
-      THRESHOLD=threshold
+      THRESHOLD = threshold
       )
     )
   }
 }
 
+rsaga_channels <- function(dem, channels, caarea, threshold){
+  for (i in seq_along(dem)){
+    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", channels[i],"\n"))
+    rsaga.geoprocessor("ta_channels", 0, env = myenv, list(
+      ELEVATION = dem[i],
+      CHNLNTWRK = channels[i],
+      INIT_GRID = caarea[i],
+      INIT_VALUE = threshold
+    )
+    )
+  }
+}
 
-rsaga.ofd <- function(x, streams){
-  for(i in seq(x)){
+rsaga_ofd <- function(x, streams){
+  for (i in seq_along(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", z2stream[i],"\n"))
     rsaga.geoprocessor("ta_channels", 4, env=myenv, list(
-      ELEVATION=x[i],
-      CHANNELS=streams[i],
-      DISTVERT=z2stream[i]
+      ELEVATION = x[i],
+      CHANNELS = streams[i],
+      DISTVERT = z2stream[i]
       )
     )
   }
@@ -214,7 +251,7 @@ gdal_setInstallation(search_path="C:/ProgramData/QGIS/QGISDufour/bin", rescan=T)
 
 Int16 <- grids[c(3,4,5,7)]
 
-for(i in seq(Int16)){
+for (i in seq(Int16)){
   gdal_translate(
     src_dataset=paste(Int16[i], ".sdat", sep=""),
     dst_dataset=paste(Int16[i], ".tif",sep=""),
@@ -228,7 +265,7 @@ for(i in seq(Int16)){
 
 Float32 <- grids[c(10,11,13,14)]
 
-for(i in seq(Float32)){
+for (i in seq(Float32)){
   gdal_translate(
     src_dataset=paste(Float32[i], ".sdat", sep=""),
     dst_dataset=paste(Float32[i], ".tif",sep=""),
@@ -249,13 +286,13 @@ for(i in seq(Float32)){
 # lat = latitutde (e.g. 34)
 
 rsaga.solar.radiation <- function(DEM,lat,hours,days){
-  for(i in 1:length(DEM)){
+  for (i in 1:length(DEM)){
     DEMn <- DEM[i]
     DAY.A.list=c("0","0","0","0","0","0","0","0","0","0","0","0")
     DAY.B.list=c("30","26","29","28","29","28","29","29","28","29","28","29")
     MONTH.list=c("0","1","2","3","4","5","6","7","8","9","10","11")
     
-    for(i in 1:12) {
+    for (i in 1:12) {
       
       DEMs <- str_split_fixed(DEMn, pat=".sgrd", n=2)[,1]
       
@@ -329,7 +366,7 @@ rsaga.solar.radiation <- function(DEM,lat,hours,days){
 # radius = radius of filter measured in grid cells 
 # outliers = condition if TRUE filters oultiers if FALSE filter noise
 rsaga.filter.outliers=function(grid.list1,grid.list2,grid.list3,grid.list4,outliers){
-  for(i in 1:length(grid.list1)) {
+  for (i in 1:length(grid.list1)) {
     zdif.list=c(grid.list2[i],grid.list1[i])
     
     rsaga.geoprocessor("grid_calculus",1,list(
@@ -376,7 +413,7 @@ rsaga.filter.outliers=function(grid.list1,grid.list2,grid.list3,grid.list4,outli
 # YMAX = y-coordinate of northwest corner
 rsaga.resample.grids=function(grid.list,METHOD,SIZE,XMIN,XMAX,YMIN,YMAX){
   library(RSAGA)
-  for(i in 1:length(grid.list)) {
+  for (i in 1:length(grid.list)) {
     rsaga.geoprocessor("grid_tools",0,list(
       INPUT=grid.list[i],
       USER_GRID=paste(grid.list[i],sep=""),
@@ -394,7 +431,7 @@ rsaga.resample.grids=function(grid.list,METHOD,SIZE,XMIN,XMAX,YMIN,YMAX){
 ### Misc
 rsaga.grid.calculus=function(grid.list,name.list,formula){
   library(RSAGA)
-  for(i in 1:length(grid.list)) {
+  for (i in 1:length(grid.list)) {
     rsaga.geoprocessor("grid_calculus",1,list(
       GRIDS=paste(grid.list[i], sep=""),
       RESULT=paste(name.list[i],sep=""),
@@ -402,18 +439,20 @@ rsaga.grid.calculus=function(grid.list,name.list,formula){
   }
 }
 
-rsaga.reclassify <- function(x, x2, min, new, na){
-  for (i in seq(x)) {
+rsaga_reclassify <- function(x, x2, old, new, na, soperator){
+  for (i in seq_along(x)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"reclassifying", x[i],"\n"))
-    rsaga.geoprocessor("grid_tools",15, env=myenv, list(
+    rsaga.geoprocessor("grid_tools", 15, env=myenv, list(
       INPUT=x[i],
       RESULT=x2[i],
       METHOD="0",
-      SOPERATOR = 1,
-      OLD=min,
+      SOPERATOR = soperator,
+      OLD=old,
       NEW=new,
-      NODATAOPT=TRUE,
-      NODATA=na)
+      NODATAOPT = TRUE,
+      NODATA = na,
+      OTHEROPT = TRUE,
+      OTHERS = na)
       )
   }
 }
