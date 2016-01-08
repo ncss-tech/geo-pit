@@ -24,7 +24,7 @@ Next the proper GDAL and RSAGA path has to be set. The first GDAL location is th
 
 ```{r, eval = FALSE}
 gdal_setInstallation(search_path = "C:/ProgramData/QGIS/QGISDufour/bin", rescan = TRUE)
-gdal_setInstallation(search_path = "C:/OSGeo4W64/bin", rescan = T)
+# gdal_setInstallation(search_path = "C:/OSGeo4W64/bin", rescan = T)
 myenv <- rsaga.env(path = "C:/Program Files/QGIS Wien/apps/saga")
 ```
 
@@ -60,8 +60,8 @@ g30 <- list(
   slopeR   = paste0(res30, "_slopeR", 1+2*radiusD),
   slopeD   = paste0(res30, "_sloped", 1+2*radiusD),
   aspect   = paste0(res30, "_aspect", 1+2*radiusD),
-  mvalleys = paste0(res30, "_mvalleys"),
-  msummits = paste0(res30, "_msummits"),
+  mvrbf = paste0(res30, "_mrvbf"),
+  mrrtf = paste0(res30, "_mrrtf"),
   caarea   = paste0(res30, "_caarea"),
   caarea_mdinf = paste0(res30, "_caarea_mdinf"),
   caheight = paste0(res30, "_cheight"),
@@ -226,7 +226,7 @@ int16.sdat <- lapply(g10[int16], paste0, ".sdat")
 gdal_stack(int16.sdat, slopeshape, "Int16", -32768)
 
 flt <- c("caarea", "msummits", "mvalleys", "wetness", "wetness_mdinf", "caarea_mdinf", "wetness_mdinf", "caarea_mdinf")
-flt <- c("z2stream")
+flt <- c("slope", "aspect")
 
 flt.sdat <- paste0(g30[flt], ".sdat")
 flt.tif <- sub("\\.sdat", "\\.tif", flt.sdat)
