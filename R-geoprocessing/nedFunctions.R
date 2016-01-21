@@ -158,13 +158,13 @@ mosaicNlcdList <- function(mosaiclist, dstpath){
 batch_warp <- function(inlist, warplist, reflist, resto, r, s_srs, t_srs, datatype, nodata, co){    
   for(i in seq(inlist)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"WARPING", inlist[i],"\n"))
-# te <- c(bbox(raster(reflist[i])))
+ te <- c(bbox(raster(reflist[i])))
   gdalwarp(
     srcfile = inlist[i],
     dstfile = warplist[i],
     s_srs = s_srs,
     t_srs = t_srs,
-#    te = te,
+    te = te,
     r = r,
     tr = c(resto,resto),
     of = "GTiff",

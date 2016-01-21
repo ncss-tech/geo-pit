@@ -31,6 +31,9 @@ for(i in seq(img)){
 }
 
 
+# Gamma
+# http://mrdata.usgs.gov/geophysics/nurequads.html
+
 # Imagery
 # Download hdf WELD tiles
 library(RCurl)

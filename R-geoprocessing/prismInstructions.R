@@ -1,43 +1,23 @@
-setwd("/media/EXTERNAL/Work/geodata/climate/PRISM")
-library(RSAGA)
+library(gdalUtils)
+library(rgdal)
+library(raster)
+
+gdal_setInstallation(search_path="C:/Program Files/QGIS Wien/bin", rescan=T)
+
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
 
 # Import grids
-months <- c("01", "02", "03", "04", "05", "06", "08", "09", "10", "11", "12", "14")
-
-ppt.gz <- paste("us_ppt_1971_2000.", months, ".gz", sep="")
-tmax.gz <- paste("us_tmax_1971_2000.", months, ".gz", sep="")
-tmin.gz <- paste("us_tmin_1971_2000.", months, ".gz", sep="")
-prism.gz <- c(ppt.gz, tmax.gz, tmin.gz)
-
-ppt.txt <- paste("us_ppt_1971_2000.", months, ".txt", sep="")
-tmax.txt <- paste("us_tmax_1971_2000.", months, ".txt", sep="")
-tmin.txt <- paste("us_tmin_1971_2000.", months, ".txt", sep="")
-prism.txt <- c(ppt.txt, tmax.txt, tmin.txt)
-
-tmean <- "M:/geodata/climate/prism/PRISM_tmean_30yr_normal_800mM2_all_asc/PRISM_tmean_30yr_normal_800mM2_annual_asc.asc"
-ppt <- "M:/geodata/climate/prism/PRISM_ppt_30yr_normal_800mM2_all_asc/PRISM_ppt_30yr_normal_800mM2_annual_asc.asc"
-
-for(i in seq(prism.gz)){
-  gunzip(prism.gz[i], prism.txt[i])
-}
+months <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "annual")
 
 
+ppt <- paste0("M:/geodata/climate/prism/PRISM_ppt_30yr_normal_800mM2_all_asc/PRISM_ppt_30yr_normal_800mM2_", months, "_asc.asc")
+tmean <- paste0("M:/geodata/climate/prism/PRISM_tmean_30yr_normal_800mM2_all_asc/PRISM_tmean_30yr_normal_800mM2_", months, "_asc.asc")
 
-rsaga.rescale.loop=function(grid.list,name,formula)
-for(i in 1:length(grid.list)){
-  rsaga.geoprocessor("grid_calculus",1,list(
-  GRIDS=paste(grid.list[i],".sgrd",sep=""),
-  RESULT=paste(name,grid.list[i],".sgrd",sep=""),
-  FORMULA=formula))
-}
+test <- stack(ppt[c(7:9)]
+test2 <- calc(test, function(x) (x[1] + x[2] + x[3]))
+writeRaster(test2, paste0("M:/geodata/climate/prism/PRISM_ppt_30yr_normal_800mM2_all_asc/PRISM_ppt_30yr_normal_800mM2_", "summer", "_asc.asc"))
 
-rsaga.convert.loop(ppt.list)
-rsaga.convert.loop(tmax.list)
-rsaga.convert.loop(tmin.list)
-
-rsaga.rescale.loop(ppt.list,"in_","(a/100)*0.0393701")
-rsaga.rescale.loop(tmax.list,"F_","(((a/100)*2)-((a/100)*2*0.1)+32)")
-rsaga.rescale.loop(tmin.list,"F_","(((a/100)*2)-((a/100)*2*0.1)+32)")
 
 # Function to compute temperature statistics
 rsaga.TEMPstats=function(tmax.list,tmin.list){
@@ -147,17 +127,24 @@ rsaga.PEindex=function(ppt.list,tmax.list,tmin.list){
       FORMULA=paste(letters[1:12],sep="",collapse="+")))
 }
 
-office.l <- office.l[11]
+batch_warp(ppt[8], "M:/geodata/project_data/8VIC/prism30m_8VIC_ppt_1981_2010_annual_mm.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
-res <- "10"
-tmean.l <- paste0(pd.p, office.l, "/prism", res, "m_11", office.l, "_tmean_1981_2010_annual_C.tif")
-ppt.l <- paste0(pd.p, office.l, "/prism", res, "m_11", office.l, "_ppt_1981_2010_annual_mm.tif")
-ffp <- "M:/geodata/climate/rmrs/ffp.txt"
-ffp.l <- paste0(pd.p, office.l, "/rmrs", res, "m_11WAV_ffp_1961_1990_annual_days.tif")
-nlcd.p <- paste0(pd.p, office.l, "/nlcd", "30m_", office.l, "_lulc2011.tif")
+batch_warp("M:/geodata/climate/prism/PRISM_ppt_30yr_normal_800mM2_all_asc/PRISM_ppt_30yr_normal_800mM2_summer_asc.asc", "M:/geodata/project_data/8VIC/prism30m_8VIC_ppt_1981_2010_summer_mm.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
-co=c("TILED=YES", "COMPRESS=DEFLATE")
-batchWarp(tmean, tmean.l, nlcd.p, res, "cubicspline", "EPSG:4269", crsarg, "Int16", "-32768", co)
-batchWarp(ppt, ppt.l, nlcd.p, res, "cubicspline", "EPSG:4269", crsarg, "Int16", "-32768", co)
-batchWarp(ffp, ffp.l, nlcd.p, res, "cubicspline", CRSargs(CRS("+init=EPSG:4326")), crsarg, "Int16", "-32768", co)
+batch_warp(tmean[8], "M:/geodata/project_data/8VIC/prism30m_8VIC_tmean_1981_2010_annual_C.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+
+batch_warp("M:/geodata/project_data/8VIC/ned30m_vic8_solar.tif", "M:/geodata/project_data/8VIC/ned30m_8VIC_solar2.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "bilinear", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/project_data/8VIC/ned30m_vic8_sr_months.tif", "M:/geodata/project_data/8VIC/ned30m_8VIC_solar_months.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "bilinear", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/project_data/8VIC/landsat30m_vic8_b123457.tif", "M:/geodata/project_data/8VIC/landsat30m_8VIC_b123457.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "bilinear", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Byte", 0, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/project_data/8VIC/landsat30m_vic8_tc123.tif", "M:/geodata/project_data/8VIC/landsat30m_8VIC_tc123.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "bilinear", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/imagery/gamma/namrad_k_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_k.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/imagery/gamma/namrad_th_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_th.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+
+batch_warp("M:/geodata/imagery/gamma/namrad_u_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_u.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
