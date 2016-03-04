@@ -52,8 +52,9 @@ paste("'", mukey[1:length(mukey)-1], "'",collapse=",", sep="")
 ```
 
 ```{r gdal examples}
-gdal_setInstallation(search_path="C:/ProgramData/QGIS/QGISDufour/bin", rescan=T)
+gdal_setInstallation(search_path="C:/Program Files/QGIS/QGIS Wien/bin", rescan=T)
 
+batch_gdal_translate(geodata_f["pc"], "M:/geodata/project_data/8VIC/ca794", outsuffix = ".tif", verbose = TRUE, projwin = bbox(ca794)[c(1, 4, 3, 2)])
 
 ogr2ogr -f "ESRI Shapefile" test.shp test.gdb ca794_a -nln ca794_a
 

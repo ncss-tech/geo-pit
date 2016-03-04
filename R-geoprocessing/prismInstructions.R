@@ -142,9 +142,10 @@ batch_warp("M:/geodata/project_data/8VIC/landsat30m_vic8_b123457.tif", "M:/geoda
 
 batch_warp("M:/geodata/project_data/8VIC/landsat30m_vic8_tc123.tif", "M:/geodata/project_data/8VIC/landsat30m_8VIC_tc123.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "bilinear", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
-batch_warp("M:/geodata/imagery/gamma/namrad_k_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_k.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+batch_warp("M:/geodata/imagery/gamma/namrad_k_aea_nogaps.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_k.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
-batch_warp("M:/geodata/imagery/gamma/namrad_th_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_th.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+batch_warp("M:/geodata/imagery/gamma/namrad_th_aea_nogaps.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_th.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
-batch_warp("M:/geodata/imagery/gamma/namrad_u_aea.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_u.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
+batch_warp("M:/geodata/imagery/gamma/namrad_u_aea_nogaps.tif", "M:/geodata/imagery/gamma/gamma30m_8VIC_namrad_u.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "cubicspline", CRSargs(CRS("+init=epsg:5070")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))
 
+batch_warp("M:/geodata/project_data/8VIC/cluster15.tif", "M:/geodata/project_data/8VIC/cluster152.tif","M:/geodata/project_data/8VIC/ned30m_8VIC.tif", 30, "near", CRSargs(CRS("+init=epsg:26911")), CRSargs(CRS("+init=epsg:5070")), "Float32", -99999, c("BIGTIFF=YES"))

@@ -23,7 +23,7 @@ source("C:/workspace/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
 Next the proper GDAL and RSAGA path has to be set. The first GDAL location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
 
 ```{r, eval = FALSE}
-gdal_setInstallation(search_path = "C:/ProgramData/QGIS/QGISDufour/bin", rescan = TRUE)
+gdal_setInstallation(search_path = "C:/Program Data/QGIS/QGIS Wien/bin", rescan = TRUE)
 # gdal_setInstallation(search_path = "C:/OSGeo4W64/bin", rescan = T)
 myenv <- rsaga.env(path = "C:/Program Files/QGIS Wien/apps/saga")
 ```
