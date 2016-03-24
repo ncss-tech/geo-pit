@@ -20,13 +20,13 @@ try:
 
     #Calculate Field
 
-    with arcpy.da.Editor(workspace) as edit:arcpy.CalculateField_management(inFC, "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
+    with arcpy.da.Editor(workspace) as edit:arcpy.CalculateField_management(inFC, "ACRES", '!shape.area@ACRES!', "PYTHON_9.3", )
 
 except arcpy.ExecuteError:
     print (arcpy.GetMesssages (2))
 
 #Refresh Active View
-arcpy.RefreshActiveView()
+#arcpy.RefreshActiveView()
 
 
 
