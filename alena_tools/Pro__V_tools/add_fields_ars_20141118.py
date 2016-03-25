@@ -27,3 +27,5 @@ arcpy.AddField_management (sflinFC, "ORIG_FEATSYM", "TEXT", "", "", fieldLength)
 arcpy.CalculateField_management(inFC, "ORIG_MUSYM", '[MUSYM]', "VB" )
 arcpy.CalculateField_management(sfpinFC, "ORIG_FEATSYM", '[FEATSYM]', "VB" )
 arcpy.CalculateField_management(sflinFC, "ORIG_FEATSYM", '[FEATSYM]', "VB" )
+
+print ("Script Completed")

@@ -48,4 +48,5 @@ arcpy.SelectLayerByAttribute_management (insfptsFC, "CLEAR_SELECTION")
 arcpy.SelectLayerByAttribute_management (insflnFC, "CLEAR_SELECTION")
 
 
-print "Script Completed"
+#print "Script Completed"
+print ("Script Completed")

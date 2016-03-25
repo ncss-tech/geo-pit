@@ -24,5 +24,5 @@ arcpy.CalculateField_management(inFC, "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 
 
-#print "Script Completed"
+print "Script Completed"
 

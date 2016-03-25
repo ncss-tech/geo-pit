@@ -39,7 +39,8 @@ arcpy.TableToExcel_conversion("outFCDISSOLVE_SORT", out_xls)
 arcpy.Delete_management ("outFC")
 arcpy.Delete_management ("outFCDISSOLVE")
 
-print "Script Completed"
+#print "Script Completed"
+print ("Script Completed")
 
 
                         

@@ -37,4 +37,5 @@ arcpy.Statistics_analysis("outFCDISSOLVE_SORT", "STATISTICS", [["ACRES", "SUM"]]
 arcpy.Delete_management ("outFCDISSOLVE")
 #arcpy.Delete_management ("outFCDISSOLVE_SORT")
 
-print "Script Completed"
+#print "Script Completed"
+print ("Script Completed")

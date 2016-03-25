@@ -40,5 +40,5 @@ arcpy.AddField_management("COMPARE", "ACRES", "DOUBLE", )
 arcpy.CalculateField_management("COMPARE", "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
 
 
-#print "Script Completed"
-print ('Script Completed')
+print "Script Completed"
+#print ('Script Completed')
