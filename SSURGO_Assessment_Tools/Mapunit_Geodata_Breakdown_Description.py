@@ -9,7 +9,6 @@
 #
 # Created:     8.28.2014
 # Copyright:   (c) Adolfo.Diaz 2014
-# Licence:     $500 per license
 #
 #
 # Should I add an "Other" line to the processHydro field when percentages don't exceed 0%.  Some results may all be 0%.
