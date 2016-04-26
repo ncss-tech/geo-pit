@@ -25,13 +25,13 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-##        print msg
-##
-##        f = open(textFilePath,'a+')
-##        f.write(msg + " \n")
-##        f.close
-##
-##        del f
+        #print msg
+
+        f = open(textFilePath,'a+')
+        f.write(msg + " \n")
+        f.close
+
+        del f
 
         #for string in msg.split('\n'):
             #Add a geoprocessing message (in case this is run as a tool)
@@ -113,102 +113,188 @@ def errorMsg():
         AddMsgAndPrint("Unhandled error in errorMsg method", 2)
         pass
 
-## ===================================================================================
+### ===================================================================================
 def setScratchWorkspace():
-    # This function will set the scratchGDB environment based on the scratchWorkspace environment.
-    #
-    # The scratch workspac will typically not be defined by the user but the scratchGDB will
-    # always be defined.  The default location for the scratchGDB is at C:\Users\<user>\AppData\Local\Temp
-    # on Windows 7 or C:\Documents and Settings\<user>\Localsystem\Temp on Windows XP.  Inside this
-    # directory, scratch.gdb will be created.
-    #
-    # If scratchWorkspace is set to something other than a GDB or Folder than the scratchWorkspace
-    # will be set to C:\temp.  If C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
-    #
-    # If scratchWorkspace is an SDE GDB than the scratchWorkspace will be set to C:\temp.  If
-    # C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
+    """ This function will set the scratchWorkspace for the interim of the execution
+        of this tool.  The scratchWorkspace is used to set the scratchGDB which is
+        where all of the temporary files will be written to.  The path of the user-defined
+        scratchWorkspace will be compared to existing paths from the user's system
+        variables.  If there is any overlap in directories the scratchWorkspace will
+        be set to C:\TEMP, assuming C:\ is the system drive.  If all else fails then
+        the packageWorkspace Environment will be set as the scratchWorkspace. This
+        function returns the scratchGDB environment which is set upon setting the scratchWorkspace"""
 
     try:
+        AddMsgAndPrint("\nSetting Scratch Workspace")
+        scratchWK = arcpy.env.scratchWorkspace
+
         # -----------------------------------------------
         # Scratch Workspace is defined by user or default is set
-        if arcpy.env.scratchWorkspace is not None:
+        if scratchWK is not None:
 
-            # describe scratch workspace
-            scratchWK = arcpy.env.scratchWorkspace
-            descSW = arcpy.Describe(scratchWK)
-            descDT = descSW.dataType.upper()
+            # dictionary of system environmental variables
+            envVariables = os.environ
 
-            # scratch workspace is geodatabase
-            if descDT == "WORKSPACE":
-                progID = descSW.workspaceFactoryProgID
-
-                # scratch workspace is a FGDB
-                if  progID == "esriDataSourcesGDB.FileGDBWorkspaceFactory.1":
-                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
-                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-
-                # scratch workspace is a Personal GDB -- set scratchWS to folder of .mdb
-                elif progID == "esriDataSourcesGDB.AccessWorkspaceFactory.1":
-                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
-                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-
-                # scratch workspace is an SDE GDB.
-                elif progID == "esriDataSourcesGDB.SdeWorkspaceFactory.1":
-
-                    # set scratch workspace to C:\Temp; avoid the server
-                    if os.path.exists(r'C:\Temp'):
-
-                        arcpy.env.scratchWorkspace = r'C:\Temp'
-                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-
-                    # set scratch workspace to default ESRI location
-                    else:
-                        arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-
-            # scratch workspace is simply a folder
-            elif descDT == "FOLDER":
-                arcpy.env.scratchWorkspace = scratchWK
-                arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-
-            # scratch workspace is set to something other than a GDB or folder; set to C:\Temp
+            # get the root system drive
+            if envVariables.has_key('SYSTEMDRIVE'):
+                sysDrive = envVariables['SYSTEMDRIVE']
             else:
-                # set scratch workspace to C:\Temp
-                if os.path.exists(r'C:\Temp'):
+                sysDrive = None
 
-                    arcpy.env.scratchWorkspace = r'C:\Temp'
-                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+            varsToSearch = ['ESRI_OS_DATADIR_LOCAL_DONOTUSE','ESRI_OS_DIR_DONOTUSE','ESRI_OS_DATADIR_MYDOCUMENTS_DONOTUSE',
+                            'ESRI_OS_DATADIR_ROAMING_DONOTUSE','TEMP','LOCALAPPDATA','PROGRAMW6432','COMMONPROGRAMFILES','APPDATA',
+                            'USERPROFILE','PUBLIC','SYSTEMROOT','PROGRAMFILES','COMMONPROGRAMFILES(X86)','ALLUSERSPROFILE']
 
-                # set scratch workspace to default ESRI location
+            """ This is a printout of my system environmmental variables - Windows 7
+            -----------------------------------------------------------------------------------------
+            ESRI_OS_DATADIR_LOCAL_DONOTUSE C:\Users\adolfo.diaz\AppData\Local\
+            ESRI_OS_DIR_DONOTUSE C:\Users\ADOLFO~1.DIA\AppData\Local\Temp\6\arc3765\
+            ESRI_OS_DATADIR_MYDOCUMENTS_DONOTUSE C:\Users\adolfo.diaz\Documents\
+            ESRI_OS_DATADIR_COMMON_DONOTUSE C:\ProgramData\
+            ESRI_OS_DATADIR_ROAMING_DONOTUSE C:\Users\adolfo.diaz\AppData\Roaming\
+            TEMP C:\Users\ADOLFO~1.DIA\AppData\Local\Temp\6\arc3765\
+            LOCALAPPDATA C:\Users\adolfo.diaz\AppData\Local
+            PROGRAMW6432 C:\Program Files
+            COMMONPROGRAMFILES :  C:\Program Files (x86)\Common Files
+            APPDATA C:\Users\adolfo.diaz\AppData\Roaming
+            USERPROFILE C:\Users\adolfo.diaz
+            PUBLIC C:\Users\Public
+            SYSTEMROOT :  C:\Windows
+            PROGRAMFILES :  C:\Program Files (x86)
+            COMMONPROGRAMFILES(X86) :  C:\Program Files (x86)\Common Files
+            ALLUSERSPROFILE :  C:\ProgramData
+            ------------------------------------------------------------------------------------------"""
+
+            bSetTempWorkSpace = False
+
+            """ Iterate through each Environmental variable; If the variable is within the 'varsToSearch' list
+                list above then check their value against the user-set scratch workspace.  If they have anything
+                in common then switch the workspace to something local  """
+            for var in envVariables:
+
+                if not var in varsToSearch:
+                    continue
+
+                # make a list from the scratch and environmental paths
+                varValueList = (envVariables[var].lower()).split(os.sep)          # ['C:', 'Users', 'adolfo.diaz', 'AppData', 'Local']
+                scratchWSList = (scratchWK.lower()).split(os.sep)                 # [u'C:', u'Users', u'adolfo.diaz', u'Documents', u'ArcGIS', u'Default.gdb', u'']
+
+                # remove any blanks items from lists
+                if '' in varValueList: varValueList.remove('')
+                if '' in scratchWSList: scratchWSList.remove('')
+
+                # First element is the drive letter; remove it if they are
+                # the same otherwise review the next variable.
+                if varValueList[0] == scratchWSList[0]:
+                    scratchWSList.remove(scratchWSList[0])
+                    varValueList.remove(varValueList[0])
+
+                # obtain a similarity ratio between the 2 lists above
+                #sM = SequenceMatcher(None,varValueList,scratchWSList)
+
+                # Compare the values of 2 lists; order is significant
+                common = [i for i, j in zip(varValueList, scratchWSList) if i == j]
+
+                if len(common) > 0:
+                    bSetTempWorkSpace = True
+                    break
+
+            # The current scratch workspace shares 1 or more directory paths with the
+            # system env variables.  Create a temp folder at root
+            if bSetTempWorkSpace:
+                AddMsgAndPrint("\tCurrent Workspace: " + scratchWK,0)
+
+                if sysDrive:
+                    tempFolder = sysDrive + os.sep + "TEMP"
+
+                    if not os.path.exists(tempFolder):
+                        os.makedirs(tempFolder,mode=777)
+
+                    arcpy.env.scratchWorkspace = tempFolder
+                    AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+
                 else:
-                    arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+                    packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
+                    if arcpy.env[packageWS[0]]:
+                        arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
+                        AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+                    else:
+                        AddMsgAndPrint("\tCould not set any scratch workspace",2)
+                        return False
 
-        # -----------------------------------------------
-        # Scratch Workspace is not defined. Attempt to set scratch to C:\temp
-        elif os.path.exists(r'C:\Temp'):
+            # user-set workspace does not violate system paths; Check for read/write
+            # permissions; if write permissions are denied then set workspace to TEMP folder
+            else:
+                arcpy.env.scratchWorkspace = scratchWK
 
-            arcpy.env.scratchWorkspace = r'C:\Temp'
-            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+                if arcpy.env.scratchGDB == None:
+                    AddMsgAndPrint("\tCurrent scratch workspace: " + scratchWK + " is READ only!",0)
 
-        # set scratch workspace to default ESRI location
+                    if sysDrive:
+                        tempFolder = sysDrive + os.sep + "TEMP"
+
+                        if not os.path.exists(tempFolder):
+                            os.makedirs(tempFolder,mode=777)
+
+                        arcpy.env.scratchWorkspace = tempFolder
+                        AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+
+                    else:
+                        packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
+                        if arcpy.env[packageWS[0]]:
+                            arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
+                            AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+
+                        else:
+                            AddMsgAndPrint("\tCould not set any scratch workspace",2)
+                            return False
+
+                else:
+                    AddMsgAndPrint("\tUser-defined scratch workspace is set to: "  + arcpy.env.scratchGDB,0)
+
+        # No workspace set (Very odd that it would go in here unless running directly from python)
         else:
+            AddMsgAndPrint("\tNo user-defined scratch workspace ",0)
+            sysDrive = os.environ['SYSTEMDRIVE']
 
-            arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+            if sysDrive:
+                tempFolder = sysDrive + os.sep + "TEMP"
 
-##        AddMsgAndPrint("**********Scratch******")
-##        AddMsgAndPrint(env.scratchFolder)
-##        AddMsgAndPrint(env.scratchGDB)
+                if not os.path.exists(tempFolder):
+                    os.makedirs(tempFolder,mode=777)
+
+                arcpy.env.scratchWorkspace = tempFolder
+                AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+
+            else:
+                packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
+                if arcpy.env[packageWS[0]]:
+                    arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
+                    AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+
+                else:
+                    return False
+
         arcpy.Compact_management(arcpy.env.scratchGDB)
-
-        return True
+        return arcpy.env.scratchGDB
 
     except:
-        errorMsg()
-        return False
 
-## ===============================================================================================================
+        # All Failed; set workspace to packageWorkspace environment
+        try:
+            packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
+            if arcpy.env[packageWS[0]]:
+                arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
+                arcpy.Compact_management(arcpy.env.scratchGDB)
+                return arcpy.env.scratchGDB
+            else:
+                AddMsgAndPrint("\tCould not set scratchWorkspace. Not even to default!",2)
+                return False
+        except:
+            errorMsg()
+            return False
+
+# ===============================================================================================================
 def determineOverlap(muLayer):
     # This function will compute a geometric intersection of the SSA boundary and the extent
     # boundary to determine overlap.  If the number of features in the output is greater than
@@ -261,14 +347,14 @@ def determineOverlap(muLayer):
         numOfMulayerPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
 
         # make a feature layer out of the mulayer
-        tempMULayer = "tempOverlap"
-        arcpy.MakeFeatureLayer_management(muLayer,tempMULayer)
+        tempOverlap = "tempOverlap"
+        arcpy.MakeFeatureLayer_management(muLayer,tempOverlap)
 
         # Select all polys that intersect with the SAPOLYGON
-        arcpy.SelectLayerByLocation_management(tempMULayer,"INTERSECT",saPolyLayer, "", "NEW_SELECTION")
+        arcpy.SelectLayerByLocation_management(tempOverlap,"INTERSECT",saPolyLayer, "", "NEW_SELECTION")
 
         # Count the # of features of union output
-        numOfSelectedPolys = int(arcpy.GetCount_management(tempMULayer).getOutput(0))
+        numOfSelectedPolys = int(arcpy.GetCount_management(tempOverlap).getOutput(0))
 
         # All features are within the geodata extent
         if numOfMulayerPolys == numOfSelectedPolys:
@@ -285,21 +371,21 @@ def determineOverlap(muLayer):
             AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
             return False
 
-        arcpy.SelectLayerByAttribute_management(tempMULayer, "CLEAR_SELECTION")
+        arcpy.SelectLayerByAttribute_management(tempOverlap, "CLEAR_SELECTION")
 
-        if arcpy.Exists(tempMULayer):
-            arcpy.Delete_management(tempMULayer)
+        if arcpy.Exists(tempOverlap):
+            arcpy.Delete_management(tempOverlap)
 
         if arcpy.Exists(saPolyLayer):
             arcpy.Delete_management(saPolyLayer)
 
-        del soilsFolder, workspaces,saPolyLayer,numOfMulayerPolys, tempMULayer, numOfSelectedPolys, saPolygonPath
+        del soilsFolder, workspaces,saPolyLayer,numOfMulayerPolys, tempOverlap, numOfSelectedPolys, saPolygonPath
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
         errorMsg()
 
-## ===================================================================================
+# ===================================================================================
 def getZoneField(analysisType):
     # This function will return a field name based on the analysis type that
     # was chosen by the user.  If analysis type is MUKEY, then MUKEY is returned if
@@ -351,7 +437,7 @@ def getZoneField(analysisType):
         errorMsg()
         return ""
 
-## ===================================================================================
+# ===================================================================================
 def FindField(layer, chkField):
     # Check table or featureclass to see if specified field exists
     # If fully qualified name is found, return that name; otherwise return ""
@@ -386,7 +472,7 @@ def FindField(layer, chkField):
         errorMsg()
         return ""
 
-## ===============================================================================================================
+# ===============================================================================================================
 def splitThousands(someNumber):
 # will determine where to put a thousands seperator if one is needed.
 # Input is an integer.  Integer with or without thousands seperator is returned.
@@ -398,7 +484,7 @@ def splitThousands(someNumber):
         errorMsg()
         return someNumber
 
-## ===================================================================================
+# ===================================================================================
 def getMapunitInfo(muDict,mukeyList):
 # This function will try to retrieve the MUNAME and AREASYMBOL from the most current
 # SSURGO dataset in MLRAGeodata.  The function returns a dictionary with the following
@@ -597,7 +683,7 @@ def getComponents(mukeyID):
         errorMsg()
         return ""
 
-## ===================================================================================
+# ===================================================================================
 def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
 # This version of getSlopeMode was not used.  NumPy proved to be less efficient.
 
@@ -608,7 +694,7 @@ def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
             where_clause = arcpy.AddFieldDelimiters(muLayerPath,field) + " = '" + zoneID + "'"
             arcpy.MakeFeatureLayer_management(muLayer, "modeLyr", where_clause)
 
-            outModeFC = env.scratchGDB + os.sep + "outMode"
+            outModeFC = scratchWS + os.sep + "outMode"
 
             if arcpy.Exists(outModeFC):
                 arcpy.Delete_management(outModeFC)
@@ -626,7 +712,7 @@ def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
 
         # Convert the slope extraction to Int
         intExtract = Int(extract)
-        intOut = env.scratchGDB + os.sep + "intExtract"
+        intOut = scratchWS + os.sep + "intExtract"
 
         if arcpy.Exists(intOut):
             arcpy.Delete_management(intOut)
@@ -707,7 +793,7 @@ def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
         errorMsg()
         return ""
 
-#### ===================================================================================
+# ===================================================================================
 def getSlopeMode(field,zoneID,slopeRaster):
 
     try:
@@ -723,7 +809,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
             arcpy.SelectLayerByAttribute_management("tempMUKEYlayer", "NEW_SELECTION", where_clause)
 
             # Convert the mapunit polys from the layer above and convert it to a temporary FC
-            outModeFC = env.scratchGDB + os.sep + "slopeMode_" + str(zoneID)
+            outModeFC = scratchWS + os.sep + "slopeMode_" + str(zoneID)
 
             if arcpy.Exists(outModeFC):
                 arcpy.Delete_management(outModeFC)
@@ -739,7 +825,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
             outModeFC = muLayerPath
 
         # slope raster extraction by the polys of interest
-        outExtract = env.scratchGDB + os.sep + "outExtract"
+        outExtract = scratchWS + os.sep + "outExtract"
         arcpy.env.extent = outModeFC
         arcpy.env.mask = outModeFC
 
@@ -786,13 +872,13 @@ def getSlopeMode(field,zoneID,slopeRaster):
     #""" -------------------  ONLY USE THIS TO GET MODE WITHIN A TENTH OF A PERCENT.  MORE PRECISE BUT VERY ROBUST ----------------------"""
     ##    trueStatement = "\"" + valueField + "\" >= " + str(maxModeInt) + " AND \"" + valueField + "\" <" + str(maxModeInt + 1)
     ##    conRas = Con(intOut, slopeRaster, "", trueStatement)
-    ##    outCon = env.scratchGDB + os.sep + "outCon"
+    ##    outCon = scratchWS + os.sep + "outCon"
     ##
     ##    if arcpy.Exists(outCon):
     ##        arcpy.Delete_management(outCon)
     ##    outCon = conRas.save(outCon)
     ##
-    ##    outPoint = env.scratchGDB + os.sep + "outPoint"
+    ##    outPoint = scratchWS + os.sep + "outPoint"
     ##
     ##    if arcpy.Exists(outPoint):
     ##        arcpy.Delete_management(outPoint)
@@ -807,7 +893,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
     ##    arcpy.CalculateField_management(outPoint, "TEMP", expression, "PYTHON_9.3")
     ##
     ##    # Generate Frequency Table and grab the highest one
-    ##    frequencyTable = env.scratchGDB + os.sep + "frequency"
+    ##    frequencyTable = scratchWS + os.sep + "frequency"
     ##
     ##    if arcpy.Exists(frequencyTable):
     ##        arcpy.Delete_management(frequencyTable)
@@ -819,8 +905,8 @@ def getSlopeMode(field,zoneID,slopeRaster):
     ##    sql_expression = (None,'ORDER BY FREQUENCY DESC')
     ##    maxModeFloat = [float(row[0]) for row in arcpy.da.SearchCursor(frequencyTable, (fields),sql_clause=sql_expression)][0]
     ##
-    ##    if arcpy.Exists(env.scratchGDB + os.sep + "outCon"):
-    ##        arcpy.Delete_management(env.scratchGDB + os.sep + "outCon")
+    ##    if arcpy.Exists(scratchWS + os.sep + "outCon"):
+    ##        arcpy.Delete_management(scratchWS + os.sep + "outCon")
     ##
     ##    if arcpy.Exists(outPoint):
     ##        arcpy.Delete_management(outPoint)
@@ -855,7 +941,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
         errorMsg()
         return ""
 
-## ===================================================================================
+# ===================================================================================
 def processAdjacentComponents_ORIGINAL():
 
     try:
@@ -910,7 +996,7 @@ def processAdjacentComponents_ORIGINAL():
         compFields = ["compname"]
 
         """ --------------------- Compute Adjacent Mapunit Components ------------------------------ """
-        outBuffer = env.scratchGDB + os.sep + "soilBuffer"
+        outBuffer = scratchWS + os.sep + "soilBuffer"
         if arcpy.Exists(outBuffer):
             arcpy.Delete_management(outBuffer)
 
@@ -926,7 +1012,7 @@ def processAdjacentComponents_ORIGINAL():
             arcpy.CalculateField_management(outBuffer,mukeyOGfield,expression,"PYTHON_9.3")
             arcpy.DeleteField_management(outBuffer,"MUKEY")
 
-        outIntersect = env.scratchGDB + os.sep + "soilIntersect"
+        outIntersect = scratchWS + os.sep + "soilIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -1127,7 +1213,7 @@ def processAdjacentComponents_ORIGINAL():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processAdjacentComponents(zoneField):
 
     try:
@@ -1220,7 +1306,7 @@ def processAdjacentComponents(zoneField):
 
         """ ------------------------------------ Buffer muLayer by 1m -------------------------------------- """
         # Create an outer buffer of 1m around the muLayer to get a list of adjacent MUKEYs
-        outBuffer = env.scratchGDB + os.sep + "soilBuffer"
+        outBuffer = scratchWS + os.sep + "soilBuffer"
         if arcpy.Exists(outBuffer):
             arcpy.Delete_management(outBuffer)
 
@@ -1236,7 +1322,7 @@ def processAdjacentComponents(zoneField):
             del mukeyOGfield, expression
 
         """ --------------------------- Intersect the buffered output with SSURGO polygons -------------------- """
-        outIntersect = env.scratchGDB + os.sep + "soilIntersect"
+        outIntersect = scratchWS + os.sep + "soilIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -1292,7 +1378,7 @@ def processAdjacentComponents(zoneField):
                 arcpy.SelectLayerByAttribute_management(intersectLayer, "NEW_SELECTION", where_clause)
 
                 """ ------------  First summary Statistics to summarize # of unique mukeys in the intersected layer ------------ """
-                outStatsTable = env.scratchGDB + os.sep + "summary1"
+                outStatsTable = scratchWS + os.sep + "summary1"
 
                 if arcpy.Exists(outStatsTable):
                     arcpy.Delete_management(outStatsTable)
@@ -1309,7 +1395,7 @@ def processAdjacentComponents(zoneField):
                 del shpAreaFld, caseField, statsField
 
                 # Join summarized table above to get component name
-                outCompView_joined = env.scratchGDB + os.sep + "outCompView_" + str(mukey)
+                outCompView_joined = scratchWS + os.sep + "outCompView_" + str(mukey)
 
                 if arcpy.Exists(outCompView_joined):
                     arcpy.Delete_management(outCompView_joined)
@@ -1326,7 +1412,7 @@ def processAdjacentComponents(zoneField):
                     arcpy.Delete_management(intersectLayer)
 
                 """ ----------------------  Second summary Statistics to summarize joined table --------------------------- """
-                outStatsTable2 = env.scratchGDB + os.sep + "summary2"
+                outStatsTable2 = scratchWS + os.sep + "summary2"
                 compField = [f.name for f in arcpy.ListFields(outCompView_joined,"*compname")][0]
                 shpAreaFld = [f.name for f in arcpy.ListFields(outCompView_joined,"*Shape_Area")][0]
                 statsField = [[shpAreaFld, "SUM"]]
@@ -1399,8 +1485,8 @@ def processAdjacentComponents(zoneField):
         else:
 
             """ ------------ Run a frequency on the intersect results  ------------"""
-            outFrequency = env.scratchGDB + os.sep + "outFrquency"
-            outCompView_joined = env.scratchGDB + os.sep + "outCompView_Joined"
+            outFrequency = scratchWS + os.sep + "outFrquency"
+            outCompView_joined = scratchWS + os.sep + "outCompView_Joined"
 
             if arcpy.Exists(outFrequency):
                 arcpy.Delete_management(outFrequency)
@@ -1415,7 +1501,7 @@ def processAdjacentComponents(zoneField):
             arcpy.CopyRows_management(compView, outCompView_joined)
             arcpy.RemoveJoin_management(compView)
 
-            outStatsTable = env.scratchGDB + os.sep + "adjComp_reportByMapunit"
+            outStatsTable = scratchWS + os.sep + "adjComp_reportByMapunit"
 
             if arcpy.Exists(outStatsTable):
                 arcpy.Delete_management(outStatsTable)
@@ -1503,7 +1589,7 @@ def processAdjacentComponents(zoneField):
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processComponentComposition():
 # This function will calculate a component composition % of total acres based on the
 # SDJR mapunits.  Mapunit acres are first weighted by their component percents and then
@@ -1603,7 +1689,7 @@ def processComponentComposition():
 
         # summarize acres by MUKEY for temp layer; Result will be the unique MUKEYS in the layer with their acres
         statsField = [["acres", "SUM"]]
-        outStatsTable = env.scratchGDB + os.sep + "mukeyAcreSummary"
+        outStatsTable = scratchWS + os.sep + "mukeyAcreSummary"
         arcpy.Statistics_analysis(tempLayer, outStatsTable, statsField, "MUKEY")
 
         # Add 'compacre' field if it doesn't exist to the outStatsTable; This field will contain the
@@ -1617,7 +1703,7 @@ def processComponentComposition():
         arcpy.AddJoin_management(compView,"MUKEY",outStatsTable,"MUKEY","KEEP_COMMON")
 
         # Need to write the joined table out b/c you can't calculate a field on a right join
-        outCompView_joined =  env.scratchGDB + os.sep + "outCompView_compAcres"
+        outCompView_joined =  scratchWS + os.sep + "outCompView_compAcres"
         arcpy.CopyRows_management(compView, outCompView_joined)
         arcpy.RemoveJoin_management(compView)
 
@@ -1634,7 +1720,7 @@ def processComponentComposition():
         # summarize the outCompView_joined" table by compacres and component name.  This will give the total weighted acres
         # by component %RV for each unique component
         statsField = [[compAcresFld, "SUM"]]
-        outStatsTable2 = env.scratchGDB + os.sep + "compAcreSummary"
+        outStatsTable2 = scratchWS + os.sep + "compAcreSummary"
         arcpy.Statistics_analysis(outCompView_joined, outStatsTable2, statsField, compNameFld)
         del compNameFld,compAcresFld,compPercentFld,sumAcreFld
 
@@ -1677,7 +1763,7 @@ def processComponentComposition():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def getElevationSource():
 # This function will provide a breakdown of original Elevation Source information
 # by intersecting the mulayer with the SSR10_Elevation_Source feature class.
@@ -1715,7 +1801,7 @@ def getElevationSource():
             AddMsgAndPrint("\t feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "elevIntersect"
+        outIntersect = scratchWS + os.sep + "elevIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -1774,7 +1860,7 @@ def getElevationSource():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processElevation():
 
     try:
@@ -1825,7 +1911,7 @@ def processElevation():
             units = "$$"
 
         # output Zonal Statistics Table
-        outZoneTable = env.scratchGDB + os.sep +"demZoneTable"
+        outZoneTable = scratchWS + os.sep +"demZoneTable"
 
         # Delete Zonal Statistics Table if it exists
         if arcpy.Exists(outZoneTable):
@@ -1833,7 +1919,13 @@ def processElevation():
 
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
-        outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+        try:
+            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+        except:
+            if bFeatureLyr:
+                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+            else:
+                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
@@ -1880,7 +1972,7 @@ def processElevation():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processSlope():
 
     try:
@@ -1923,7 +2015,7 @@ def processSlope():
         slopeRasterPath = workspaces[0] + os.sep + slopeRaster[0]
 
         # output Zonal Statistics Table
-        outZoneTable = env.scratchGDB + os.sep +"slopeZoneTable"
+        outZoneTable = scratchWS + os.sep +"slopeZoneTable"
 
         # Delete Zonal Statistics Table if it exists
         if arcpy.Exists(outZoneTable):
@@ -1931,7 +2023,13 @@ def processSlope():
 
         # Run Zonal Statistics on the muLayer against the DEM
         # NODATA cells are not ignored;
-        outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+        try:
+            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+        except:
+            if bFeatureLyr:
+                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+            else:
+                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN","STD"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
@@ -1989,7 +2087,7 @@ def processSlope():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processAspect():
 
     try:
@@ -2023,7 +2121,7 @@ def processAspect():
             return False
 
         # output Zonal Statistics Table
-        outTAtable = env.scratchGDB + os.sep +"aspectTAtable"
+        outTAtable = scratchWS + os.sep +"aspectTAtable"
 
         # Delete Zonal Statistics Table if it exists
         if arcpy.Exists(outTAtable):
@@ -2051,7 +2149,7 @@ def processAspect():
         try:
             TabulateArea(muLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
         except:
-            if b_featLayer:
+            if bFeatureLyr:
                 TabulateArea(muLayerExtent, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
             else:
                 TabulateArea(tempMuLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
@@ -2095,7 +2193,6 @@ def processAspect():
 
                 # Zone field was MLRA_Temp
                 else:
-                    AddMsgAndPrint("\n")
                     theTab = "\t"
 
                 expression = arcpy.AddFieldDelimiters(outTAtable,zoneField) + " = '" + zone + "'"
@@ -2159,7 +2256,7 @@ def processAspect():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processClimate():
 
     try:
@@ -2197,7 +2294,8 @@ def processClimate():
                 return False
 
             # output Zonal Statistics Table
-            outZoneTable = env.scratchGDB + os.sep + climateLyr
+            outZoneTable = scratchWS + os.sep + climateLyr
+            #outZoneTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB + os.sep + climateLyr)
 
             # Delete Zonal Statistics Table if it exists
             if arcpy.Exists(outZoneTable):
@@ -2205,7 +2303,13 @@ def processClimate():
 
             # Run Zonal Statistics on the muLayer agains the climate layer
             # NODATA cells are not ignored;
-            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
+            try:
+                outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
+            except:
+                if bFeatureLyr:
+                    outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, raster[0], outZoneTable, "DATA", "ALL")
+                else:
+                    outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
 
             zoneTableFields = [zoneField,"MEAN"]
             del raster, outZoneTable
@@ -2237,7 +2341,7 @@ def processClimate():
             for climateLyr in climateLyrs:
 
                 # path to the zonal stat table
-                outZoneTable = env.scratchGDB + os.sep + climateLyr
+                outZoneTable = scratchWS + os.sep + climateLyr
                 expression = arcpy.AddFieldDelimiters(outZoneTable,zoneField) + " = '" + zone + "'"
                 climateZoneCount = [row[0] for row in arcpy.da.SearchCursor(outZoneTable, (zoneField), where_clause = expression)]
 
@@ -2269,7 +2373,7 @@ def processClimate():
 
         # Delete all zonal stats table if they exist
         for climateLyr in climateLyrs:
-            outZoneTable = env.scratchGDB + os.sep + climateLyr
+            outZoneTable = scratchWS + os.sep + climateLyr
             if arcpy.Exists(outZoneTable):
                 arcpy.Delete_management(outZoneTable)
 
@@ -2279,7 +2383,7 @@ def processClimate():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processNLCD():
 
     try:
@@ -2325,13 +2429,14 @@ def processNLCD():
                 acreConv = 1
 
             # output Zonal Statistics Table
-            outTAtable = env.scratchGDB + os.sep + "nlcdTAtable"
+            #outTAtable = scratchWS + os.sep + "nlcdTAtable"
+            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
             # Delete Zonal Statistics Table if it exists
             if arcpy.Exists(outTAtable):
                 arcpy.Delete_management(outTAtable)
 
-            theValueField = FindField(nlcd,"Value")
+            theValueField = FindField(nlcd,"VALUE")
             if not theValueField:
                 AddMsgAndPrint("\tNLCD Raster Layer is Missing the Value Field",2)
                 return False
@@ -2341,7 +2446,7 @@ def processNLCD():
             try:
                 TabulateArea(muLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
             except:
-                if b_featLayer:
+                if bFeatureLyr:
                     TabulateArea(muLayerExtent, zoneField, nlcd, theValueField, outTAtable, cellSize)
                 else:
                     TabulateArea(tempMuLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
@@ -2449,7 +2554,7 @@ def processNLCD():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processNASS():
 
     try:
@@ -2495,13 +2600,14 @@ def processNASS():
                 acreConv = 1
 
             # output Tabulate Areas Table
-            outTAtable = env.scratchGDB + os.sep + "nassTAtable"
+            #outTAtable = scratchWS + os.sep + "nassTAtable"
+            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
             # Delete Tabulate Areas Table if it exists
             if arcpy.Exists(outTAtable):
                 arcpy.Delete_management(outTAtable)
 
-            theValueField = FindField(nass,"Value")
+            theValueField = FindField(nass,"VALUE")
             if not theValueField:
                 AddMsgAndPrint("\tNASS Raster Layer is Missing the Value Field",2)
                 return False
@@ -2511,7 +2617,7 @@ def processNASS():
             try:
                 TabulateArea(muLayer, zoneField, nass, theValueField, outTAtable, cellSize)
             except:
-                if b_featLayer:
+                if bFeatureLyr:
                     TabulateArea(muLayerExtent, zoneField, nass, theValueField, outTAtable, cellSize)
                 else:
                     TabulateArea(tempMuLayer, zoneField, nass, theValueField, outTAtable, cellSize)
@@ -2621,7 +2727,7 @@ def processNASS():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processNatureServe():
 
     try:
@@ -2667,13 +2773,14 @@ def processNatureServe():
                 acreConv = 1
 
             # output Zonal Statistics Table
-            outTAtable = env.scratchGDB + os.sep + "rasterTAtable"
+            #outTAtable = scratchWS + os.sep + "rasterTAtable"
+            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
             # Delete Zonal Statistics Table if it exists
             if arcpy.Exists(outTAtable):
                 arcpy.Delete_management(outTAtable)
 
-            theValueField = FindField(raster,"Value")
+            theValueField = FindField(raster,"VALUE")
             if not theValueField:
                 AddMsgAndPrint("\tEcosystems Raster Layer is Missing the Value Field",2)
                 return False
@@ -2683,7 +2790,7 @@ def processNatureServe():
             try:
                 TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
             except:
-                if b_featLayer:
+                if bFeatureLyr:
                     TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
                 else:
                     TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
@@ -2788,7 +2895,7 @@ def processNatureServe():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processLandFire():
 
     try:
@@ -2837,13 +2944,14 @@ def processLandFire():
                 acreConv = 1
 
             # output Zonal Statistics Table
-            outTAtable = env.scratchGDB + os.sep + "rasterTAtable"
+            #outTAtable = scratchWS + os.sep + "rasterTAtable"
+            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
             # Delete Zonal Statistics Table if it exists
             if arcpy.Exists(outTAtable):
                 arcpy.Delete_management(outTAtable)
 
-            theValueField = FindField(raster,"Value")
+            theValueField = FindField(raster,"VALUE")
             if not theValueField:
                 AddMsgAndPrint("\tEcosystems Raster Layer is Missing the Value Field",2)
                 return False
@@ -2853,7 +2961,7 @@ def processLandFire():
             try:
                 TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
             except:
-                if b_featLayer:
+                if bFeatureLyr:
                     TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
                 else:
                     TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
@@ -2882,7 +2990,7 @@ def processLandFire():
                     expression = arcpy.AddFieldDelimiters(raster,theValueField) + " = " + str(valueNumber)
                     fireClass = [row[0] for row in arcpy.da.SearchCursor(raster, (classNameField),expression)][0]
                     rasterLU[clsField] = (fireClass)
-
+                    del expression,fireClass
 
             # list of unique zones used...ideally MUKEY
             ta_zoneFields = set([row[0] for row in arcpy.da.SearchCursor(outTAtable, (zoneField))]) #[u'2228988', u'426680', u'427731']
@@ -2952,7 +3060,7 @@ def processLandFire():
                                     AddMsgAndPrint(theTab + str(valueListSorted[i]) + " --- " + acreFormat + " ac. --- " + str(muPercent) + " %",1)
 
                                 del valueAcres, muPercent, acreFormat
-                            del totalArea, valueList
+                            del totalArea, valueList, valueListSorted, maxAcreLength
                     del expression
 
             if arcpy.Exists(outTAtable):
@@ -2966,7 +3074,7 @@ def processLandFire():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processMLRAInfo():
 
     try:
@@ -3002,7 +3110,7 @@ def processMLRAInfo():
             AddMsgAndPrint("\tMLRA feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "mlraIntersect"
+        outIntersect = scratchWS + os.sep + "mlraIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3063,7 +3171,7 @@ def processMLRAInfo():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processLRRInfo():
 
     try:
@@ -3098,7 +3206,7 @@ def processLRRInfo():
             AddMsgAndPrint("\tLRR feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "lrrIntersect"
+        outIntersect = scratchWS + os.sep + "lrrIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3155,7 +3263,7 @@ def processLRRInfo():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processEcoregions():
 
     try:
@@ -3190,7 +3298,7 @@ def processEcoregions():
             AddMsgAndPrint("\ecoregion feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "ecoIntersect"
+        outIntersect = scratchWS + os.sep + "ecoIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3247,7 +3355,7 @@ def processEcoregions():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processLandOwnership():
 
     try:
@@ -3286,7 +3394,7 @@ def processLandOwnership():
             return False
 
         # if temp intersect layer exists delete it
-        outIntersect = env.scratchGDB + os.sep + "padusIntersect"
+        outIntersect = scratchWS + os.sep + "padusIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3356,7 +3464,7 @@ def processLandOwnership():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processHydro():
 
     try:
@@ -3391,7 +3499,7 @@ def processHydro():
             AddMsgAndPrint("\tHydro feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "hydroIntersect"
+        outIntersect = scratchWS + os.sep + "hydroIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3546,7 +3654,7 @@ def processHydro():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processNWI():
 
     try:
@@ -3581,7 +3689,7 @@ def processNWI():
             AddMsgAndPrint("\tWetlands feature class is missing necessary fields",2)
             return False
 
-        outIntersect = env.scratchGDB + os.sep + "wetlandIntersect"
+        outIntersect = scratchWS + os.sep + "wetlandIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
@@ -3775,7 +3883,7 @@ def processNWI():
         errorMsg()
         return False
 
-## ===================================================================================
+# ===================================================================================
 def processPedons():
 # This function will query the NCSS_Soil_Characterization_Database for all pedons within
 # the muLayer and a limited number of pedons outside of the muLayer.  All queried pedons will
@@ -3797,6 +3905,10 @@ def processPedons():
 
         if len(workspaces) == 0:
             AddMsgAndPrint("\t\"NCSS_Soil_Characterizaton_Database\" FGDB was not found in the pedons folder",2)
+            return False
+
+        if len(workspaces) > 1:
+            AddMsgAndPrint("\tThere are more than 1 FGDB that begin with \"NCSS_Soil_Characterizaton_Database\" Only 1 can be present",2)
             return False
 
         arcpy.env.workspace = workspaces[0]
@@ -3825,12 +3937,26 @@ def processPedons():
             arcpy.Delete_management(tempPedonLayer)
         arcpy.MakeFeatureLayer_management(pedonPath,tempPedonLayer)
 
-        if not int(arcpy.GetCount_management(tempPedonLayer).getOutput(0)) > 1000:
-            AddMsgAndPrint("\tFailed to properly create feature layer from " + fcList[0],2)
-            return False
+        # Make feature layer was only making a layer for the points within the extent of the muLayer despite having a
+        # national extent.  Not sure why!  I was forced to count the # of pedons to make sure the layer was correct.
+        # A 2nd attempt at making a layer in case the pedon count is extremely low.
+        if int(arcpy.GetCount_management(tempPedonLayer).getOutput(0)) < 500:
+##            AddMsgAndPrint("\tFailed to properly create feature layer from " + fcList[0],2)
+##            AddMsgAndPrint("\tCount is: " + str(int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))))
+##            AddMsgAndPrint("\tPedon Path: " + pedonPath)
+
+            arcpy.Delete_management(tempPedonLayer)
+            arcpy.CopyFeatures_management(pedonPath,scratchWS + os.sep + "tempPedonLayer")
+            arcpy.MakeFeatureLayer_management(scratchWS + os.sep + "tempPedonLayer",tempPedonLayer)
+
+            if int(arcpy.GetCount_management(tempPedonLayer).getOutput(0)) < 500:
+                AddMsgAndPrint("\tFailed to properly create feature layer from " + scratchWS + os.sep + "tempPedonLayer",2)
+                AddMsgAndPrint("\tCount is: " + str(int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))))
+                AddMsgAndPrint("\tPedon Path: " + scratchWS + os.sep + "tempPedonLayer")
+                return False
 
         # Select all polys that intersect with the SAPOLYGON
-        if b_featLayer:
+        if bFeatureLyr:
             arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayer,"", "NEW_SELECTION")
         else:
             arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",tempMuLayer,"", "NEW_SELECTION")
@@ -3869,7 +3995,7 @@ def processPedons():
             distExpression = str(miles) + " Miles"
             arcpy.SelectLayerByAttribute_management(tempPedonLayer,"CLEAR_SELECTION")
 
-            if b_featLayer:
+            if bFeatureLyr:
                 arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",muLayer, distExpression, "NEW_SELECTION")
             else:
                 arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",tempMuLayer, distExpression, "NEW_SELECTION")
@@ -3914,7 +4040,7 @@ def processPedons():
 
 ## ====================================== Main Body ==================================
 # Import modules
-import sys, string, os, locale, traceback, urllib, re, arcpy, operator
+import sys, string, os, locale, traceback, urllib, re, arcpy, operator, getpass
 from arcpy import env
 from arcpy.sa import *
 
@@ -3954,10 +4080,10 @@ if __name__ == '__main__':
         # Start by getting information about the input layer
         descInput = arcpy.Describe(muLayer)
         muLayerDT = descInput.dataType.upper()
-        b_featLayer = False
+        bFeatureLyr = False
 
         if muLayerDT == "FEATURELAYER":
-            b_featLayer = True
+            bFeatureLyr = True
             muLayerName = descInput.Name
             muLayerPath = descInput.FeatureClass.catalogPath
 
@@ -3990,16 +4116,10 @@ if __name__ == '__main__':
         # record basic user inputs and settings to log file for future purposes
         logBasicSettings()
 
-        # Test whether script is being executed from ArcMap or ArcCatalog
-        try:
-            mxd = arcpy.mapping.MapDocument("CURRENT")
-            bArcCatalog = False
-        except:
-            bArcCatalog = True
+        scratchWS = setScratchWorkspace()
+        arcpy.env.scratchWorkspace = scratchWS
 
-        if setScratchWorkspace():
-
-            AddMsgAndPrint("\nUser Scratch Workspace: " + arcpy.env.scratchWorkspace,0)
+        if scratchWS:
 
             # determine overlap using input and SAPOLYGON
             if not determineOverlap(muLayer):
@@ -4030,15 +4150,15 @@ if __name__ == '__main__':
                 if muLayer input is a feature class create a feature layer from it.  These will be used in case
                 Tabulate Areas fails to execute.  I was continously having grid reading errors with Tabulate area
                 and could not figure out why.  This is a workaround"""
-            if b_featLayer:
-                muLayerExtent = os.path.join(arcpy.env.scratchGDB, "muLayerExtent")
+            tempMuLayer = "tempMuLayer"
+            if bFeatureLyr:
+                muLayerExtent = os.path.join(scratchWS, "muLayerExtent")
                 if arcpy.Exists(muLayerExtent):
                     arcpy.Delete_management(muLayerExtent)
                 arcpy.CopyFeatures_management(muLayer, muLayerExtent)
                 muLayerPath = muLayerExtent
 
             else:
-                tempMuLayer = "tempMuLayer"
                 if arcpy.Exists(tempMuLayer):
                     arcpy.Delete_management(tempMuLayer)
                 arcpy.MakeFeatureLayer_management(muLayer,tempMuLayer)
@@ -4189,29 +4309,35 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
             arcpy.SetProgressorPosition()
 
+            """ --------------------  NCSS Characterization Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
+            if not processPedons():
+                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
             """ ---------------------  Get Original Elevation Source ------------------------------ """
             arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
             if not getElevationSource():
                 AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
             arcpy.SetProgressorPosition()
 
-##            """ ---------------------  Elevation Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Elevation Information")
-##            if not processElevation():
-##                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ -------------------- Slope Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Calculating Slope Information")
-##            if not processSlope():
-##                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ -------------------- Aspect Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Calculating Aspect Information")
-##            if not processAspect():
-##                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
-##            arcpy.SetProgressorPosition()
+            """ ---------------------  Elevation Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Elevation Information")
+            if not processElevation():
+                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Slope Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Slope Information")
+            if not processSlope():
+                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Aspect Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Aspect Information")
+            if not processAspect():
+                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
+            arcpy.SetProgressorPosition()
 
             """ -------------------- Climate Data ------------------------------------ """
             arcpy.SetProgressorLabel("Acquiring Climate Data")
@@ -4243,12 +4369,6 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
-            """ --------------------  NCSS Characterization Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
-            if not processPedons():
-                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
             AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
 
             arcpy.ResetProgressor()
@@ -4260,7 +4380,7 @@ if __name__ == '__main__':
             if bSubset and arcpy.Exists(muLayerExtent):
                 arcpy.Delete_management(muLayerExtent)
 
-            if bArcCatalog and arcpy.Exists(tempMuLayer):
+            if not bSubset and arcpy.Exists(tempMuLayer):
                 arcpy.Delete_management(tempMuLayer)
 
             # Add blank line for formatting
