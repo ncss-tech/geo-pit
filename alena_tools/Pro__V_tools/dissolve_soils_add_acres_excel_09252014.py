@@ -17,11 +17,11 @@ arcpy.Dissolve_management (inFC, "outFCDISSOLVE", dissolveFields)
 
 #Add Field
 
-arcpy.AddField_management("outFCDISSOLVE", "ACRES", "DOUBLE", )
+arcpy.AddField_management("outFCDISSOLVE", "ACRES", "LONG", )
 
 #Calculate Field
 
-arcpy.CalculateField_management("outFCDISSOLVE", "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
+arcpy.CalculateField_management("outFCDISSOLVE", "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Sort
 
@@ -38,4 +38,4 @@ arcpy.Delete_management ("outFCDISSOLVE")
 #arcpy.Delete_management ("outFCDISSOLVE_SORT")
 
 #print "Script Completed"
-print ("Script Completed")
+#print ("Script Completed")
