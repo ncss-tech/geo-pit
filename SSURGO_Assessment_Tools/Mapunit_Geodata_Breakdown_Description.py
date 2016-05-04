@@ -5,7 +5,6 @@
 # Author:      Adolfo.Diaz
 #              Region 10 GIS Specialist
 #              608.662.4422 ext. 216
-#              608.215.7291 (mobile)
 #              adolfo.diaz@wi.usda.gov
 #
 # Created:     8.28.2014
@@ -4258,6 +4257,60 @@ if __name__ == '__main__':
             """----------------------------- Start Adding pedon points and records---------------------------------------"""
             arcpy.SetProgressor("step", "Beginning Rapid Mapunit Assesment", 0, 18, 1)
 
+            """ -------------------- Climate Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring Climate Data")
+            if not processClimate():
+                AddMsgAndPrint("\n\tFailed to Acquire Climate Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  NLCD Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
+            if not processNLCD():
+                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  NASS Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
+            if not processNASS():
+                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  EcoSystem Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
+            if not processNatureServe():
+                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  LandFire Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
+            if not processLandFire():
+                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ ---------------------  Get Original Elevation Source ------------------------------ """
+            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
+            if not getElevationSource():
+                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Elevation Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Elevation Information")
+            if not processElevation():
+                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Aspect Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Aspect Information")
+            if not processAspect():
+                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Slope Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Slope Information")
+            if not processSlope():
+                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
+            arcpy.SetProgressorPosition()
+
             """ ---------------------  Component Composition % - Total Area ------------------------------ """
             arcpy.SetProgressorLabel("Calculating Component Composition Percent -- Weighted by Area")
             if arcpy.ListFields(muLayerPath, "MUKEY") > 0:
@@ -4314,60 +4367,6 @@ if __name__ == '__main__':
             arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
             if not processPedons():
                 AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ ---------------------  Get Original Elevation Source ------------------------------ """
-            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
-            if not getElevationSource():
-                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Elevation Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Elevation Information")
-            if not processElevation():
-                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ -------------------- Slope Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Calculating Slope Information")
-            if not processSlope():
-                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ -------------------- Aspect Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Calculating Aspect Information")
-            if not processAspect():
-                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ -------------------- Climate Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring Climate Data")
-            if not processClimate():
-                AddMsgAndPrint("\n\tFailed to Acquire Climate Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  NLCD Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
-            if not processNLCD():
-                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  NASS Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
-            if not processNASS():
-                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  EcoSystem Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
-            if not processNatureServe():
-                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  LandFire Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
-            if not processLandFire():
-                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
             AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
