@@ -435,7 +435,7 @@ def getZoneField(analysisType):
 
     except:
         errorMsg()
-        return ""
+        return False
 
 # ===================================================================================
 def FindField(layer, chkField):
