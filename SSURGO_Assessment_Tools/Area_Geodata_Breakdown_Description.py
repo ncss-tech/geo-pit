@@ -25,7 +25,7 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-        #print msg
+        print msg
 
         f = open(textFilePath,'a+')
         f.write(msg + " \n")
@@ -75,39 +75,6 @@ def errorMsg():
         exc_type, exc_value, exc_traceback = sys.exc_info()
         theMsg = "\t" + traceback.format_exception(exc_type, exc_value, exc_traceback)[1] + "\n\t" + traceback.format_exception(exc_type, exc_value, exc_traceback)[-1]
         AddMsgAndPrint(theMsg,2)
-
-##        tb = sys.exc_info()[2] # return a tuple of type, value, traceback
-##        tbinfo = traceback.format_tb(tb)[0]
-##        theMsg = "\t" + tbinfo + "\n\t" + str(sys.exc_type)+ ": " + str(sys.exc_value)
-##        AddMsgAndPrint(theMsg,2)
-
-#""" ------------------Just for Testing -----------------------"""
-##        exc_type, exc_value, exc_traceback = sys.exc_info()
-##
-##        AddMsgAndPrint("\n\t***** print_tb:",2)
-##        AddMsgAndPrint(traceback.print_tb(exc_traceback, limit=1, file=sys.stdout))
-##
-##        AddMsgAndPrint("\n\t***** print_exception:",2)
-##        AddMsgAndPrint(traceback.print_exception(exc_type, exc_value, exc_traceback,
-##                                  limit=2, file=sys.stdout))
-##        AddMsgAndPrint("\n\t***** print_exc:",2)
-##        AddMsgAndPrint(traceback.print_exc())
-##
-##        AddMsgAndPrint("\n\t***** format_exc, first and last line:",2)
-##        formatted_lines = traceback.format_exc().splitlines()
-##        AddMsgAndPrint(formatted_lines[0])
-##        AddMsgAndPrint(formatted_lines[-1])
-##
-##        AddMsgAndPrint("\n\t***** format_exception:",2)
-##        AddMsgAndPrint(repr(traceback.format_exception(exc_type, exc_value,
-##                                              exc_traceback)))
-##        AddMsgAndPrint("\n\t***** extract_tb:",2)
-##        AddMsgAndPrint(repr(traceback.extract_tb(exc_traceback)))
-##
-##        AddMsgAndPrint("\n\t***** format_tb:",2)
-##        AddMsgAndPrint(repr(traceback.format_tb(exc_traceback)))
-##
-##        AddMsgAndPrint("\n\t***** tb_lineno:", exc_traceback.tb_lineno,2)
 
     except:
         AddMsgAndPrint("Unhandled error in errorMsg method", 2)
@@ -300,15 +267,6 @@ def determineOverlap(muLayer):
     # boundary to determine overlap.  If the number of features in the output is greater than
     # the sum of the features of the muLayer and the extentboundary then overlap is assumed
     # and TRUE is returned otherwise FALSE is returned.
-    #
-    # -1 and 0 = SSA completely within extentBoundary
-    # -1 and -1 = No intersection between SSA and extentBoundary
-    #
-    # Return:
-    # 0 = No Overlap whatsoever - SKIP
-    # 1 = Completely Within (no clipping is necessary)
-    # 2 = Intersection Found
-    # 3 = Failed
 
     try:
         # -------------- Get the SAPOLYGON ----------- Layer
@@ -338,48 +296,39 @@ def determineOverlap(muLayer):
             AddMsgAndPrint("\t The SSURGO SAPOLYGON layer was not found -- Cannot determine Overlap\n",2)
             return False
 
-        saPolyLayer = "saPolyLayer"
-        if arcpy.Exists(saPolyLayer):
-            arcpy.Delete_management(saPolyLayer)
-        arcpy.MakeFeatureLayer_management(saPolygonPath,saPolyLayer)
+        # Intersect the soils and input layer
+        outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
 
-        # Count the # of features in the SSA boundary
-        numOfMulayerPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
-
-        # make a feature layer out of the mulayer
-        tempOverlap = "tempOverlap"
-        arcpy.MakeFeatureLayer_management(muLayer,tempOverlap)
-
-        # Select all polys that intersect with the SAPOLYGON
-        arcpy.SelectLayerByLocation_management(tempOverlap,"INTERSECT",saPolyLayer, "", "NEW_SELECTION")
-
-        # Count the # of features of union output
-        numOfSelectedPolys = int(arcpy.GetCount_management(tempOverlap).getOutput(0))
+        totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
+        totalIntAcres = sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642
 
         # All features are within the geodata extent
-        if numOfMulayerPolys == numOfSelectedPolys:
+        if int(totalMUacres) == int(totalIntAcres):
             AddMsgAndPrint("\tALL polygons are within Geodata Extent",0)
             return True
 
         # some features are outside the geodata extent.  Warn the user
-        elif numOfMulayerPolys > numOfSelectedPolys:
-            AddMsgAndPrint("\tThere are " + str(numOfMulayerPolys - numOfSelectedPolys) + " polygons outside of your Geodata extent that will not participate in the analysis",2)
-            return True
+        elif totalIntAcres < totalMUacres and not totalIntAcres < 1:
+            prctOfCoverage = round((totalIntAcres / totalMUacres) * 100,1)
+
+            if prctOfCoverage > 50:
+                AddMsgAndPrint("\tWARNING: There is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",1)
+                AddMsgAndPrint("\tWARNING: " + splitThousands(round((totalMUacres-totalIntAcres),1)) + " .ac will not be accounted for",1)
+                return True
+            else:
+                AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",2)
+                return False
 
         # There is no overlap
         else:
             AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
             return False
 
-        arcpy.SelectLayerByAttribute_management(tempOverlap, "CLEAR_SELECTION")
+        if arcpy.Exists(outIntersect):
+            arcpy.Delete_management(outIntersect)
 
-        if arcpy.Exists(tempOverlap):
-            arcpy.Delete_management(tempOverlap)
-
-        if arcpy.Exists(saPolyLayer):
-            arcpy.Delete_management(saPolyLayer)
-
-        del soilsFolder, workspaces,saPolyLayer,numOfMulayerPolys, tempOverlap, numOfSelectedPolys, saPolygonPath
+        del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
@@ -583,6 +532,9 @@ def getMapunitInfo(muDict,mukeyList):
 
 ## ===================================================================================
 def getSoilsOrder():
+# This function will report the top 3 taxonomic orders in a given area of interest along
+# with their associated component series.  Only those components that are greater than
+# 5% of their taxonomic order will be reported.
 
     try:
         AddMsgAndPrint("\nSoils Taxonomic Order Information:",0)
@@ -608,43 +560,59 @@ def getSoilsOrder():
 
         arcpy.env.workspace = workspaces[0]
 
-        """ -------------------------------------- Setup MUPOLYGON ---------------------------------------- """
-        fcList = arcpy.ListFeatureClasses("MUPOLYGON","Polygon")
+        """ -------------------------------------- Setup MUPOLYGON or MuRASTER ---------------------------------------- """
+        bRaster = False
+        rasterList = arcpy.ListRasters("*MuRaster_10m")
 
-        if not len(fcList):
-            AddMsgAndPrint("\tMUPOLYGON feature class was not found in the SSURGO.gdb File Geodatabase",2)
-            return False
+        if len(rasterList) == 1:
+            muRasterPath = arcpy.env.workspace + os.sep + rasterList[0]
+            mukeyField = FindField(rasterList[0],"mukey")
 
-        muPolygonPath = arcpy.env.workspace + os.sep + fcList[0]
-        mukeyField = FindField(fcList[0],"mukey")
+            if mukeyField:
+                cellSize = arcpy.Describe(muRasterPath).MeanCellWidth
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
+                bRaster = True
+                print "\n\tUsing Raster"
 
-        if not mukeyField:
-            AddMsgAndPrint("\tMUPOLYGON feature class is missing necessary fields",2)
-            return False
+        if not bRaster:
+            fcList = arcpy.ListFeatureClasses("MUPOLYGON","Polygon")
 
-        """ --------------------------- Intersect the input layer with SSURGO polygons -------------------- """
-        outIntersect = scratchWS + os.sep + "soilIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+            if not len(fcList):
+                AddMsgAndPrint("\tMUPOLYGON feature class was not found in the SSURGO.gdb File Geodatabase",2)
+                return False
+
+            muPolygonPath = arcpy.env.workspace + os.sep + fcList[0]
+            mukeyField = FindField(fcList[0],"mukey")
+
+            if not mukeyField:
+                AddMsgAndPrint("\tMUPOLYGON feature class is missing necessary fields",2)
+                return False
+
+        """ --------------------------- Intersect the input layer with SSURGO polygons or Extract by Mask -------------------- """
+        outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
         # Intersect the soils and input layer
-        arcpy.Intersect_analysis([muPolygonPath,muLayer], outIntersect,"ALL","","INPUT")
+        arcpy.SetProgressorLabel("Computing a geometric intersection with soils")
 
-        # Convert the intersect output to a layer; Need this for Joins
-        outIntersectLyr = "outIntersectLyr"
-        arcpy.MakeFeatureLayer_management(outIntersect,outIntersectLyr)
+        if bRaster:
+            outExtractByMask = ExtractByMask(muRasterPath,muLayer)
+            outExtractByMask.save(outIntersect)
 
-        # Return False if intersect resulted in empty geometry
-        totalIntPolys = int(arcpy.GetCount_management(outIntersect).getOutput(0))
+            shpAreaFld = "Shape_Area"
+            if not arcpy.ListFields(outIntersect,shpAreaFld):
+                arcpy.AddField_management(outIntersect,shpAreaFld,"LONG")
 
-        if not totalIntPolys > 0:
-            AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayer) + " and 'MUPOLYGON' layer" ,2)
+            countFld = [f.name for f in arcpy.ListFields(outIntersect,"*count")][0]
+            calcExpression = "[" + countFld + "] * " + str(cellSize**2)
+            arcpy.CalculateField_management(outIntersect,shpAreaFld,calcExpression)
 
-            if arcpy.Exists(outIntersect):
-                arcpy.Delete_management(outIntersect)
-            return False
+            totalSoilIntAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, (shpAreaFld))]) / 4046.85642))
 
-        totalSoilIntAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642))
+        else:
+            arcpy.Intersect_analysis([muPolygonPath,muLayer], outIntersect,"ALL","","INPUT")
+            totalSoilIntAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642))
+            shpAreaFld = [f.name for f in arcpy.ListFields(outIntersect,"*Shape_Area")][0]
 
         uniqueMukeys = set([row[0] for row in arcpy.da.SearchCursor(outIntersect, (mukeyField))])
 
@@ -657,10 +625,15 @@ def getSoilsOrder():
             else:
                 mukeyExpression = mukeyExpression + "'" + str(mukey) + "')"
 
+        # Summarize intersect results by mukey and shape_Area; this table will be joined to the component table
+        outStatsTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        arcpy.Statistics_analysis(outIntersect,outStatsTable,[[shpAreaFld, "SUM"]],mukeyField)
+
         """ ---------------------------------------- Setup Component Table -----------------------------------
             Make a copy of the component table but limit the new copy to only those fields that are needed and
             only those records that are needed by using SQL expressions"""
 
+        arcpy.SetProgressorLabel("Preparing Component Table")
         compTable = arcpy.ListTables("component", "ALL")
 
         if not len(compTable):
@@ -687,8 +660,6 @@ def getSoilsOrder():
             else:
                 fieldinfo.addField(field.name, field.name, "HIDDEN", "")
 
-        #expression = arcpy.AddFieldDelimiters(compTablePath,'majcompflag') + " = 'Yes' AND " + mukeyExpression
-
         compView = "comp_view"
         if arcpy.Exists(compView):
             arcpy.Delete_management(compView)
@@ -696,80 +667,96 @@ def getSoilsOrder():
         # The created component_view layer will have fields as set in fieldinfo object
         arcpy.MakeTableView_management(compTablePath, compView, mukeyExpression, workspaces[0], fieldinfo)
 
-        # get a list of unique Taxonomic Orders in the component table
-        uniqueTaxOrders = set([row[0] for row in arcpy.da.SearchCursor(compView, ('taxorder'))])
-        if not len(uniqueTaxOrders):
+        # get a record of the compView table; there better be records; possibly using old dataset
+        if int(arcpy.GetCount_management(compView).getOutput(0)) < 1:
             AddMsgAndPrint("\tThere was no match between components and soils",2)
             return False
 
-        """ ------------------------------------------------------ Begin the reporting --------------------------------------------------------- """
-        # Join component table view to the intersect output
-        arcpy.AddJoin_management(outIntersectLyr,mukeyField,compView,mukeyField,"KEEP_ALL")
+        """ ------------------------------------ Join the component table and summary statistics table ------------------------------------
+            Need to write the joined table out b/c you can't calculate a field on a right join and fields are not listing correctly.
+            Recalculate acres weighted by comp %;  There may be some comps that don't add to 100% which would create a difference
+            between the intersected soils"""
 
-        # Need to write the joined table out b/c you can't calculate a field on a
-        # right join and fields are not listing correctly
+        arcpy.AddJoin_management(compView,mukeyField,outStatsTable,mukeyField,"KEEP_ALL")
+
         outJoinTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-        arcpy.CopyRows_management(outIntersectLyr, outJoinTable)
-        arcpy.RemoveJoin_management(outIntersectLyr)
+        arcpy.CopyRows_management(compView, outJoinTable)
+        arcpy.RemoveJoin_management(compView)
 
-        taxOrderFld = [f.name for f in arcpy.ListFields(outJoinTable,"*taxorder")][0]
-        shpAreaFld = [f.name for f in arcpy.ListFields(outJoinTable,"*Shape_Area")][0]
+        mukeyJoinField = [f.name for f in arcpy.ListFields(outJoinTable,"*mukey")][0]
         compNameFld = [f.name for f in arcpy.ListFields(outJoinTable,"*compname")][0]
         compPrctFld = [f.name for f in arcpy.ListFields(outJoinTable,"*comppct_r")][0]
         compKindFld = [f.name for f in arcpy.ListFields(outJoinTable,"*compkind")][0]
+        taxOrderFld = [f.name for f in arcpy.ListFields(outJoinTable,"*taxorder")][0]
+        shpAreaFld = [f.name for f in arcpy.ListFields(outJoinTable,"*Shape_Area")][0]
 
-        # ------------------------------------------------------------------------------------------------------------------- Report Acres where Taxonomic Orders is NULL
-        # If there are records that have no Taxonomic Order populated notify the user
-##        nullTaxOrder = [row[0] for row in arcpy.da.SearchCursor(compView, ("compname"), where_clause="taxorder IS NULL")]
-##        if len(nullTaxOrder) > 0:
-##            for compName in nullTaxOrder:
-##                if not compName == "Water":
-##                    AddMsgAndPrint("\tComponent Name: " + compName + " has no Tax Order populated",1)
-        nullTaxOrderAcres = 0
-        for row in arcpy.da.SearchCursor(outJoinTable, (shpAreaFld,compPrctFld), where_clause=taxOrderFld + " IS NULL"):
-            nullTaxOrderAcres += ((float(row[0]) / 4046.85642) * (row[1]/100))
+        totalJoinAcres = 0.0
+        compPrctExpression = arcpy.AddFieldDelimiters(outJoinTable,compPrctFld) + " IS NOT NULL"
+        for row in arcpy.da.SearchCursor(outJoinTable, (compPrctFld,shpAreaFld),where_clause=compPrctExpression):
+            totalJoinAcres += (((float(row[0])/100)*float(row[1])) / 4046.85642)
+        print "Total Join Acres: " + str(totalJoinAcres)
 
-        if nullTaxOrderAcres > 0:
-            AddMsgAndPrint("\t\tThere are " + str(splitThousands(round(nullTaxOrderAcres,1))) + " .ac that have no Taxonomic Order populated",1)
-
+        """ ------------------------------- Create a dictionary of unique taxorders and their total acre sum ------------------------------- """
         # {u'Alfisols': 232.52185224210945, None: 0.0017223240957696508, u'Entisols': 9.87166917356607, u'Mollisols': 13.63258202871674}
         taxOrderDict = dict()
-        for row in arcpy.da.SearchCursor(outJoinTable,[taxOrderFld,shpAreaFld,compPrctFld],sql_clause=(None,'ORDER BY ' + shpAreaFld + ' DESC')):
-            if not taxOrderDict.has_key(row[0]):
-                taxOrderDict[row[0]] = ((float(row[1]) / 4046.85642) * (float(row[2])/100))
+        for row in arcpy.da.SearchCursor(outJoinTable,[compPrctFld,shpAreaFld,taxOrderFld],where_clause=compPrctExpression,sql_clause=(None,'ORDER BY ' + shpAreaFld + ' DESC')):
+            if not taxOrderDict.has_key(row[2]):
+                taxOrderDict[row[2]] = (((float(row[0])/100)*float(row[1])) / 4046.85642)
             else:
-                taxOrderDict[row[0]] += ((float(row[1]) / 4046.85642) * (float(row[2])/100))
+                taxOrderDict[row[2]] += (((float(row[0])/100)*float(row[1])) / 4046.85642)
 
-        """ -------------- Report Taxonomic Order Ascending by acres """
+        # ---------------------------------- Strictly Formatting for Tax Order printing
+        taxOrderFormattingDict = dict()
+        for order in taxOrderDict:
+            taxOrderFormattingDict[order] = (len(str(splitThousands(round(taxOrderDict[order],1)))))
+
+        maxOrderAcreLength = sorted([coinfo for cokey,coinfo in taxOrderFormattingDict.iteritems()],reverse=True)[0]
+
+        """ ------------------------------- Report Taxonomic Order and their comp series -------------------------------
+            Only print the top 3 Taxonomic Orders that are greater than 10% in coverage.  Only print the component
+            series that are above 5%."""
         # [(u'Alfisols', 129.35453762808402), (u'Mollisols', 96.10388326877232), (u'Entisols', 37.445368094602095), (None, 0.0017223240957696508)]
+        orderCount = 1
+        otherOrdersAcres = 0
         for taxInfo in sorted(taxOrderDict.items(), key=operator.itemgetter(1),reverse=True):
 
+            taxOrderName = taxInfo[0]
             taxOrderAcres = taxInfo[1]
-            taxOrderPrctOfTotal = str(float("%.1f" %(((taxOrderAcres / totalSoilIntAcres) * 100)))) + " %"
 
-            if taxOrderAcres < 1.0:
-                msg = "Less than 1 .ac ----------------- " + taxOrderPrctOfTotal
-            else:
-                msg = str(splitThousands(round(taxInfo[1],1))) + " .ac ------------ " + taxOrderPrctOfTotal
-
-            if taxInfo[0] == 'None' or not taxInfo[0]:
+            # Don't report taxorders that are not populated; accounted for above already
+            if taxOrderName == 'None' or not taxOrderName:
                 continue
-##                AddMsgAndPrint("\t\tNOT Populated: " + msg,1)
-##                expression = arcpy.AddFieldDelimiters(outJoinTable,taxOrderFld) + " IS NULL"
-            else:
-                AddMsgAndPrint("\n\t\t" + taxInfo[0] + ": " + msg ,1)
-                expression = arcpy.AddFieldDelimiters(outJoinTable,taxOrderFld) + " = '" + taxInfo[0] + "'"
 
-            with arcpy.da.SearchCursor(outJoinTable,[compNameFld,compKindFld,compPrctFld,shpAreaFld],where_clause=expression,sql_clause=(None,'ORDER BY ' + shpAreaFld + ' DESC')) as cursor:
+            # taxonomic order percent of total area
+            taxOrderPrctOfTotal = float("%.1f" %(((taxOrderAcres / totalJoinAcres) * 100)))
 
-                compDict = dict()        #{u'Bertrand Series': 4.126611328239694, u'Yellowriver Series': 26.780026433416218,
+            # Only report the top 3 tax orders that are greater or equal to 10% of total area
+            if taxOrderPrctOfTotal < 10 and orderCount < 4:
+                otherOrdersAcres += taxOrderAcres
+                continue
+
+            # Print Taxonomic Order, Order Acres, Percent of total Area
+            firstDash = "-" * (75 - len(taxOrderName))
+            secondDash = "-" * (60 - maxOrderAcreLength)
+            msg = str(splitThousands(round(taxInfo[1],1))) + " .ac " + secondDash + str(taxOrderPrctOfTotal) + " %"
+            AddMsgAndPrint("\n\t\t" + taxOrderName + ": " + firstDash + msg ,1)
+
+            """ ------------------------------- Collect component series information ----------------------------------------"""
+            expression = arcpy.AddFieldDelimiters(outJoinTable,taxOrderFld) + " = '" + taxInfo[0] + "' AND " + compPrctExpression
+            with arcpy.da.SearchCursor(outJoinTable,[compPrctFld,compNameFld,compKindFld,shpAreaFld],where_clause=expression) as cursor:
+
+                compDict = dict()        #{u'Bertrand Series': 4.126611328239694, u'Yellowriver Series': 26.780026433416218}
                 compNameLength = list()
 
                 for row in cursor:
 
                     # Component Acres weighted by comp% RV
-                    compAcres = ((float(row[2])/100)*float(row[3]))/4046.85642
-                    mergeCompName = row[0] + " " + row[1]
+                    compAcres = ((float(row[0])/100)*float(row[3]))/4046.85642
+                    compAcresPrctOfTotal = (compAcres/taxOrderAcres)*100
+
+                    # Only report components that are > 5% of total order area
+                    #if compAcresPrctOfTotal > 3.0:
+                    mergeCompName = row[1] + " " + row[2]
                     compNameLength.append(len(mergeCompName))
 
                     if not compDict.has_key(mergeCompName):
@@ -779,27 +766,89 @@ def getSoilsOrder():
 
                     del compAcres,mergeCompName
 
-                compPctSorted = sorted(compDict.items(), key=operator.itemgetter(0),reverse=True)  # [(u'Yellowriver Series', 26.780026433416218), (u'Village Series', 18.838143614081368)]
+                if not compDict:
+                    AddMsgAndPrint("\t\t\tAll Series are below 5%")
+                    continue
+
+                compPctSorted = sorted(compDict.items(), key=operator.itemgetter(1),reverse=True)  # [(u'Yellowriver Series', 26.780026433416218), (u'Village Series', 18.838143614081368)]
+
+                # Strictly formatting; get maximum character length for the Acres and Component name
                 maxCompAcreLength = sorted([len(splitThousands(round(compAcre,1))) for compName,compAcre in compDict.iteritems()],reverse=True)[0]
+                maxCompNameLength = max(compNameLength)
 
-                compNameLength.reverse()
-                maxCompNameLength = compNameLength[0]
-
+                compCount = 1
                 for compinfo in compPctSorted:
 
                     firstSpace = " " * (maxCompNameLength - len(compinfo[0]))
-                    secondSpace = " "  * (maxCompAcreLength - len(str(compinfo[1])))
+                    secondSpace = " "  * (maxCompAcreLength - len(splitThousands(round(compinfo[1],1))))
                     compAcresPrctOfTotal = str(round((compinfo[1]/taxOrderAcres)*100,1))
 
-                    AddMsgAndPrint("\t\t\t" + compinfo[0] + firstSpace + " --- " + str(splitThousands(round(compinfo[1],1))) + " .ac" + secondSpace + " --- " + compAcresPrctOfTotal + " %",1)
+                    if compCount < 4:
+                        AddMsgAndPrint("\t\t\t" + compinfo[0] + firstSpace + " --- " + str(splitThousands(round(compinfo[1],1))) + " .ac" + secondSpace + " --- " + compAcresPrctOfTotal + " %",1)
+                    else:
+                        break
 
                 del compDict,compNameLength,compPctSorted,maxCompNameLength,maxCompAcreLength
 
-        deleteThis = [outJoinTable,outIntersect,outIntersectLyr,compView]
+            orderCount += 1
 
-        for layers in deleteThis:
-            if arcpy.Exists(layers):
-                arcpy.Delete_management(layers)
+        """ ------------------------------ Report Other Taxon Orders that did not get reported for acre accountability purposes --------------"""
+        if otherOrdersAcres > 0:
+            otherAcresPrct = str(float("%.1f" %(((otherOrdersAcres / totalJoinAcres) * 100))))
+            AddMsgAndPrint("\n\t\tOther Orders: " + "-" * 64 + splitThousands(round(otherOrdersAcres,1)) + " .ac " + secondDash + otherAcresPrct + " %",1)
+
+        """ ------------------------------ Report Acres where Taxonomic Orders is NULL for acre accountability purposes --------------"""
+        nullTaxOrderAcres = 0.0
+        for row in arcpy.da.SearchCursor(outJoinTable, (compPrctFld,shpAreaFld), where_clause=taxOrderFld + " IS NULL AND " + compPrctExpression):
+            nullTaxOrderAcres += (((float(row[0])/100)*row[1]) / 4046.85642)
+
+        if nullTaxOrderAcres > 0:
+            nullTaxOrderPrctOfTotal = str(float("%.1f" %(((nullTaxOrderAcres / totalJoinAcres) * 100)))) + " %"
+            firstDash = "-" * 47
+            AddMsgAndPrint("\n\t\tTaxonomic Order NOT Populated: " + firstDash + str(splitThousands(round(nullTaxOrderAcres,1))) + " .ac " + secondDash + nullTaxOrderPrctOfTotal ,1)
+
+        """ ------------------------------ Report Acres where comp percentages don't add up to 100% ----------------------------------
+            If components for a specific mapunit only add up to 90% than 10% of the mapunit's acres will be reported.
+            Summarize the join table by component percent and then select those mukeys where the summed comp percent
+            are less than 100%.  Use those mukeys to select from the join table. Do not exclude NULL taxon records
+            b/c eventhough they have been accounted for their shortage of 100% has not."""
+
+        outStatsTable2 = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        arcpy.Statistics_analysis(outJoinTable,outStatsTable2,[[compPrctFld,"SUM"]],mukeyJoinField)
+
+        mukeyStatsField = [f.name for f in arcpy.ListFields(outStatsTable2,"*mukey")][0]
+        compPrctStatsField = [f.name for f in arcpy.ListFields(outStatsTable2,"*comppct_r")][0]
+        uniqueMukeys = set([row[0] for row in arcpy.da.SearchCursor(outStatsTable2, (mukeyStatsField),where_clause=compPrctStatsField + " < 100")])
+
+        mukeyExpression = mukeyJoinField + " IN ("
+        iCount = 0
+        for mukey in uniqueMukeys:
+            iCount+=1
+            if iCount < len(uniqueMukeys):
+                mukeyExpression = mukeyExpression + "'" + str(mukey) + "',"
+            else:
+                mukeyExpression = mukeyExpression + "'" + str(mukey) + "')"
+
+        compAcresLessThan100 = 0
+        for row in arcpy.da.SearchCursor(outJoinTable,(compPrctFld,shpAreaFld,taxOrderFld),where_clause=mukeyExpression):
+            compAcresLessThan100 += (((100 - float(row[0]))/100) * row[1]) / 4046.85642
+
+        if compAcresLessThan100 > 0:
+            AddMsgAndPrint("\n\t\tAcres from mapunits whose components do not add up to 100%: " + splitThousands(round(compAcresLessThan100,1)) + " .ac " + str(round(((compAcresLessThan100/totalJoinAcres)*100),1)) + " %",1)
+
+        """ ------------------------------- Clean up time! --------------------------------------------"""
+##        deleteThis = [outIntersect,outStatsTable,compView,outJoinTable,outStatsTable2]
+##
+##        for layer in deleteThis:
+##            if arcpy.Exists(layer):
+##                arcpy.Delete_management(layer)
+
+        del soilsFolder,workspaces,mukeyField,outIntersect,totalSoilIntAcres,uniqueMukeys,mukeyExpression,outStatsTable,
+        shpAreaFld,compTable,compTablePath,compFields,compTablefields,fieldinfo,compView,outJoinTable,compNameFld,compPrctFld,compKindFld,
+        taxOrderFld,shpAreaFld,totalJoinAcres,nullTaxOrderAcres,taxOrderDict
+
+        if bRaster: del rasterList,muRasterPath,cellSize
+        else: fcList,muPolygonPath
 
         return True
 
@@ -1174,16 +1223,6 @@ def processAdjacentComponents(zoneField):
         arcpy.Intersect_analysis([muPolygonPath,outBuffer], outIntersect,"ALL","","INPUT")
 
         ## Explore the "Polygon Neighbors tool"
-
-        # Return False if intersect resulted in empty geometry
-        totalIntPolys = int(arcpy.GetCount_management(outIntersect).getOutput(0))
-
-        if not totalIntPolys > 0:
-            AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayer) + " and 'MUPOLYGON' layer" ,2)
-
-            if arcpy.Exists(outIntersect):
-                arcpy.Delete_management(outIntersect)
-            return False
 
         if zoneField != "MLRA_Temp":
             mukeyField = "MUKEY_OG"
@@ -3749,9 +3788,9 @@ if __name__ == '__main__':
         analysisType = "MLRA Mapunit" # MLRA (Object ID)
         #outputFolder = arcpy.GetParameterAsText(3) # D:\MLRA_Workspace_Stanton\MLRAprojects\layers
 
-##        muLayer = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAprojects\layers\SDJR___MLRA_103___Lester_Storden_complex__6_to_10_percent_slopes__moderately_eroded.shp'
-##        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAGeodata'
-##        analysisType = 'MLRA Mapunit'
+        muLayer = r'C:\Temp\scratch.gdb\MLRA103'
+        geoFolder = r'C:\MLRA_Workspace_AlbertLea\MLRAGeodata'
+        analysisType = 'MLRA Mapunit'
 
         # Check Availability of Spatial Analyst Extension
         try:
@@ -3887,9 +3926,9 @@ if __name__ == '__main__':
 ##            arcpy.SetProgressorPosition()
 
             """ ---------------------  Soils Order Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
+            arcpy.SetProgressorLabel("Soils Taxonomic Order Information")
             if not getSoilsOrder():
-                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
+                AddMsgAndPrint("\n\tFailed to Acquire Soils Taxonomic Order Information",2)
             arcpy.SetProgressorPosition()
 
 ##            """ ---------------------  LRR Data ------------------------------ """
