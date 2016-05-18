@@ -592,10 +592,8 @@ def getSoilsOrder():
         """ --------------------------- Intersect the input layer with SSURGO polygons or Extract by Mask -------------------- """
         outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
-        # Intersect the soils and input layer
-        arcpy.SetProgressorLabel("Computing a geometric intersection with soils")
-
         if bRaster:
+            arcpy.SetProgressorLabel("Extracting AOI from " + rasterList[0])
             outExtractByMask = ExtractByMask(muRasterPath,muLayer)
             outExtractByMask.save(outIntersect)
 
@@ -610,6 +608,7 @@ def getSoilsOrder():
             totalSoilIntAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, (shpAreaFld))]) / 4046.85642))
 
         else:
+            arcpy.SetProgressorLabel("Computing a geometric intersection with soils")
             arcpy.Intersect_analysis([muPolygonPath,muLayer], outIntersect,"ALL","","INPUT")
             totalSoilIntAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642))
             shpAreaFld = [f.name for f in arcpy.ListFields(outIntersect,"*Shape_Area")][0]
@@ -694,12 +693,15 @@ def getSoilsOrder():
         compPrctExpression = arcpy.AddFieldDelimiters(outJoinTable,compPrctFld) + " IS NOT NULL"
         for row in arcpy.da.SearchCursor(outJoinTable, (compPrctFld,shpAreaFld),where_clause=compPrctExpression):
             totalJoinAcres += (((float(row[0])/100)*float(row[1])) / 4046.85642)
-        print "Total Join Acres: " + str(totalJoinAcres)
 
-        """ ------------------------------- Create a dictionary of unique taxorders and their total acre sum ------------------------------- """
-        # {u'Alfisols': 232.52185224210945, None: 0.0017223240957696508, u'Entisols': 9.87166917356607, u'Mollisols': 13.63258202871674}
+        """ ------------------------------- Create a dictionary of unique taxorders and their total acre sum -------------------------------
+            Exclude components and taxorders records that are NULL.  Taxorder NULLS will be accounted for at the bottom"""
+
+        # {u'Alfisols': 232.52185224210945, u'Entisols': 9.87166917356607, u'Mollisols': 13.63258202871674}
         taxOrderDict = dict()
-        for row in arcpy.da.SearchCursor(outJoinTable,[compPrctFld,shpAreaFld,taxOrderFld],where_clause=compPrctExpression,sql_clause=(None,'ORDER BY ' + shpAreaFld + ' DESC')):
+        whereClause = compPrctExpression + " AND " + taxOrderFld + " IS NOT NULL"
+        for row in arcpy.da.SearchCursor(outJoinTable,[compPrctFld,shpAreaFld,taxOrderFld],where_clause=whereClause,sql_clause=(None,'ORDER BY ' + shpAreaFld + ' DESC')):
+
             if not taxOrderDict.has_key(row[2]):
                 taxOrderDict[row[2]] = (((float(row[0])/100)*float(row[1])) / 4046.85642)
             else:
@@ -713,10 +715,10 @@ def getSoilsOrder():
         maxOrderAcreLength = sorted([coinfo for cokey,coinfo in taxOrderFormattingDict.iteritems()],reverse=True)[0]
 
         """ ------------------------------- Report Taxonomic Order and their comp series -------------------------------
-            Only print the top 3 Taxonomic Orders that are greater than 10% in coverage.  Only print the component
+            Report the top 3 Taxonomic Orders that are greater than 10% in coverage.  Only print the component
             series that are above 5%."""
         # [(u'Alfisols', 129.35453762808402), (u'Mollisols', 96.10388326877232), (u'Entisols', 37.445368094602095), (None, 0.0017223240957696508)]
-        orderCount = 1
+        ordersPrinted = 0
         otherOrdersAcres = 0
         for taxInfo in sorted(taxOrderDict.items(), key=operator.itemgetter(1),reverse=True):
 
@@ -730,8 +732,7 @@ def getSoilsOrder():
             # taxonomic order percent of total area
             taxOrderPrctOfTotal = float("%.1f" %(((taxOrderAcres / totalJoinAcres) * 100)))
 
-            # Only report the top 3 tax orders that are greater or equal to 10% of total area
-            if taxOrderPrctOfTotal < 10 and orderCount < 4:
+            if ordersPrinted >= 3:
                 otherOrdersAcres += taxOrderAcres
                 continue
 
@@ -746,35 +747,30 @@ def getSoilsOrder():
             with arcpy.da.SearchCursor(outJoinTable,[compPrctFld,compNameFld,compKindFld,shpAreaFld],where_clause=expression) as cursor:
 
                 compDict = dict()        #{u'Bertrand Series': 4.126611328239694, u'Yellowriver Series': 26.780026433416218}
-                compNameLength = list()
 
                 for row in cursor:
 
                     # Component Acres weighted by comp% RV
                     compAcres = ((float(row[0])/100)*float(row[3]))/4046.85642
-                    compAcresPrctOfTotal = (compAcres/taxOrderAcres)*100
-
-                    # Only report components that are > 5% of total order area
-                    #if compAcresPrctOfTotal > 3.0:
                     mergeCompName = row[1] + " " + row[2]
-                    compNameLength.append(len(mergeCompName))
 
                     if not compDict.has_key(mergeCompName):
                         compDict[mergeCompName] = compAcres
                     else:
                         compDict[mergeCompName] += compAcres
 
-                    del compAcres,mergeCompName
+                    del compAcres, mergeCompName
 
                 if not compDict:
-                    AddMsgAndPrint("\t\t\tAll Series are below 5%")
+                    AddMsgAndPrint("\t\t\tThere are NO components associated with this Taxonomic Order")
                     continue
 
-                compPctSorted = sorted(compDict.items(), key=operator.itemgetter(1),reverse=True)  # [(u'Yellowriver Series', 26.780026433416218), (u'Village Series', 18.838143614081368)]
+                compPctSorted = sorted(compDict.items(), key=operator.itemgetter(1),reverse=True)[:4]  # [(u'Yellowriver Series', 26.780026433416218), (u'Village Series', 18.838143614081368)]
 
                 # Strictly formatting; get maximum character length for the Acres and Component name
-                maxCompAcreLength = sorted([len(splitThousands(round(compAcre,1))) for compName,compAcre in compDict.iteritems()],reverse=True)[0]
-                maxCompNameLength = max(compNameLength)
+                ##maxCompAcreLength = sorted([len(splitThousands(round(compAcre,1))) for compName,compAcre in compDict.iteritems()],reverse=True)[0]
+                maxCompAcreLength = sorted([len(splitThousands(round(compAcre,1))) for compName,compAcre in compPctSorted],reverse=True)[0]
+                maxCompNameLength = sorted([len(compName) for compName,compAcre in compPctSorted],reverse=True)[0]
 
                 compCount = 1
                 for compinfo in compPctSorted:
@@ -785,12 +781,13 @@ def getSoilsOrder():
 
                     if compCount < 4:
                         AddMsgAndPrint("\t\t\t" + compinfo[0] + firstSpace + " --- " + str(splitThousands(round(compinfo[1],1))) + " .ac" + secondSpace + " --- " + compAcresPrctOfTotal + " %",1)
+                        compCount+=1
                     else:
                         break
 
-                del compDict,compNameLength,compPctSorted,maxCompNameLength,maxCompAcreLength
+                del compDict,compPctSorted,maxCompNameLength,maxCompAcreLength
 
-            orderCount += 1
+            ordersPrinted += 1
 
         """ ------------------------------ Report Other Taxon Orders that did not get reported for acre accountability purposes --------------"""
         if otherOrdersAcres > 0:
@@ -3788,8 +3785,8 @@ if __name__ == '__main__':
         analysisType = "MLRA Mapunit" # MLRA (Object ID)
         #outputFolder = arcpy.GetParameterAsText(3) # D:\MLRA_Workspace_Stanton\MLRAprojects\layers
 
-        muLayer = r'C:\Temp\scratch.gdb\MLRA103'
-        geoFolder = r'C:\MLRA_Workspace_AlbertLea\MLRAGeodata'
+        muLayer = r'O:\scratch\scratch.gdb\AOI2'
+        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_Onalaska\MLRAGeodata'
         analysisType = 'MLRA Mapunit'
 
         # Check Availability of Spatial Analyst Extension

@@ -300,15 +300,6 @@ def determineOverlap(muLayer):
     # boundary to determine overlap.  If the number of features in the output is greater than
     # the sum of the features of the muLayer and the extentboundary then overlap is assumed
     # and TRUE is returned otherwise FALSE is returned.
-    #
-    # -1 and 0 = SSA completely within extentBoundary
-    # -1 and -1 = No intersection between SSA and extentBoundary
-    #
-    # Return:
-    # 0 = No Overlap whatsoever - SKIP
-    # 1 = Completely Within (no clipping is necessary)
-    # 2 = Intersection Found
-    # 3 = Failed
 
     try:
         # -------------- Get the SAPOLYGON ----------- Layer
@@ -338,48 +329,39 @@ def determineOverlap(muLayer):
             AddMsgAndPrint("\t The SSURGO SAPOLYGON layer was not found -- Cannot determine Overlap\n",2)
             return False
 
-        saPolyLayer = "saPolyLayer"
-        if arcpy.Exists(saPolyLayer):
-            arcpy.Delete_management(saPolyLayer)
-        arcpy.MakeFeatureLayer_management(saPolygonPath,saPolyLayer)
+        # Intersect the soils and input layer
+        outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
 
-        # Count the # of features in the SSA boundary
-        numOfMulayerPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
-
-        # make a feature layer out of the mulayer
-        tempOverlap = "tempOverlap"
-        arcpy.MakeFeatureLayer_management(muLayer,tempOverlap)
-
-        # Select all polys that intersect with the SAPOLYGON
-        arcpy.SelectLayerByLocation_management(tempOverlap,"INTERSECT",saPolyLayer, "", "NEW_SELECTION")
-
-        # Count the # of features of union output
-        numOfSelectedPolys = int(arcpy.GetCount_management(tempOverlap).getOutput(0))
+        totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
+        totalIntAcres = sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642
 
         # All features are within the geodata extent
-        if numOfMulayerPolys == numOfSelectedPolys:
+        if int(totalMUacres) == int(totalIntAcres):
             AddMsgAndPrint("\tALL polygons are within Geodata Extent",0)
             return True
 
         # some features are outside the geodata extent.  Warn the user
-        elif numOfMulayerPolys > numOfSelectedPolys:
-            AddMsgAndPrint("\tThere are " + str(numOfMulayerPolys - numOfSelectedPolys) + " polygons outside of your Geodata extent that will not participate in the analysis",2)
-            return True
+        elif totalIntAcres < totalMUacres and not totalIntAcres < 1:
+            prctOfCoverage = round((totalIntAcres / totalMUacres) * 100,1)
+
+            if prctOfCoverage > 50:
+                AddMsgAndPrint("\tWARNING: There is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",1)
+                AddMsgAndPrint("\tWARNING: " + splitThousands(round((totalMUacres-totalIntAcres),1)) + " .ac will not be accounted for",1)
+                return True
+            else:
+                AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",2)
+                return False
 
         # There is no overlap
         else:
             AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
             return False
 
-        arcpy.SelectLayerByAttribute_management(tempOverlap, "CLEAR_SELECTION")
+        if arcpy.Exists(outIntersect):
+            arcpy.Delete_management(outIntersect)
 
-        if arcpy.Exists(tempOverlap):
-            arcpy.Delete_management(tempOverlap)
-
-        if arcpy.Exists(saPolyLayer):
-            arcpy.Delete_management(saPolyLayer)
-
-        del soilsFolder, workspaces,saPolyLayer,numOfMulayerPolys, tempOverlap, numOfSelectedPolys, saPolygonPath
+        del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
