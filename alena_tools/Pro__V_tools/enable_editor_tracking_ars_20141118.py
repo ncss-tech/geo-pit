@@ -31,6 +31,6 @@ for dataset in arcpy.ListDatasets("", "Feature"):
 
 # Execute enable editor tracking
 for dataset in dataList:
-    print 'Enabling tracking on ' + dataset
+    print ("Enabling tracking on " + dataset)
     arcpy.EnableEditorTracking_management(dataset,"Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
-print 'Enabling complete'
+print ("Enabling complete")

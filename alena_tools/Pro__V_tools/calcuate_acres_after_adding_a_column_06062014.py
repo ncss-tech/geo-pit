@@ -13,7 +13,7 @@ inFC = arcpy.GetParameterAsText (0)
 
 #Add Field
 
-arcpy.AddField_management(inFC, "ACRES", "DOUBLE", )
+arcpy.AddField_management(inFC, "ACRES", "SHORT", )
 
 #Calculate Field
 
