@@ -49,284 +49,103 @@ def errorMsg():
         AddMsgAndPrint("Unhandled error in errorMsg method", 2)
         pass
 
-### ===================================================================================
+## ===================================================================================
 def setScratchWorkspace():
-    """ This function will set the scratchWorkspace for the interim of the execution
-        of this tool.  The scratchWorkspace is used to set the scratchGDB which is
-        where all of the temporary files will be written to.  The path of the user-defined
-        scratchWorkspace will be compared to existing paths from the user's system
-        variables.  If there is any overlap in directories the scratchWorkspace will
-        be set to C:\TEMP, assuming C:\ is the system drive.  If all else fails then
-        the packageWorkspace Environment will be set as the scratchWorkspace. This
-        function returns the scratchGDB environment which is set upon setting the scratchWorkspace"""
+    # This function will set the scratchGDB environment based on the scratchWorkspace environment.
+    #
+    # The scratch workspac will typically not be defined by the user but the scratchGDB will
+    # always be defined.  The default location for the scratchGDB is at C:\Users\<user>\AppData\Local\Temp
+    # on Windows 7 or C:\Documents and Settings\<user>\Localsystem\Temp on Windows XP.  Inside this
+    # directory, scratch.gdb will be created.
+    #
+    # If scratchWorkspace is set to something other than a GDB or Folder than the scratchWorkspace
+    # will be set to C:\temp.  If C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
+    #
+    # If scratchWorkspace is an SDE GDB than the scratchWorkspace will be set to C:\temp.  If
+    # C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
 
     try:
-        AddMsgAndPrint("\nSetting Scratch Workspace")
-        scratchWK = arcpy.env.scratchWorkspace
-
         # -----------------------------------------------
         # Scratch Workspace is defined by user or default is set
-        if scratchWK is not None:
+        if arcpy.env.scratchWorkspace is not None:
 
-            # dictionary of system environmental variables
-            envVariables = os.environ
+            # describe scratch workspace
+            scratchWK = arcpy.env.scratchWorkspace
+            descSW = arcpy.Describe(scratchWK)
+            descDT = descSW.dataType.upper()
 
-            # get the root system drive
-            if envVariables.has_key('SYSTEMDRIVE'):
-                sysDrive = envVariables['SYSTEMDRIVE']
-            else:
-                sysDrive = None
+            # scratch workspace is geodatabase
+            if descDT == "WORKSPACE":
+                progID = descSW.workspaceFactoryProgID
 
-            varsToSearch = ['ESRI_OS_DATADIR_LOCAL_DONOTUSE','ESRI_OS_DIR_DONOTUSE','ESRI_OS_DATADIR_MYDOCUMENTS_DONOTUSE',
-                            'ESRI_OS_DATADIR_ROAMING_DONOTUSE','TEMP','LOCALAPPDATA','PROGRAMW6432','COMMONPROGRAMFILES','APPDATA',
-                            'USERPROFILE','PUBLIC','SYSTEMROOT','PROGRAMFILES','COMMONPROGRAMFILES(X86)','ALLUSERSPROFILE']
+                # scratch workspace is a FGDB
+                if  progID == "esriDataSourcesGDB.FileGDBWorkspaceFactory.1":
+                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
+                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
-            """ This is a printout of my system environmmental variables - Windows 7
-            -----------------------------------------------------------------------------------------
-            ESRI_OS_DATADIR_LOCAL_DONOTUSE C:\Users\adolfo.diaz\AppData\Local\
-            ESRI_OS_DIR_DONOTUSE C:\Users\ADOLFO~1.DIA\AppData\Local\Temp\6\arc3765\
-            ESRI_OS_DATADIR_MYDOCUMENTS_DONOTUSE C:\Users\adolfo.diaz\Documents\
-            ESRI_OS_DATADIR_COMMON_DONOTUSE C:\ProgramData\
-            ESRI_OS_DATADIR_ROAMING_DONOTUSE C:\Users\adolfo.diaz\AppData\Roaming\
-            TEMP C:\Users\ADOLFO~1.DIA\AppData\Local\Temp\6\arc3765\
-            LOCALAPPDATA C:\Users\adolfo.diaz\AppData\Local
-            PROGRAMW6432 C:\Program Files
-            COMMONPROGRAMFILES :  C:\Program Files (x86)\Common Files
-            APPDATA C:\Users\adolfo.diaz\AppData\Roaming
-            USERPROFILE C:\Users\adolfo.diaz
-            PUBLIC C:\Users\Public
-            SYSTEMROOT :  C:\Windows
-            PROGRAMFILES :  C:\Program Files (x86)
-            COMMONPROGRAMFILES(X86) :  C:\Program Files (x86)\Common Files
-            ALLUSERSPROFILE :  C:\ProgramData
-            ------------------------------------------------------------------------------------------"""
+                # scratch workspace is a Personal GDB -- set scratchWS to folder of .mdb
+                elif progID == "esriDataSourcesGDB.AccessWorkspaceFactory.1":
+                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
+                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
-            bSetTempWorkSpace = False
+                # scratch workspace is an SDE GDB.
+                elif progID == "esriDataSourcesGDB.SdeWorkspaceFactory.1":
 
-            """ Iterate through each Environmental variable; If the variable is within the 'varsToSearch' list
-                list above then check their value against the user-set scratch workspace.  If they have anything
-                in common then switch the workspace to something local  """
-            for var in envVariables:
+                    # set scratch workspace to C:\Temp; avoid the server
+                    if os.path.exists(r'C:\Temp'):
 
-                if not var in varsToSearch:
-                    continue
+                        arcpy.env.scratchWorkspace = r'C:\Temp'
+                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
-                # make a list from the scratch and environmental paths
-                varValueList = (envVariables[var].lower()).split(os.sep)          # ['C:', 'Users', 'adolfo.diaz', 'AppData', 'Local']
-                scratchWSList = (scratchWK.lower()).split(os.sep)                 # [u'C:', u'Users', u'adolfo.diaz', u'Documents', u'ArcGIS', u'Default.gdb', u'']
-
-                # remove any blanks items from lists
-                if '' in varValueList: varValueList.remove('')
-                if '' in scratchWSList: scratchWSList.remove('')
-
-                # First element is the drive letter; remove it if they are
-                # the same otherwise review the next variable.
-                if varValueList[0] == scratchWSList[0]:
-                    scratchWSList.remove(scratchWSList[0])
-                    varValueList.remove(varValueList[0])
-
-                # obtain a similarity ratio between the 2 lists above
-                #sM = SequenceMatcher(None,varValueList,scratchWSList)
-
-                # Compare the values of 2 lists; order is significant
-                common = [i for i, j in zip(varValueList, scratchWSList) if i == j]
-
-                if len(common) > 0:
-                    bSetTempWorkSpace = True
-                    break
-
-            # The current scratch workspace shares 1 or more directory paths with the
-            # system env variables.  Create a temp folder at root
-            if bSetTempWorkSpace:
-                AddMsgAndPrint("\tCurrent Workspace: " + scratchWK,0)
-
-                if sysDrive:
-                    tempFolder = sysDrive + os.sep + "TEMP"
-
-                    if not os.path.exists(tempFolder):
-                        os.makedirs(tempFolder,mode=777)
-
-                    arcpy.env.scratchWorkspace = tempFolder
-                    AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
-
-                else:
-                    packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
-                    if arcpy.env[packageWS[0]]:
-                        arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
-                        AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+                    # set scratch workspace to default ESRI location
                     else:
-                        AddMsgAndPrint("\tCould not set any scratch workspace",2)
-                        return False
+                        arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
+                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
-            # user-set workspace does not violate system paths; Check for read/write
-            # permissions; if write permissions are denied then set workspace to TEMP folder
-            else:
+            # scratch workspace is simply a folder
+            elif descDT == "FOLDER":
                 arcpy.env.scratchWorkspace = scratchWK
+                arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
-                if arcpy.env.scratchGDB == None:
-                    AddMsgAndPrint("\tCurrent scratch workspace: " + scratchWK + " is READ only!",0)
-
-                    if sysDrive:
-                        tempFolder = sysDrive + os.sep + "TEMP"
-
-                        if not os.path.exists(tempFolder):
-                            os.makedirs(tempFolder,mode=777)
-
-                        arcpy.env.scratchWorkspace = tempFolder
-                        AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
-
-                    else:
-                        packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
-                        if arcpy.env[packageWS[0]]:
-                            arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
-                            AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
-
-                        else:
-                            AddMsgAndPrint("\tCould not set any scratch workspace",2)
-                            return False
-
-                else:
-                    AddMsgAndPrint("\tUser-defined scratch workspace is set to: "  + arcpy.env.scratchGDB,0)
-
-        # No workspace set (Very odd that it would go in here unless running directly from python)
-        else:
-            AddMsgAndPrint("\tNo user-defined scratch workspace ",0)
-            sysDrive = os.environ['SYSTEMDRIVE']
-
-            if sysDrive:
-                tempFolder = sysDrive + os.sep + "TEMP"
-
-                if not os.path.exists(tempFolder):
-                    os.makedirs(tempFolder,mode=777)
-
-                arcpy.env.scratchWorkspace = tempFolder
-                AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
-
+            # scratch workspace is set to something other than a GDB or folder; set to C:\Temp
             else:
-                packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
-                if arcpy.env[packageWS[0]]:
-                    arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
-                    AddMsgAndPrint("\tTemporarily setting scratch workspace to: " + arcpy.env.scratchGDB,1)
+                # set scratch workspace to C:\Temp
+                if os.path.exists(r'C:\Temp'):
 
+                    arcpy.env.scratchWorkspace = r'C:\Temp'
+                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+
+                # set scratch workspace to default ESRI location
                 else:
-                    return False
+                    arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
+                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
 
+        # -----------------------------------------------
+        # Scratch Workspace is not defined. Attempt to set scratch to C:\temp
+        elif os.path.exists(r'C:\Temp'):
+
+            arcpy.env.scratchWorkspace = r'C:\Temp'
+            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+
+        # set scratch workspace to default ESRI location
+        else:
+
+            arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
+            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
+
+##        AddMsgAndPrint("**********Scratch******")
+##        AddMsgAndPrint(env.scratchFolder)
+##        AddMsgAndPrint(env.scratchGDB)
         arcpy.Compact_management(arcpy.env.scratchGDB)
-        return arcpy.env.scratchGDB
+
+        return True
 
     except:
-
-        # All Failed; set workspace to packageWorkspace environment
-        try:
-            packageWS = [f for f in arcpy.ListEnvironments() if f=='packageWorkspace']
-            if arcpy.env[packageWS[0]]:
-                arcpy.env.scratchWorkspace = arcpy.env[packageWS[0]]
-                arcpy.Compact_management(arcpy.env.scratchGDB)
-                return arcpy.env.scratchGDB
-            else:
-                AddMsgAndPrint("\tCould not set scratchWorkspace. Not even to default!",2)
-                return False
-        except:
-            errorMsg()
-            return False
-
-## ===================================================================================
-##def setScratchWorkspace():
-##    # This function will set the scratchGDB environment based on the scratchWorkspace environment.
-##    #
-##    # The scratch workspac will typically not be defined by the user but the scratchGDB will
-##    # always be defined.  The default location for the scratchGDB is at C:\Users\<user>\AppData\Local\Temp
-##    # on Windows 7 or C:\Documents and Settings\<user>\Localsystem\Temp on Windows XP.  Inside this
-##    # directory, scratch.gdb will be created.
-##    #
-##    # If scratchWorkspace is set to something other than a GDB or Folder than the scratchWorkspace
-##    # will be set to C:\temp.  If C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
-##    #
-##    # If scratchWorkspace is an SDE GDB than the scratchWorkspace will be set to C:\temp.  If
-##    # C:\temp doesn't exist than the ESRI scratchWorkspace locations will be used.
-##
-##    try:
-##        # -----------------------------------------------
-##        # Scratch Workspace is defined by user or default is set
-##        if arcpy.env.scratchWorkspace is not None:
-##
-##            # describe scratch workspace
-##            scratchWK = arcpy.env.scratchWorkspace
-##            descSW = arcpy.Describe(scratchWK)
-##            descDT = descSW.dataType.upper()
-##
-##            # scratch workspace is geodatabase
-##            if descDT == "WORKSPACE":
-##                progID = descSW.workspaceFactoryProgID
-##
-##                # scratch workspace is a FGDB
-##                if  progID == "esriDataSourcesGDB.FileGDBWorkspaceFactory.1":
-##                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
-##                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##                # scratch workspace is a Personal GDB -- set scratchWS to folder of .mdb
-##                elif progID == "esriDataSourcesGDB.AccessWorkspaceFactory.1":
-##                    arcpy.env.scratchWorkspace = os.path.dirname(scratchWK)
-##                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##                # scratch workspace is an SDE GDB.
-##                elif progID == "esriDataSourcesGDB.SdeWorkspaceFactory.1":
-##
-##                    # set scratch workspace to C:\Temp; avoid the server
-##                    if os.path.exists(r'C:\Temp'):
-##
-##                        arcpy.env.scratchWorkspace = r'C:\Temp'
-##                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##                    # set scratch workspace to default ESRI location
-##                    else:
-##                        arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-##                        arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##            # scratch workspace is simply a folder
-##            elif descDT == "FOLDER":
-##                arcpy.env.scratchWorkspace = scratchWK
-##                arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##            # scratch workspace is set to something other than a GDB or folder; set to C:\Temp
-##            else:
-##                # set scratch workspace to C:\Temp
-##                if os.path.exists(r'C:\Temp'):
-##
-##                    arcpy.env.scratchWorkspace = r'C:\Temp'
-##                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##                # set scratch workspace to default ESRI location
-##                else:
-##                    arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-##                    arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##        # -----------------------------------------------
-##        # Scratch Workspace is not defined. Attempt to set scratch to C:\temp
-##        elif os.path.exists(r'C:\Temp'):
-##
-##            arcpy.env.scratchWorkspace = r'C:\Temp'
-##            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-##        # set scratch workspace to default ESRI location
-##        else:
-##
-##            arcpy.env.scratchWorkspace = arcpy.env.scratchFolder
-##            arcpy.env.scratchWorkspace = arcpy.env.scratchGDB
-##
-####        AddMsgAndPrint("**********Scratch******")
-####        AddMsgAndPrint(env.scratchFolder)
-####        AddMsgAndPrint(env.scratchGDB)
-##        arcpy.Compact_management(arcpy.env.scratchGDB)
-##
-##        return True
-##
-##    except:
-##        errorMsg()
-##        return False
+        errorMsg()
+        return False
 
 ## ===============================================================================================================
-def determineOverlap(muLayerPath,slopeLayer):
+def determineOverlap(muLayer):
     # This function will compute a geometric intersection of the mu polygons and the extent
     # of the slope layer to determine overlap.  If the number of features in the output is greater than
     # the sum of the features of the muLayerPath and the extentboundary then overlap is assumed
@@ -337,53 +156,50 @@ def determineOverlap(muLayerPath,slopeLayer):
         AddMsgAndPrint("\nDeterming overlap between input polygons and slope layer",0)
 
         # Create a polygon footprint from the slope layer
-        outDomain = scratchWS + os.sep + 'outDomain'
-        if arcpy.Exists(outDomain):
-            arcpy.Delete_management(outDomain)
+        outDomain = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
         outGeom = "POLYGON"
         arcpy.RasterDomain_3d(slopeLayer, outDomain, outGeom)
 
-        # Count the # of features in the SSA boundary
-        numOfMulayerPolys = int(arcpy.GetCount_management(muLayerPath).getOutput(0))
+        # Intersect the soils and input layer
+        outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        arcpy.Intersect_analysis([muLayer,outDomain], outIntersect,"ALL","","INPUT")
 
-        # make a feature layer out of the mulayer
-        tempMULayer = "tempMUlayer"
-        if arcpy.Exists(tempMULayer):
-            arcpy.Delete_management(tempMULayer)
-
-        arcpy.MakeFeatureLayer_management(muLayerPath,tempMULayer)
-
-        # Select all polys that intersect with the SAPOLYGON
-        arcpy.SelectLayerByLocation_management(tempMULayer,"INTERSECT",outDomain, "", "NEW_SELECTION")
-
-        # Count the # of features of union output
-        numOfSelectedPolys = int(arcpy.GetCount_management(tempMULayer).getOutput(0))
+        totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
+        totalIntAcres = sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642
 
         # All features are within the geodata extent
-        if numOfMulayerPolys == numOfSelectedPolys:
-            AddMsgAndPrint("\tALL polygons are within Slope Layer Extent",0)
+        if int(totalMUacres) == int(totalIntAcres):
+            AddMsgAndPrint("\tALL polygons are within Raster extent",0)
             return True
 
         # some features are outside the geodata extent.  Warn the user
-        elif numOfMulayerPolys > numOfSelectedPolys:
-            AddMsgAndPrint("\tThere are " + str(numOfMulayerPolys - numOfSelectedPolys) + " polygons outside of your Slope Layer extent that will not participate in the analysis",1)
-            return True
+        elif totalIntAcres < totalMUacres and totalIntAcres > 1:
+            prctOfCoverage = round((totalIntAcres / totalMUacres) * 100,1)
+
+            if prctOfCoverage > 50:
+                AddMsgAndPrint("\tWARNING: There is only " + str(prctOfCoverage) + " % coverage between your area of interest and Raster Layer",1)
+                AddMsgAndPrint("\tWARNING: " + splitThousands(round((totalMUacres-totalIntAcres),1)) + " .ac will not be accounted for",1)
+                return True
+            elif prctOfCoverage < 1:
+                AddMsgAndPrint("\tALL polygons are outside of your Raster Extent.  Cannot proceed with analysis",2)
+                return False
+            else:
+                AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and Raster extent",2)
+                return False
 
         # There is no overlap
         else:
-            AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
+            AddMsgAndPrint("\tALL polygons are ouside of your Raster Extent.  Cannot proceed with analysis",2)
             return False
 
-        arcpy.SelectLayerByAttribute_management(tempMULayer, "CLEAR_SELECTION")
-
-        if arcpy.Exists(tempMULayer):
-            arcpy.Delete_management(tempMULayer)
+        if arcpy.Exists(outIntersect):
+            arcpy.Delete_management(outIntersect)
 
         if arcpy.Exists(outDomain):
             arcpy.Delete_management(outDomain)
 
-        del outDomain, outGeom, numOfMulayerPolys, tempMULayer, numOfSelectedPolys
+        del outDomain,outGeom,outIntersect,numOfMulayerPolys,tempMULayer,numOfSelectedPolys
 
     except:
         errorMsg()
@@ -712,16 +528,16 @@ def getElevationSource():
             AddMsgAndPrint("\t feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "elevIntersect"
+        outIntersect = env.scratchGDB + os.sep + "elevIntersect"
         if arcpy.Exists(outIntersect):
             arcpy.Delete_management(outIntersect)
 
         # Intersect the mulayer with the SSR10 Elevation Source
-        arcpy.Intersect_analysis([[tempMuLayer,1],[elevSource[0],2]],outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayer,1],[elevSource[0],2]],outIntersect,"ALL","","")
 
         # Make sure there are output polygons as a result of intersection
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
-            AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayerPath) + " and 'SSR10 Elevation Source' layer" ,2)
+            AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayerPath) + " and 'Ecoregion' layer" ,2)
 
             if arcpy.Exists(outIntersect):
                 arcpy.Delete_management(outIntersect)
@@ -806,6 +622,11 @@ def createShapefile(below5,above95,zsTable):
             return False, False
 
         # Isolate anomaly polygons using the query from above
+##        tempMULayer = "tempMUlayer"
+##        if arcpy.Exists(tempMULayer):
+##            arcpy.Delete_management(tempMULayer)
+
+##        arcpy.MakeFeatureLayer_management(muLayerPath,tempMULayer,sQuery)
         arcpy.SelectLayerByAttribute_management(tempMuLayer,"NEW_SELECTION",sQuery)
         lyrField = "Layer"
         symbField = "Symbology"
@@ -880,7 +701,6 @@ def createShapefile(below5,above95,zsTable):
         AddMsgAndPrint("\tLocation: " + newShape)
 
         arcpy.CopyFeatures_management(tempMuLayer,newShape)
-        arcpy.SelectLayerByAttribute_management(tempMuLayer, "CLEAR_SELECTION")
         return newShape,lyrPath
 
     except:
@@ -901,17 +721,11 @@ if __name__ == '__main__':
     slopeLayer = arcpy.GetParameter(1)
     lowSlope = arcpy.GetParameter(2)
     highSlope = arcpy.GetParameter(3)
-##    analysisType = arcpy.GetParameterAsText(4)
 
-##    muLayer = r'C:\flex\histogramTest\HistTest.gdb\mukey_1690935'
-##    slopeLayer = r'C:\MLRA_Workspace_AlbertLea\MLRAGeodata\elevation\Elevation.gdb\Slope_10m_MLRA'
-##    lowSlope = 8
-##    highSlope = 18
-
-##    muLayer = r'P:\MLRA_Geodata\MLRA_Workspace_Onalaska\MLRAprojects\layers\SDJR___MLRA_105___Plainfield_loamy_sand__0_to_3_percent_slopes.shp'
-##    slopeLayer = r'P:\MLRA_Geodata\MLRA_Workspace_Onalaska\MLRAGeodata\elevation\Elevation.gdb\Slope_10m_MLRA'
-##    lowSlope = 0
-##    highSlope = 3
+    muLayer = r'D:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAprojects\layers\SDJR___MLRA_103___Houghton_and_Muskego_soils__0_to_1_percent_slopes.shp'
+    slopeLayer = r'D:\MLRA_Geodata\MLRA_Workspace_Bemidji\MLRAGeodata\elevation\Elevation.gdb\Slope_10m_MLRA'
+    lowSlope = 0
+    highSlope = 3
 
     try:
 
@@ -974,12 +788,6 @@ if __name__ == '__main__':
 
         del descInput, muLayerDT
 
-        scratchWS = setScratchWorkspace()
-        arcpy.env.scratchWorkspace = scratchWS
-
-        if not scratchWS:
-            raise ExitError, "\nCould not set scratch workspace! Try setting it manually"
-
         """+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+  Collect info about the slope layer +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-"""
         descRaster = arcpy.Describe(slopeLayer)
         slopeLayerPath = descRaster.catalogPath
@@ -998,6 +806,11 @@ if __name__ == '__main__':
 
         cellSize = descRaster.MeanCellWidth
         res = str(int(cellSize)) + units
+
+        """ ------------ determine overlap between mupolygon and raster ------------"""
+        # determine overlap using input and SAPOLYGON
+        if not determineOverlap(muLayer):
+            raise ExitError, "\n\tNo Overlap with geodata extent.  Come Back Later!"
 
         # Isolate the name of the input layers and remove and double blanks and underscores and extentions.
         projectName = ((os.path.basename(muLayerPath).replace("_"," ")).split('.')[0]).replace("  "," ")
@@ -1039,14 +852,14 @@ if __name__ == '__main__':
 ##            for mukey in uniqueMukeys:
 ##
 ##                # Make a feature layer with the mukey subset delineations
-##                featureLayer = scratchWS + os.sep + "temp_" + str(mukey)
+##                featureLayer = env.scratchGDB + os.sep + "temp_" + str(mukey)
 ##                if arcpy.Exists(featureLayer):
 ##                    arcpy.Delete_management(featureLayer)
 ##
 ##                where_clause = arcpy.AddFieldDelimiters(muLayerPath,"MUKEY") + " = '" + mukey + "'"
 ##                arcpy.MakeFeatureLayer_management(muLayerPath,featureLayer,where_clause)
 ##
-##                rasterMask = scratchWS + os.sep + "tempRast_" + str(mukey)
+##                rasterMask = env.scratchGDB + os.sep + "tempRast_" + str(mukey)
 ##                if arcpy.Exists(rasterMask):
 ##                    arcpy.Delete_management(rasterMask)
 ##
@@ -1062,7 +875,7 @@ if __name__ == '__main__':
         # In order for the slope extraction process to go faster whenever a subset of
         # polygons was selected an extent environment needed to be set.
         if bSubset:
-            muLayerExtent = os.path.join(scratchWS, "muLayerExtent")
+            muLayerExtent = os.path.join(env.scratchGDB, "muLayerExtent")
             if arcpy.Exists(muLayerExtent):
                 arcpy.Delete_management(muLayerExtent)
             arcpy.CopyFeatures_management(tempMuLayer, muLayerExtent)
@@ -1077,7 +890,7 @@ if __name__ == '__main__':
         arcpy.env.snapRaster = slopeLayerPath
         arcpy.SetProgressorLabel("Extracting Slope")
         env.workspace = os.path.dirname(slopeLayerPath)
-        outSlope = scratchWS + os.sep + "outSlope"
+        outSlope = env.scratchGDB + os.sep + "outSlope"
 
         if arcpy.Exists(outSlope):
             arcpy.Delete_management(outSlope)
@@ -1106,7 +919,7 @@ if __name__ == '__main__':
 
         arcpy.SetProgressorLabel("Converting Extracted Slope to Points")
 
-        rasterPoint = scratchWS + os.sep + "rasterPoint"
+        rasterPoint = env.scratchGDB + os.sep + "rasterPoint"
         if arcpy.Exists(rasterPoint):
             arcpy.Delete_management(rasterPoint)
 
@@ -1719,7 +1532,7 @@ if __name__ == '__main__':
         if arcpy.Exists(outZStable):
             arcpy.Delete_management(outZStable)
 
-        arcpy.Compact_management(scratchWS)
+        arcpy.Compact_management(arcpy.env.scratchGDB)
         os.startfile(histogramFile)
 
         del plot

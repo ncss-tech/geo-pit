@@ -2003,11 +2003,17 @@ def processClimate():
             # Run Zonal Statistics on the muLayer agains the climate layer
             # NODATA cells are not ignored;
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, raster[0], outZoneTable, "DATA", "ALL")
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
 
             zoneTableFields = [zoneField,"MEAN"]
@@ -2143,11 +2149,17 @@ def processNLCD():
             cellSize = arcpy.Describe(nlcd).meanCellWidth
 
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 TabulateArea(muLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     TabulateArea(muLayerExtent, zoneField, nlcd, theValueField, outTAtable, cellSize)
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     TabulateArea(tempMuLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
@@ -2314,11 +2326,17 @@ def processNASS():
             cellSize = arcpy.Describe(nass).meanCellWidth
 
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 TabulateArea(muLayer, zoneField, nass, theValueField, outTAtable, cellSize)
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     TabulateArea(muLayerExtent, zoneField, nass, theValueField, outTAtable, cellSize)
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     TabulateArea(tempMuLayer, zoneField, nass, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
@@ -2487,11 +2505,17 @@ def processNatureServe():
             cellSize = arcpy.Describe(raster).meanCellWidth
 
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
@@ -2658,11 +2682,17 @@ def processLandFire():
             cellSize = arcpy.Describe(raster).meanCellWidth
 
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
@@ -3853,18 +3883,21 @@ if __name__ == '__main__':
                 if muLayer input is a feature class create a feature layer from it.  These will be used in case
                 Tabulate Areas fails to execute.  I was continously having grid reading errors with Tabulate area
                 and could not figure out why.  This is a workaround"""
+
             tempMuLayer = "tempMuLayer"
             if bFeatureLyr:
-                muLayerExtent = os.path.join(scratchWS, "muLayerExtent")
-                if arcpy.Exists(muLayerExtent):
-                    arcpy.Delete_management(muLayerExtent)
+                muLayerExtent = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
                 arcpy.CopyFeatures_management(muLayer, muLayerExtent)
                 muLayerPath = muLayerExtent
+                arcpy.env.extent = muLayerPath
+                arcpy.env.mask = muLayerPath
 
             else:
                 if arcpy.Exists(tempMuLayer):
                     arcpy.Delete_management(tempMuLayer)
                 arcpy.MakeFeatureLayer_management(muLayer,tempMuLayer)
+                arcpy.env.extent = tempMuLayer
+                arcpy.env.mask = tempMuLayer
 
             if FindField(muLayerPath,"MUNAME"): munamePresent = True
             if FindField(muLayerPath,"AREASYMBOL"): areasymPresent = True
