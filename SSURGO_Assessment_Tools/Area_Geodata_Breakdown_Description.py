@@ -25,7 +25,7 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-        print msg
+        #print msg
 
         f = open(textFilePath,'a+')
         f.write(msg + " \n")
@@ -298,6 +298,7 @@ def determineOverlap(muLayer):
 
         # Intersect the soils and input layer
         outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        print "OutIntersect: " + str(outIntersect)
         arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
 
         totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
@@ -306,6 +307,10 @@ def determineOverlap(muLayer):
         # All features are within the geodata extent
         if int(totalMUacres) == int(totalIntAcres):
             AddMsgAndPrint("\tALL polygons are within Geodata Extent",0)
+
+            if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+            del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
+
             return True
 
         # some features are outside the geodata extent.  Warn the user
@@ -315,23 +320,33 @@ def determineOverlap(muLayer):
             if prctOfCoverage > 50:
                 AddMsgAndPrint("\tWARNING: There is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",1)
                 AddMsgAndPrint("\tWARNING: " + splitThousands(round((totalMUacres-totalIntAcres),1)) + " .ac will not be accounted for",1)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
                 return True
+
             elif prctOfCoverage < 1:
                 AddMsgAndPrint("\tArea of interest is outside of your Geodata Extent.  Cannot proceed with analysis",2)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
                 return False
+
             else:
                 AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and Geodata Extent",2)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
                 return False
 
         # There is no overlap
         else:
             AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
+
+            if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+            del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
             return False
 
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
-
-        del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
@@ -494,6 +509,7 @@ def getMUKEYandCompInfoTable():
         """ --------------------------- Run Tabulate areas between the input layer and the SSURGO polygons or SSURGO Raster --------------------
                                         This is much faster than doing an intersect or doing an mask extraction.  The fields
                                         from the output Tabulate areas tool will have to be transposed"""
+
         outTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
         # Get the Object ID from the muLayer; need it for tabulating polygons
@@ -536,6 +552,27 @@ def getMUKEYandCompInfoTable():
 
         arcpy.CalculateField_management(outTransposeTable,shpAreaFld,"[Shape_Area2]")
         arcpy.DeleteField_management(outTransposeTable,"Shape_Area2")
+
+        # If the output tabulate area table has more than 1 record than this is an indication that
+        # more than one polygon is being assessed.  This will cause a problem when joining b/c there will be
+        # many null records.  Need to summarize the transposed table by mukey.
+
+        if int(arcpy.GetCount_management(outTable).getOutput(0)) > 1:
+            outSummarizeTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+
+            arcpy.Statistics_analysis(outTransposeTable,outSummarizeTable,[[shpAreaFld,"Sum"]],mukeyField)
+
+            # Delete the frequency field that is added by default
+            if arcpy.ListFields(outSummarizeTable,"FREQUENCY"): arcpy.DeleteField_management(outSummarizeTable,"FREQUENCY")
+
+            shpAreaFld = "Shape_Area"
+            if not arcpy.ListFields(outSummarizeTable,shpAreaFld):
+                arcpy.AddField_management(outSummarizeTable,shpAreaFld,"LONG")
+
+            arcpy.CalculateField_management(outSummarizeTable,shpAreaFld,"[SUM_Shape_Area]")
+            arcpy.DeleteField_management(outTransposeTable,"SUM_Shape_Area")
+
+            outTransposeTable = outSummarizeTable
 
         # Get a list of unique Mukeys in order to form a query expression that will be used in the component table
         uniqueMukeys = set([row[0] for row in arcpy.da.SearchCursor(outTransposeTable, (mukeyField))])
@@ -607,6 +644,7 @@ def getMUKEYandCompInfoTable():
         arcpy.RemoveJoin_management(compView)
 
         if arcpy.Exists(outTable):arcpy.Delete_management(outTable)
+        if arcpy.Exists(outTransposeTable):arcpy.Delete_management(outTransposeTable)
 
         """ ------------------------------------ Add comp percentage weighted acres ------------------------------------------------------"""
         compPrctFld = [f.name for f in arcpy.ListFields(outJoinTable,"*comppct_r")][0]
@@ -704,7 +742,8 @@ def getSoilsOrder(outJoinTable):
             # Print Taxonomic Order, Order Acres, Percent of total Area
             taxOrderAcreFormatLength = len(str(splitThousands(round(taxOrderAcres,1))))
             firstDash = ("-" * (60 - len(taxOrderName))) + " "
-            secondDash = ("-" * (45 - maxOrderAcreLength)) + " "
+            #secondDash = ("-" * (45 - maxOrderAcreLength)) + " "
+            secondDash = ("-" * (45 - taxOrderAcreFormatLength)) + " "
             AddMsgAndPrint("\n\t" + taxOrderName + ": " + firstDash + str(splitThousands(round(taxOrderAcres,1))) + " .ac " + secondDash + str(taxOrderPrctOfTotal) + " %" ,1)
 
             """ ------------------------------- Collect component series information ----------------------------------------"""
@@ -758,9 +797,9 @@ def getSoilsOrder(outJoinTable):
             ordersPrinted += 1
 
         """ ------------------------------ Report Other Taxon Orders that did not get reported for acre accountability purposes --------------"""
-        if otherOrdersAcres > 0:
+        if otherOrdersAcres > 1:
             otherAcresPrct = str(float("%.1f" %(((otherOrdersAcres / totalSoilIntAcres) * 100))))
-            secondDash = ((" " * (maxOrderAcreLength-len(splitThousands(round(otherOrdersAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxOrderAcreLength-len(splitThousands(round(otherOrdersAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
             firstDash = (48 * "-") + " "
             AddMsgAndPrint("\n\tOther Orders: " + firstDash + splitThousands(round(otherOrdersAcres,1)) + " .ac " + secondDash + otherAcresPrct + " %",1)
             del otherAcresPrct,firstDash,secondDash
@@ -768,10 +807,10 @@ def getSoilsOrder(outJoinTable):
         """ ------------------------------ Report Acres where Taxonomic Orders is NULL for acre accountability purposes --------------"""
         nullTaxOrderAcres = sum([row[0] for row in arcpy.da.SearchCursor(outJoinTable,(acreFld),where_clause=taxOrderFld + " IS NULL AND " + compPrctExpression)])
 
-        if nullTaxOrderAcres > 0:
+        if nullTaxOrderAcres > 1:
             nullTaxOrderPrctOfTotal = str(float("%.1f" %(((nullTaxOrderAcres / totalSoilIntAcres) * 100)))) + " %"
             firstDash = (31 * "-") + " "
-            secondDash = ((" " * (maxOrderAcreLength-len(splitThousands(round(nullTaxOrderAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxOrderAcreLength-len(splitThousands(round(nullTaxOrderAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tTaxonomic Order NOT Populated: " + firstDash + str(splitThousands(round(nullTaxOrderAcres,1))) + " .ac " + secondDash + nullTaxOrderPrctOfTotal ,1)
             del nullTaxOrderPrctOfTotal,firstDash,secondDash
 
@@ -790,9 +829,9 @@ def getSoilsOrder(outJoinTable):
         for row in arcpy.da.SearchCursor(outStatsTable2,(compPrctFld,shpAreaFld),where_clause=compPrctFld + " < 100"):
             missingAcres += (((100 - row[0])/100) * row[1]) / 4046.85642
 
-        if missingAcres:
+        if missingAcres > 1:
             firstDash = (23 * "-") + " "
-            secondDash = ((" " * (maxOrderAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxOrderAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxOrderAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tComponents that do NOT add up to 100%: " + firstDash + splitThousands(round(missingAcres,1)) + " .ac " + secondDash + str(round(((missingAcres/totalSoilIntAcres)*100),1)) + " %",1)
 
         """ ------------------------------- Clean up time! --------------------------------------------"""
@@ -880,7 +919,7 @@ def getSoilsGreatGroup(outJoinTable):
             # Print Taxonomic Great Group, Acres, Percent of total Area
             greatGrpAcreFormatLength = len(str(splitThousands(round(greatGrpAcres,1))))
             firstDash = ("-" * (60 - len(greatGrpName))) + " "
-            secondDash = ("-" * (45 - maxGroupAcreLength)) + " "
+            secondDash = ("-" * (45 - greatGrpAcreFormatLength)) + " "
             AddMsgAndPrint("\n\t" + greatGrpName + ": " + firstDash + str(splitThousands(round(greatGrpAcres,1))) + " .ac " + secondDash + str(greatGrpPrctOfTotal) + " %" ,1)
 
             """ ------------------------------- Collect component series information ----------------------------------------"""
@@ -934,9 +973,9 @@ def getSoilsGreatGroup(outJoinTable):
             groupsPrinted += 1
 
         """ ------------------------------ Report Other Taxon Great Groups that did not get reported for acre accountability purposes --------------"""
-        if otherGroupAcres > 0:
+        if otherGroupAcres > 1:
             otherAcresPrct = str(float("%.1f" %(((otherGroupAcres / totalSoilIntAcres) * 100))))
-            secondDash = ((" " * (maxGroupAcreLength-len(splitThousands(round(otherGroupAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxGroupAcreLength-len(splitThousands(round(otherGroupAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
             firstDash = (48 * "-") + " "
             AddMsgAndPrint("\n\tOther Orders: " + firstDash + splitThousands(round(otherGroupAcres,1)) + " .ac " + secondDash + otherAcresPrct + " %",1)
             del otherAcresPrct,firstDash,secondDash
@@ -944,10 +983,10 @@ def getSoilsGreatGroup(outJoinTable):
         """ ------------------------------ Report Acres where Taxonomic Great Group is NULL for acre accountability purposes --------------"""
         nullGreatGrpAcres = sum([row[0] for row in arcpy.da.SearchCursor(outJoinTable,(acreFld),where_clause=greatGrpFld + " IS NULL AND " + compPrctExpression)])
 
-        if nullGreatGrpAcres > 0:
+        if nullGreatGrpAcres > 1:
             nullGreatGrpPrctOfTotal = str(float("%.1f" %(((nullGreatGrpAcres / totalSoilIntAcres) * 100)))) + " %"
             firstDash = (25 * "-") + " "
-            secondDash = ((" " * (maxGroupAcreLength-len(splitThousands(round(nullGreatGrpAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxGroupAcreLength-len(splitThousands(round(nullGreatGrpAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tTaxonomic Great Group NOT Populated: " + firstDash + str(splitThousands(round(nullGreatGrpAcres,1))) + " .ac " + secondDash + nullGreatGrpPrctOfTotal ,1)
             del nullGreatGrpPrctOfTotal,firstDash,secondDash
 
@@ -966,9 +1005,9 @@ def getSoilsGreatGroup(outJoinTable):
         for row in arcpy.da.SearchCursor(outStatsTable2,(compPrctFld,shpAreaFld),where_clause=compPrctFld + " < 100"):
             missingAcres += (((100 - row[0])/100) * row[1]) / 4046.85642
 
-        if missingAcres:
+        if missingAcres > 1:
             firstDash = (23 * "-") + " "
-            secondDash = ((" " * (maxGroupAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxGroupAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxGroupAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tComponents that do NOT add up to 100%: " + firstDash + splitThousands(round(missingAcres,1)) + " .ac " + secondDash + str(round(((missingAcres/totalSoilIntAcres)*100),1)) + " %",1)
 
         """ ------------------------------- Clean up time! --------------------------------------------"""
@@ -1055,7 +1094,7 @@ def getDrainageClass(outJoinTable):
             # Print Drainage class, class Acres, Percent of total Area
             drainAcreFormatLength = len(str(splitThousands(round(drainClassAcres,1))))
             firstDash = ("-" * (60 - len(drainClassName))) + " "
-            secondDash = ("-" * (45 - maxDrainAcreLength)) + " "
+            secondDash = ("-" * (45 - drainAcreFormatLength)) + " "
             AddMsgAndPrint("\n\t" + drainClassName + ": " + firstDash + str(splitThousands(round(drainClassAcres,1))) + " .ac " + secondDash + str(drainClassPrctOfTotal) + " %" ,1)
 
             """ ------------------------------- Collect component series information ----------------------------------------"""
@@ -1109,9 +1148,9 @@ def getDrainageClass(outJoinTable):
             drainagesPrinted += 1
 
         """ ------------------------------ Report Other Drainage Classes that did not get reported for acre accountability purposes --------------"""
-        if otherDrainageAcres > 0:
+        if otherDrainageAcres > 1:
             otherAcresPrct = str(float("%.1f" %(((otherDrainageAcres / totalSoilIntAcres) * 100))))
-            secondDash = ((" " * (maxDrainAcreLength-len(splitThousands(round(otherDrainageAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxDrainAcreLength-len(splitThousands(round(otherDrainageAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
             firstDash = (47 * "-") + " "
             AddMsgAndPrint("\n\tOther Orders: " + firstDash + splitThousands(round(otherDrainageAcres,1)) + " .ac " + secondDash + otherAcresPrct + " %",1)
             del otherAcresPrct,firstDash,secondDash
@@ -1119,10 +1158,10 @@ def getDrainageClass(outJoinTable):
         """ ------------------------------ Report Acres where Drainage Class is NULL for acre accountability purposes --------------"""
         nullDrainAcres = sum([row[0] for row in arcpy.da.SearchCursor(outJoinTable,(acreFld),where_clause=drainageFld + " IS NULL AND " + compPrctExpression)])
 
-        if nullDrainAcres > 0:
+        if nullDrainAcres > 1:
             nullDrainPrctOfTotal = str(float("%.1f" %(((nullDrainAcres / totalSoilIntAcres) * 100)))) + " %"
             firstDash = (31 * "-") + " "
-            secondDash = ((" " * (maxDrainAcreLength-len(splitThousands(round(nullDrainAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxDrainAcreLength-len(splitThousands(round(nullDrainAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tDrainage Class NOT Populated: " + firstDash + str(splitThousands(round(nullDrainAcres,1))) + " .ac " + secondDash + nullDrainPrctOfTotal ,1)
             del nullDrainPrctOfTotal,firstDash,secondDash
 
@@ -1141,9 +1180,9 @@ def getDrainageClass(outJoinTable):
         for row in arcpy.da.SearchCursor(outStatsTable2,(compPrctFld,shpAreaFld),where_clause=compPrctFld + " < 100"):
             missingAcres += (((100 - row[0])/100) * row[1]) / 4046.85642
 
-        if missingAcres:
+        if missingAcres > 1:
             firstDash = (23 * "-") + " "
-            secondDash = ((" " * (maxDrainAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxDrainAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxDrainAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tComponents that do NOT add up to 100%: " + firstDash + splitThousands(round(missingAcres,1)) + " .ac " + secondDash + str(round(((missingAcres/totalSoilIntAcres)*100),1)) + " %",1)
 
         """ ------------------------------- Clean up time! --------------------------------------------"""
@@ -1220,18 +1259,18 @@ def getTempRegime(outJoinTable):
             # Print Temp Regime, Regime Acres, Percent of total Area
             tempAcreFormatLength = len(str(splitThousands(round(tempAcres,1))))
             firstDash = ("-" * (60 - len(tempName))) + " "
-            secondDash = ("-" * (45 - maxTempAcreLength)) + " "
-            AddMsgAndPrint("\t" + tempName + ": " + firstDash + str(splitThousands(round(tempAcres,1))) + " .ac " + secondDash + str(tempPrctOfTotal) + " %" ,1)
+            secondDash = ("-" * (45 - tempAcreFormatLength)) + " "
+            AddMsgAndPrint("\n\t" + tempName + ": " + firstDash + str(splitThousands(round(tempAcres,1))) + " .ac " + secondDash + str(tempPrctOfTotal) + " %" ,1)
 
             del tempName,tempAcres,tempPrctOfTotal,tempAcreFormatLength,firstDash,secondDash
 
         """ ------------------------------ Report Acres where Temperature Regime is NULL for acre accountability purposes --------------"""
         nullTempAcres = sum([row[0] for row in arcpy.da.SearchCursor(outJoinTable,(acreFld),where_clause=tempFld + " IS NULL AND " + compPrctExpression)])
 
-        if nullTempAcres > 0:
+        if nullTempAcres > 1:
             nullTempPrctOfTotal = str(float("%.1f" %(((nullTempAcres / totalSoilIntAcres) * 100)))) + " %"
             firstDash = (28 * "-") + " "
-            secondDash = ((" " * (maxTempAcreLength-len(splitThousands(round(nullTempAcres,1))))) + ((45 - maxTempAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxTempAcreLength-len(splitThousands(round(nullTempAcres,1))))) + ((45 - maxTempAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tTemperature Regime NOT Populated: " + firstDash + str(splitThousands(round(nullTempAcres,1))) + " .ac " + secondDash + nullTempPrctOfTotal ,1)
             del nullTempPrctOfTotal,firstDash,secondDash
 
@@ -1250,9 +1289,9 @@ def getTempRegime(outJoinTable):
         for row in arcpy.da.SearchCursor(outStatsTable2,(compPrctFld,shpAreaFld),where_clause=compPrctFld + " < 100"):
             missingAcres += (((100 - row[0])/100) * row[1]) / 4046.85642
 
-        if missingAcres:
+        if missingAcres > 1:
             firstDash = (23 * "-") + " "
-            secondDash = ((" " * (maxTempAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxTempAcreLength) * "-")) + " "
+            secondDash = (("-" * (maxTempAcreLength-len(splitThousands(round(missingAcres,1))))) + ((45 - maxTempAcreLength) * "-")) + " "
             AddMsgAndPrint("\n\tComponents that do NOT add up to 100%: " + firstDash + splitThousands(round(missingAcres,1)) + " .ac " + secondDash + str(round(((missingAcres/totalSoilIntAcres)*100),1)) + " %",1)
             del firstDash,secondDash
 
@@ -3325,8 +3364,8 @@ if __name__ == '__main__':
         geoFolder = arcpy.GetParameterAsText(1) # D:\MLRA_Workspace_Stanton\MLRAGeodata
         analysisType = "MLRA Mapunit" # MLRA (Object ID)
 
-##        muLayer = r'C:\Temp\scratch.gdb\MLRA94D'
-##        geoFolder = r'D:\MLRA_Geodata\MLRA_Workspace_Rhinelander\MLRAGeodata'
+##        muLayer = r'N:\flex\Diaz\SSR10_tool_datasets\SDJR___MLRA_89___Newson_muck__0_to_1_percent_slopes.shp'
+##        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_Onalaska\MLRAGeodata'
 ##        analysisType = 'MLRA Mapunit'
 
         # Check Availability of Spatial Analyst Extension
@@ -3588,8 +3627,7 @@ if __name__ == '__main__':
 
         arcpy.CheckInExtension("Spatial Analyst")
 
-        #if arcpy.Exists(outMUKEYtable):arcpy.Delete_management(outMUKEYtable)
-        #if arcpy.Exists(outCompJoinTable):arcpy.Delete_management(outCompJoinTable)
+        if arcpy.Exists(outCompJoinTable):arcpy.Delete_management(outCompJoinTable)
 
         if bFeatureLyr:
             if arcpy.Exists(muLayerExtent):arcpy.Delete_management(muLayerExtent)
