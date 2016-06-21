@@ -1979,8 +1979,9 @@ def processClimate():
         arcpy.env.workspace = workspaces[0]
 
         climateDict = dict()
-        climateLyrs = ["TempAvg_Annual","TempMax_AvgAnnual","TempMin_AvgAnnual","PrecipAvg_Annual"]
-        climateLyrDef = ["Average Annual Temperature:","Average Max Annual Temp:","Average Min Annual Temp:","Average Annual Precipitation:"]
+        climateLyrs = ["TempAvg_Annual","PrecipAvg_Annual"]
+        climateLyrDef = ["Average Min Annual Temp:","Average Mean Annual Temperature:","Average Max Annual Temp:","Average Annual Precipitation:"]
+        zoneTableFields = ["MIN","MEAN","MAX"]
         uniqueZones = set([row[0] for row in arcpy.da.SearchCursor(muLayer, (zoneField))])
 
         """ ---------------------  Run Zonal Statistics ------------------------------ """
@@ -1992,19 +1993,12 @@ def processClimate():
                 AddMsgAndPrint("\t\"" + climateLyr + "\" raster was not found in the Climate.gdb File Geodatabase",2)
                 return False
 
-            # output Zonal Statistics Table
+            # output Zonal Statistics Table; Don't use the createScrachName here
             outZoneTable = scratchWS + os.sep + climateLyr
-            #outZoneTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB + os.sep + climateLyr)
 
-            # Delete Zonal Statistics Table if it exists
-            if arcpy.Exists(outZoneTable):
-                arcpy.Delete_management(outZoneTable)
-
-            # Run Zonal Statistics on the muLayer agains the climate layer
+            # Run Zonal Statistics on the muLayer against the climate layer
             # NODATA cells are not ignored;
             try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
                 outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
             except:
                 if bFeatureLyr:
@@ -2016,7 +2010,6 @@ def processClimate():
                     arcpy.env.mask = tempMuLayer
                     outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
 
-            zoneTableFields = [zoneField,"MEAN"]
             del raster, outZoneTable
 
         """ ---------------------  Report by Zone b/c there are multiple tables ------------------------------ """
@@ -2057,19 +2050,25 @@ def processClimate():
                 with arcpy.da.SearchCursor(outZoneTable, (zoneTableFields), where_clause = expression) as cursor:
 
                     for row in cursor:
-                        value = row[1]
-                        firstSpace = " " * (30 - len(climateLyrDef[i]))
 
-                        if i < 3:
-                            field1 = str(round(((float(value) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
-                            field2 = str(round(float(value) / 100)) + " C"                         # Temp Celsius converted from values
+                        # TempAvg_Annual Layer
+                        if i < 1:
 
+                            #iterate through the zoneTableFields of min,mean,max,mean which correspond to the climateLyrDef
+                            for j in range(0,3):
+                                firstSpace = " " * (33 - len(climateLyrDef[j]))
+                                field1 = str(round(((float(row[j]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
+                                field2 = str(round(float(row[j]) / 100)) + " C"                         # Temp Celsius converted from values
+                                AddMsgAndPrint(theTab + climateLyrDef[j] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
+
+                        # PrecipAvg_Annual Layer
                         else:
-                            field1 = str(int(round(float(value) / 100))) + " mm"                 # Precip units in MM rounded to the nearest mm
-                            field2 = str(int(round((float(value) / 100) * 0.0393701))) + " inches"    # Precip units in inches
+                            firstSpace = " " * (33 - len(climateLyrDef[3]))
+                            field1 = str(int(round(float(row[1]) / 100))) + " mm"                 # Precip units in MM rounded to the nearest mm
+                            field2 = str(int(round((float(row[1]) / 100) * 0.0393701))) + " inches"    # Precip units in inches
+                            AddMsgAndPrint(theTab + climateLyrDef[3] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
-                        AddMsgAndPrint(theTab + climateLyrDef[i] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
-                        del value,firstSpace,field1,field2
+                        del firstSpace,field1,field2
 
                     i += 1
                 del outZoneTable, expression
@@ -2077,10 +2076,10 @@ def processClimate():
         del elevFolder,workspaces,climateDict, climateLyrDef, uniqueZones
 
         # Delete all zonal stats table if they exist
-        for climateLyr in climateLyrs:
-            outZoneTable = scratchWS + os.sep + climateLyr
-            if arcpy.Exists(outZoneTable):
-                arcpy.Delete_management(outZoneTable)
+##        for climateLyr in climateLyrs:
+##            outZoneTable = scratchWS + os.sep + climateLyr
+##            if arcpy.Exists(outZoneTable):
+##                arcpy.Delete_management(outZoneTable)
 
         return True
 
@@ -3999,113 +3998,113 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire Climate Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
-            """ --------------------  NLCD Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
-            if not processNLCD():
-                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  NASS Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
-            if not processNASS():
-                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  EcoSystem Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
-            if not processNatureServe():
-                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ --------------------  LandFire Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
-            if not processLandFire():
-                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ ---------------------  Get Original Elevation Source ------------------------------ """
-            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
-            if not getElevationSource():
-                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Elevation Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Elevation Information")
-            if not processElevation():
-                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ -------------------- Aspect Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Calculating Aspect Information")
-            if not processAspect():
-                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ -------------------- Slope Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Calculating Slope Information")
-            if not processSlope():
-                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Component Composition % - Total Area ------------------------------ """
-            arcpy.SetProgressorLabel("Calculating Component Composition Percent -- Weighted by Area")
-            if arcpy.ListFields(muLayerPath, "MUKEY") > 0:
-                if not processComponentComposition():
-                    AddMsgAndPrint("\n\tFailed to Calculate Component Composition % of all mapunits",2)
-                arcpy.SetProgressorPosition()
-            else:
-                AddMsgAndPrint("\nCannot calculate component composition % -- MUKEY is missing from " + muLayerName,2)
-                arcpy.SetProgressorPosition()
-
-            """ ---------------------  Adjacent Component Data ------------------------------ """
-            arcpy.SetProgressorLabel("Itemizing Major Components mapped in adjacent polygons")
-            if not processAdjacentComponents(zoneField):
-                AddMsgAndPrint("\n\tFailed to Acquire Adjacent Mapunit Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ --------------------  NCSS Characterization Data ------------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
-            if not processPedons():
-                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
-
-            """ ---------------------  LRR Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
-            if not processLRRInfo():
-                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  MLRA Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
-            if not processMLRAInfo():
-                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
-            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
-            if not processEcoregions():
-                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Ownership Data ------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
-            if not processLandOwnership():
-                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Hydro Data ------------------------------ """
-            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
-            if not processHydro():
-                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Wetland Data ------------------------------ """
-            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
-            if not processNWI():
-                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
-            arcpy.SetProgressorPosition()
+##            """ --------------------  NLCD Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
+##            if not processNLCD():
+##                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ --------------------  NASS Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
+##            if not processNASS():
+##                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ --------------------  EcoSystem Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
+##            if not processNatureServe():
+##                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ --------------------  LandFire Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
+##            if not processLandFire():
+##                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ ---------------------  Get Original Elevation Source ------------------------------ """
+##            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
+##            if not getElevationSource():
+##                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Elevation Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Gathering Elevation Information")
+##            if not processElevation():
+##                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ -------------------- Aspect Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Calculating Aspect Information")
+##            if not processAspect():
+##                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ -------------------- Slope Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Calculating Slope Information")
+##            if not processSlope():
+##                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Component Composition % - Total Area ------------------------------ """
+##            arcpy.SetProgressorLabel("Calculating Component Composition Percent -- Weighted by Area")
+##            if arcpy.ListFields(muLayerPath, "MUKEY") > 0:
+##                if not processComponentComposition():
+##                    AddMsgAndPrint("\n\tFailed to Calculate Component Composition % of all mapunits",2)
+##                arcpy.SetProgressorPosition()
+##            else:
+##                AddMsgAndPrint("\nCannot calculate component composition % -- MUKEY is missing from " + muLayerName,2)
+##                arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Adjacent Component Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Itemizing Major Components mapped in adjacent polygons")
+##            if not processAdjacentComponents(zoneField):
+##                AddMsgAndPrint("\n\tFailed to Acquire Adjacent Mapunit Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ --------------------  NCSS Characterization Data ------------------------------------ """
+##            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
+##            if not processPedons():
+##                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
+##
+##            """ ---------------------  LRR Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
+##            if not processLRRInfo():
+##                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  MLRA Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
+##            if not processMLRAInfo():
+##                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
+##            if not processEcoregions():
+##                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Ownership Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
+##            if not processLandOwnership():
+##                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Hydro Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
+##            if not processHydro():
+##                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Wetland Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
+##            if not processNWI():
+##                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
+##            arcpy.SetProgressorPosition()
 
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
