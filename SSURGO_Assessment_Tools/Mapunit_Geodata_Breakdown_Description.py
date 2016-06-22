@@ -308,7 +308,7 @@ def determineOverlap(muLayer):
 
         if not os.path.exists(soilsFolder):
             AddMsgAndPrint("\t\"soils\" folder was not found in your MLRAGeodata Folder -- Cannot determine Overlap\n",2)
-            return 0
+            return False
         else:
             arcpy.env.workspace = soilsFolder
 
@@ -339,29 +339,44 @@ def determineOverlap(muLayer):
         # All features are within the geodata extent
         if int(totalMUacres) == int(totalIntAcres):
             AddMsgAndPrint("\tALL polygons are within Geodata Extent",0)
+
+            if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+            del soilsFolder, workspaces,saPolygonPath,totalMUacres,totalIntAcres
             return True
 
         # some features are outside the geodata extent.  Warn the user
-        elif totalIntAcres < totalMUacres and not totalIntAcres < 1:
+        elif totalIntAcres < totalMUacres and totalIntAcres > 1:
             prctOfCoverage = round((totalIntAcres / totalMUacres) * 100,1)
 
             if prctOfCoverage > 50:
                 AddMsgAndPrint("\tWARNING: There is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",1)
                 AddMsgAndPrint("\tWARNING: " + splitThousands(round((totalMUacres-totalIntAcres),1)) + " .ac will not be accounted for",1)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,totalMUacres,totalIntAcres
                 return True
+
+            elif prctOfCoverage < 1:
+                AddMsgAndPrint("\tArea of interest is outside of your Geodata Extent.  Cannot proceed with analysis",2)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
+                return False
+
             else:
-                AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and MUPOLYGON Layer",2)
+                AddMsgAndPrint("\tThere is only " + str(prctOfCoverage) + " % coverage between your area of interest and Geodata Extent",2)
+
+                if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+                del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
                 return False
 
         # There is no overlap
         else:
             AddMsgAndPrint("\tALL polygons are ouside of your Geodata Extent.  Cannot proceed with analysis",2)
+
+            if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
+            del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
             return False
-
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
-
-        del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
@@ -420,7 +435,7 @@ def getZoneField(analysisType):
         return False
 
 # ===================================================================================
-def FindField(layer, chkField):
+def FindField(layer,chkField):
     # Check table or featureclass to see if specified field exists
     # If fully qualified name is found, return that name; otherwise return ""
     # Set workspace before calling FindField
@@ -444,15 +459,15 @@ def FindField(layer, chkField):
                 if theFieldname.upper() == chkField.upper():
                     return theField.name
 
-            return ""
+            return False
 
         else:
             AddMsgAndPrint("\tInput layer not found", 0)
-            return ""
+            return False
 
     except:
         errorMsg()
-        return ""
+        return False
 
 # ===============================================================================================================
 def splitThousands(someNumber):
@@ -480,7 +495,7 @@ def getMapunitInfo(muDict,mukeyList):
 
         if not os.path.exists(soilsFolder):
             AddMsgAndPrint("\t\"soils\" folder was not found in your MLRAGeodata Folder -- Cannot get MUNAME & AREASYMBOL Information\n",2)
-            return ""
+            return False
         else:
             arcpy.env.workspace = soilsFolder
 
@@ -489,11 +504,11 @@ def getMapunitInfo(muDict,mukeyList):
 
         if len(workspaces) == 0:
             AddMsgAndPrint("\t\"SSURGO.gdb\" was not found in the soils folder -- Cannot get MUNAME & AREASYMBOL Information\n",2)
-            return ""
+            return False
 
         if len(workspaces) > 1:
             AddMsgAndPrint("\tThere are muliple \"SSURGO_*.gdb\" in the soils folder -- Cannot get MUNAME & AREASYMBOL Information\n",2)
-            return ""
+            return False
 
         arcpy.env.workspace = workspaces[0]
 
@@ -509,7 +524,7 @@ def getMapunitInfo(muDict,mukeyList):
 
         if not mukeyField or not areaSymField:
             AddMsgAndPrint("\MUPOLYGON layer is missing necessary fields -- Cannot get AREASYMBOL Information\n",2)
-            return ""
+            return False
 
         muPolyPath = arcpy.env.workspace + os.sep + fcList[0]
 
@@ -518,13 +533,13 @@ def getMapunitInfo(muDict,mukeyList):
 
         if not len(muTable):
             AddMsgAndPrint("\Mapunit table was not found in the SSURGO.gdb File Geodatabase -- Cannot get MUNAME Information\n",2)
-            return ""
+            return False
 
         munameField = FindField(muTable[0],"MUNAME")
 
         if not munameField:
             AddMsgAndPrint("\mapunit table is missing necessary fields -- Cannot get MUNAME Information\n",2)
-            return ""
+            return False
 
         muTablePath = arcpy.env.workspace + os.sep + muTable[0]
 
@@ -557,11 +572,11 @@ def getMapunitInfo(muDict,mukeyList):
         if len(muDict) > 0:
             return muDict
         else:
-            return ""
+            return False
 
     except:
         errorMsg()
-        return ""
+        return False
 
 ## ===================================================================================
 def getComponents(mukeyID):
@@ -779,35 +794,41 @@ def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
 def getSlopeMode(field,zoneID,slopeRaster):
 
     try:
-        mlraTempB = False
+        bMlraTemp = False
 
         # Analysis Mode is MUKEY
         if field != 'MLRA_Temp':
             arcpy.SetProgressorLabel("Computing Slope Mode for MUKEY: " + str(zoneID))
 
             # Isolate polygons to a layer that will have their slope mode calculated
-            arcpy.MakeFeatureLayer_management(muLayer, "tempMUKEYlayer")
+            if bFeatureLyr:
+                arcpy.MakeFeatureLayer_management(muLayerExtent,"tempMUKEYlayer")
+            else:
+                arcpy.MakeFeatureLayer_management(muLayer, "tempMUKEYlayer")
+
             where_clause = arcpy.AddFieldDelimiters("tempMUKEYlayer",field) + " = '" + zoneID + "'"
-            arcpy.SelectLayerByAttribute_management("tempMUKEYlayer", "NEW_SELECTION", where_clause)
+            arcpy.SelectLayerByAttribute_management("tempMUKEYlayer","NEW_SELECTION",where_clause)
 
             # Convert the mapunit polys from the layer above and convert it to a temporary FC
-            outModeFC = scratchWS + os.sep + "slopeMode_" + str(zoneID)
-
-            if arcpy.Exists(outModeFC):
-                arcpy.Delete_management(outModeFC)
-
+            #outModeFC = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+            outModeFC = arcpy.env.scratchGDB + os.sep + "mode_" + str(zoneID)
             arcpy.CopyFeatures_management("tempMUKEYlayer",outModeFC)
+
+            arcpy.SelectLayerByAttribute_management("tempMUKEYlayer","CLEAR_SELECTION")
             arcpy.Delete_management("tempMUKEYlayer")
-            mlraTempB = True
+            bMlraTemp = True
 
         # Analysis Mode is MLRA
         else:
             # set outModeFC the same as muLayerPath
             arcpy.SetProgressorLabel("Computing Slope Mode")
-            outModeFC = muLayerPath
+            if bFeatureLyr:
+                outModeFC = muLayerExtent
+            else:
+                outModeFC = muLayerPath
 
         # slope raster extraction by the polys of interest
-        outExtract = scratchWS + os.sep + "outExtract"
+        outExtract = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
         arcpy.env.extent = outModeFC
         arcpy.env.mask = outModeFC
 
@@ -851,66 +872,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
         maxModeInt = [row[0] for row in arcpy.da.SearchCursor(outExtract, (fields),sql_clause=sql_expression)][0]
         del fields, sql_expression
 
-    #""" -------------------  ONLY USE THIS TO GET MODE WITHIN A TENTH OF A PERCENT.  MORE PRECISE BUT VERY ROBUST ----------------------"""
-    ##    trueStatement = "\"" + valueField + "\" >= " + str(maxModeInt) + " AND \"" + valueField + "\" <" + str(maxModeInt + 1)
-    ##    conRas = Con(intOut, slopeRaster, "", trueStatement)
-    ##    outCon = scratchWS + os.sep + "outCon"
-    ##
-    ##    if arcpy.Exists(outCon):
-    ##        arcpy.Delete_management(outCon)
-    ##    outCon = conRas.save(outCon)
-    ##
-    ##    outPoint = scratchWS + os.sep + "outPoint"
-    ##
-    ##    if arcpy.Exists(outPoint):
-    ##        arcpy.Delete_management(outPoint)
-    ##
-    ##    # Create point layer from conditional raster
-    ##    env.workspace = env.scratchGDB
-    ##    arcpy.RasterToPoint_conversion("outCon", outPoint, "VALUE")
-    ##
-    ##    # Truncate all grid_code values to 1 decimal point
-    ##    arcpy.AddField_management(outPoint,"TEMP", "TEXT", "", "", "10")
-    ##    expression = 'str(!grid_code!)[:str(!grid_code!).find(".")+2]'
-    ##    arcpy.CalculateField_management(outPoint, "TEMP", expression, "PYTHON_9.3")
-    ##
-    ##    # Generate Frequency Table and grab the highest one
-    ##    frequencyTable = scratchWS + os.sep + "frequency"
-    ##
-    ##    if arcpy.Exists(frequencyTable):
-    ##        arcpy.Delete_management(frequencyTable)
-    ##
-    ##    frequencyFields = ["TEMP"]
-    ##    arcpy.Frequency_analysis(outPoint, frequencyTable, frequencyFields)
-    ##
-    ##    fields = ["TEMP", "FREQUENCY"]
-    ##    sql_expression = (None,'ORDER BY FREQUENCY DESC')
-    ##    maxModeFloat = [float(row[0]) for row in arcpy.da.SearchCursor(frequencyTable, (fields),sql_clause=sql_expression)][0]
-    ##
-    ##    if arcpy.Exists(scratchWS + os.sep + "outCon"):
-    ##        arcpy.Delete_management(scratchWS + os.sep + "outCon")
-    ##
-    ##    if arcpy.Exists(outPoint):
-    ##        arcpy.Delete_management(outPoint)
-    ##
-    ##    if arcpy.Exists(frequencyTable):
-    ##        arcpy.Delete_management(frequencyTable)
-
-    ##    del oldSetting, extract, intExtract, maxModeInt, trueStatement, conRas, outCon, outPoint, expression, frequencyTable, frequencyFields, fields, sql_expression
-    ##
-    ##    if maxModeFloat > 0:
-    ##        return maxModeFloat
-    ##    else:
-    ##        AddMsgAndPrint("\n\t\tMode is less than 0",2)
-    ##        return ""
-
-##        if maxModeInt > 0:
-##            return maxModeInt
-##        else:
-##            AddMsgAndPrint("\n\t\tMode is less than 0: " + str(maxModeInt),2)
-##            return ""
-
-        if mlraTempB:
+        if bMlraTemp:
             if arcpy.Exists(outModeFC):
                 arcpy.Delete_management(outModeFC)
 
@@ -920,6 +882,7 @@ def getSlopeMode(field,zoneID,slopeRaster):
         return maxModeInt
 
     except:
+        AddMsgAndPrint("\n\nCheck out: " + outModeFC + " : " + str(zoneID),2)
         errorMsg()
         return ""
 
@@ -1065,7 +1028,7 @@ def processAdjacentComponents(zoneField):
             for mukey in muLayerUniqueMukeys:
 
                 # Report results by MUNAME - MUKEY - Areasymbol
-                if munamePresent and areasymPresent and mukeyPresent:
+                if bMunamePresent and bAreasymPresent and bMukeyPresent:
                     spaceAfter = " " * (maxMukeyLength - len(mukey))
                     muName = muDict.get(mukey)[0]
                     areaSymbol = muDict.get(mukey)[5]
@@ -1363,8 +1326,6 @@ def processComponentComposition():
                 fieldinfo.addField(field.name, field.name, "HIDDEN", "")
 
         compView = "comp_view"
-        if arcpy.Exists(compView):
-            arcpy.Delete_management(compView)
 
         # The created component_view layer will have fields as set in fieldinfo object
         arcpy.MakeTableView_management(compTablePath, compView, "", "", fieldinfo)
@@ -1372,10 +1333,12 @@ def processComponentComposition():
         """ ---------------------------------------- Setup MuLayer ----------------------------------- """
         # Make a layer from the input muLayer
         tempLayer = "tempLayer"
-        if arcpy.Exists(tempLayer):
-            arcpy.Delete_management(tempLayer)
+        if arcpy.Exists(tempLayer):arcpy.Delete_management(tempLayer)
 
-        arcpy.MakeFeatureLayer_management(muLayer,tempLayer)
+        if bFeatureLyr:
+            arcpy.MakeFeatureLayer_management(muLayerExtent,tempLayer)
+        else:
+            arcpy.MakeFeatureLayer_management(muLayer,tempLayer)
 
         # Add an acre field if it doesn't exist
         if arcpy.ListFields(tempLayer, "acres") > 0:
@@ -1388,7 +1351,7 @@ def processComponentComposition():
 
         # summarize acres by MUKEY for temp layer; Result will be the unique MUKEYS in the layer with their acres
         statsField = [["acres", "SUM"]]
-        outStatsTable = scratchWS + os.sep + "mukeyAcreSummary"
+        outStatsTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
         arcpy.Statistics_analysis(tempLayer, outStatsTable, statsField, "MUKEY")
 
         # Add 'compacre' field if it doesn't exist to the outStatsTable; This field will contain the
@@ -1402,7 +1365,7 @@ def processComponentComposition():
         arcpy.AddJoin_management(compView,"MUKEY",outStatsTable,"MUKEY","KEEP_COMMON")
 
         # Need to write the joined table out b/c you can't calculate a field on a right join
-        outCompView_joined =  scratchWS + os.sep + "outCompView_compAcres"
+        outCompView_joined = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
         arcpy.CopyRows_management(compView, outCompView_joined)
         arcpy.RemoveJoin_management(compView)
 
@@ -1419,7 +1382,7 @@ def processComponentComposition():
         # summarize the outCompView_joined" table by compacres and component name.  This will give the total weighted acres
         # by component %RV for each unique component
         statsField = [[compAcresFld, "SUM"]]
-        outStatsTable2 = scratchWS + os.sep + "compAcreSummary"
+        outStatsTable2 = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
         arcpy.Statistics_analysis(outCompView_joined, outStatsTable2, statsField, compNameFld)
         del compNameFld,compAcresFld,compPercentFld,sumAcreFld
 
@@ -1439,6 +1402,7 @@ def processComponentComposition():
             for row in cursor:
 
                 firstSpace = " " * (maxCompNameLength - len(row[0]))
+                AddMsgAndPrint("\nError: " + str(row[1]))
                 acres = splitThousands(float("%.1f" %(row[1])))
                 compPercent = str(float("%.1f" %((row[1]/totalAcres) * 100))) + " %"
                 secondSpace = " " * (7 - len(str(compPercent))) # 100.0 %
@@ -1638,7 +1602,7 @@ def processElevation():
                 maxConv = str(splitThousands(round((row[2] * conversion[0]),1)) + " (" + conversion[1] + ")")
                 meanConv = str(splitThousands(round((row[3] * conversion[0]),1)) + " (" + conversion[1] + ")")
 
-                if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                     spaceAfter = " " * (maxMukeyLength - len(row[0]))
                     muName = muDict.get(row[0])[0]
                     areaSymbol = muDict.get(row[0])[5]
@@ -1647,7 +1611,7 @@ def processElevation():
                     del spaceAfter, muName, areaSymbol
 
                 # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                     AddMsgAndPrint("\n\t" + row[0],0)
                     theTab = "\t" * 2
 
@@ -1747,7 +1711,7 @@ def processSlope():
                 if not mode > -1:
                     mode = "N/A"
 
-                if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                     spaceAfter = " " * (maxMukeyLength - len(zone))
                     muName = muDict.get(zone)[0]
                     areaSymbol = muDict.get(zone)[5]
@@ -1756,7 +1720,7 @@ def processSlope():
                     del muName,spaceAfter, areaSymbol
 
                 # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                     AddMsgAndPrint("\n\t" + zone,0)
                     theTab = "\t" * 2
 
@@ -1878,7 +1842,7 @@ def processAspect():
             for zone in ta_zoneFields:
 
                 # if Muname and AreaSymbol are present print both; this is only valid for MUKEY zone
-                if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                     firstSpace = " " * (maxMukeyLength - len(mukey))
                     muName = muDict.get(zone)[0]
                     areaSymbol = muDict.get(zone)[5]
@@ -1886,7 +1850,7 @@ def processAspect():
                     theTab = "\t" * 2
 
                 # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                     AddMsgAndPrint("\n\t" + zone,0)
                     theTab = "\t" * 2
 
@@ -1980,11 +1944,11 @@ def processClimate():
 
         climateDict = dict()
         climateLyrs = ["TempAvg_Annual","PrecipAvg_Annual"]
-        climateLyrDef = ["Average Min Annual Temp:","Average Mean Annual Temperature:","Average Max Annual Temp:","Average Annual Precipitation:"]
+        climateLyrDef = ["Min Average Annual Temp:","Mean Average Annual Temperature:","Max Average Annual Temp:","Average Annual Precipitation:"]
         zoneTableFields = ["MIN","MEAN","MAX"]
         uniqueZones = set([row[0] for row in arcpy.da.SearchCursor(muLayer, (zoneField))])
 
-        """ ---------------------  Run Zonal Statistics ------------------------------ """
+        """ --------------------------------------------  Run Zonal Statistics ------------------------------------------- """
         for climateLyr in climateLyrs:
 
             raster = arcpy.ListRasters(climateLyr + "*","GRID")
@@ -1995,6 +1959,7 @@ def processClimate():
 
             # output Zonal Statistics Table; Don't use the createScrachName here
             outZoneTable = scratchWS + os.sep + climateLyr
+            if arcpy.Exists(outZoneTable): arcpy.Delete_management(outZoneTable)
 
             # Run Zonal Statistics on the muLayer against the climate layer
             # NODATA cells are not ignored;
@@ -2012,12 +1977,11 @@ def processClimate():
 
             del raster, outZoneTable
 
-        """ ---------------------  Report by Zone b/c there are multiple tables ------------------------------ """
-
+        """ -----------------------------------------  Report by Zone b/c there are multiple tables -------------------------------- """
         for zone in uniqueZones:
 
             # Add heading if analysis is done by MUKEY
-            if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+            if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                 spaceAfter = " " * (maxMukeyLength - len(zone))
                 muName = muDict.get(zone)[0]
                 areaSymbol = muDict.get(zone)[5]
@@ -2026,7 +1990,7 @@ def processClimate():
                 del muName,spaceAfter, areaSymbol
 
             # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-            elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+            elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                 AddMsgAndPrint("\n\t" + zone,0)
                 theTab = "\t" * 2
 
@@ -2051,20 +2015,29 @@ def processClimate():
 
                     for row in cursor:
 
-                        # TempAvg_Annual Layer
+                        # Report Temperatures in F and C
                         if i < 1:
 
-                            #iterate through the zoneTableFields of min,mean,max,mean which correspond to the climateLyrDef
-                            for j in range(0,3):
-                                firstSpace = " " * (33 - len(climateLyrDef[j]))
-                                field1 = str(round(((float(row[j]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
-                                field2 = str(round(float(row[j]) / 100)) + " C"                         # Temp Celsius converted from values
-                                AddMsgAndPrint(theTab + climateLyrDef[j] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
+                            # iterate through the zoneTableFields of min,mean,max,mean which correspond to the climateLyrDef
+                            # only for MLRA analysis
+                            if zoneField == "MLRA_Temp":
+                                for j in range(0,3):
+                                    firstSpace = " " * (32 - len(climateLyrDef[j]))
+                                    field1 = str(round(((float(row[j]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
+                                    field2 = str(round(float(row[j]) / 100)) + " C"                  # Temp Celsius converted from values
+                                    AddMsgAndPrint(theTab + climateLyrDef[j] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
-                        # PrecipAvg_Annual Layer
+                            # Only report the average for MUKEY analysis; Not enough variation between min and max
+                            else:
+                                firstSpace = " " * (32 - len(climateLyrDef[1]))
+                                field1 = str(round(((float(row[1]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
+                                field2 = str(round(float(row[1]) / 100)) + " C"                  # Temp Celsius converted from values
+                                AddMsgAndPrint(theTab + climateLyrDef[1] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
+
+                        # Report Precipitation in mm and inches
                         else:
-                            firstSpace = " " * (33 - len(climateLyrDef[3]))
-                            field1 = str(int(round(float(row[1]) / 100))) + " mm"                 # Precip units in MM rounded to the nearest mm
+                            firstSpace = " " * (32 - len(climateLyrDef[3]))
+                            field1 = str(int(round(float(row[1]) / 100))) + " mm"                      # Precip units in MM rounded to the nearest mm
                             field2 = str(int(round((float(row[1]) / 100) * 0.0393701))) + " inches"    # Precip units in inches
                             AddMsgAndPrint(theTab + climateLyrDef[3] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
@@ -2076,10 +2049,10 @@ def processClimate():
         del elevFolder,workspaces,climateDict, climateLyrDef, uniqueZones
 
         # Delete all zonal stats table if they exist
-##        for climateLyr in climateLyrs:
-##            outZoneTable = scratchWS + os.sep + climateLyr
-##            if arcpy.Exists(outZoneTable):
-##                arcpy.Delete_management(outZoneTable)
+        for climateLyr in climateLyrs:
+            outZoneTable = scratchWS + os.sep + climateLyr
+            if arcpy.Exists(outZoneTable):
+                arcpy.Delete_management(outZoneTable)
 
         return True
 
@@ -2186,7 +2159,7 @@ def processNLCD():
                 for zone in ta_zoneFields:
 
                     # if Muname is present; Print the Mapunit Name; this is only valid for MUKEY zone
-                    if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                    if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                         firstSpace = " " * (maxMukeyLength - len(mukey))
                         muName = muDict.get(zone)[0]
                         areaSymbol = muDict.get(zone)[5]
@@ -2194,7 +2167,7 @@ def processNLCD():
                         theTab = "\t" * 3
 
                     # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                    elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                    elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                         AddMsgAndPrint("\n\t\t" + zone,0)
                         theTab = "\t" * 3
 
@@ -2365,14 +2338,14 @@ def processNASS():
                 for zone in ta_zoneFields:
 
                     # if Muname is present; Print the Mapunit Name; this is only valid for MUKEY zone
-                    if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                    if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                         muName = muDict.get(zone)[0]
                         areaSymbol = muDict.get(zone)[5]
                         AddMsgAndPrint("\n\t\t" + areaSymbol + "  --  " + zone + "  --  " + muName)
                         theTab = "\t" * 3
 
                      # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                    elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                    elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                         AddMsgAndPrint("\n\t" + zone,0)
                         theTab = "\t" * 2
 
@@ -2541,14 +2514,14 @@ def processNatureServe():
                 for zone in ta_zoneFields:
 
                     # if Muname is present; Print the Mapunit Name; this is only valid for MUKEY zone
-                    if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                    if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                         muName = muDict.get(zone)[0]
                         areaSymbol = muDict.get(zone)[5]
                         AddMsgAndPrint("\n\t\t" + areaSymbol + "  --  " + zone + "  --  " + muName)
                         theTab = "\t" * 3
 
                     # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                    elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                    elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                         AddMsgAndPrint("\n\t" + zone,0)
                         theTab = "\t" * 3
 
@@ -2729,14 +2702,14 @@ def processLandFire():
                 for zone in ta_zoneFields:
 
                     # if Muname is present; Print the Mapunit Name; this is only valid for MUKEY zone
-                    if munamePresent and areasymPresent and mukeyPresent and zoneField != "MLRA_Temp":
+                    if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                         muName = muDict.get(zone)[0]
                         areaSymbol = muDict.get(zone)[5]
                         AddMsgAndPrint("\n\t\t" + areaSymbol + "  --  " + zone + "  --  " + muName)
                         theTab = "\t" * 3
 
                     # Only MUKEY was present and soils FGDB was not available to retrieve Areasymbol and MuNAME
-                    elif (not munamePresent or not areasymPresent) and mukeyPresent and zoneField != "MLRA_Temp":
+                    elif (not bMunamePresent or not bAreasymPresent) and bMukeyPresent and zoneField != "MLRA_Temp":
                         AddMsgAndPrint("\n\t" + zone,0)
                         theTab = "\t" * 3
 
@@ -3265,7 +3238,7 @@ def processHydro():
                 muHydroPercent = str(int(round(float("%.1f" %((muHydroLength / totalHydroLength) * 100))))) + " %"
 
                 # Report results by MUNAME - MUKEY - Areasymbol - Length - %
-                if munamePresent and areasymPresent and mukeyPresent:
+                if bMunamePresent and bAreasymPresent and bMukeyPresent:
                     firstSpace = " " * (maxMukeyLength - len(mukey))
                     muName = muDict.get(mukey)[0]
                     areaSymbol = muDict.get(mukey)[5]
@@ -3466,7 +3439,7 @@ def processNWI():
                 muWetlandPercent = str(float("%.1f" %((muWetlandAcres / muAcres) * 100))) + " % of mapunit"  # Wetland percent relative to total mapunit acres
 
                 # Report results by MUNAME - MUKEY - Areasymbol - Length - %
-                if munamePresent and areasymPresent and mukeyPresent:
+                if bMunamePresent and bAreasymPresent and bMukeyPresent:
                     firstSpace = " " * (maxMukeyLength - len(mukey))
                     muName = muDict.get(mukey)[0]
                     areaSymbol = muDict.get(mukey)[5]
@@ -3782,7 +3755,6 @@ if __name__ == '__main__':
         muLayer = arcpy.GetParameter(0) # D:\MLRA_Workspace_Stanton\MLRAprojects\layers\MLRA_102C___Moody_silty_clay_loam__0_to_2_percent_slopes.shp
         geoFolder = arcpy.GetParameterAsText(1) # D:\MLRA_Workspace_Stanton\MLRAGeodata
         analysisType = arcpy.GetParameterAsText(2) # MLRA (Object ID)
-        #outputFolder = arcpy.GetParameterAsText(3) # D:\MLRA_Workspace_Stanton\MLRAprojects\layers
 
 ##        muLayer = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAprojects\layers\SDJR___MLRA_103___Lester_Storden_complex__6_to_10_percent_slopes__moderately_eroded.shp'
 ##        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAGeodata'
@@ -3804,44 +3776,37 @@ if __name__ == '__main__':
         # Set overwrite option
         arcpy.env.overwriteOutput = True
 
-        mukeyPresent = False
-        munamePresent = False
-        areasymPresent = False
-        muDict = dict()
-
         # Start by getting information about the input layer
         descInput = arcpy.Describe(muLayer)
         muLayerDT = descInput.dataType.upper()
+        muLayerName = descInput.Name
         bFeatureLyr = False
 
         if muLayerDT == "FEATURELAYER":
             bFeatureLyr = True
-            muLayerName = descInput.Name
             muLayerPath = descInput.FeatureClass.catalogPath
-
             if muLayerPath.find(".gdb") > 1:
                 outputFolder = os.path.dirname(muLayerPath[:muLayerPath.find(".gdb")+4])
             else:
                 outputFolder = os.path.dirname(muLayerPath)
+            textFilePath = outputFolder + os.sep + str(muLayer)+ ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
 
         elif muLayerDT in ("FEATURECLASS"):
-            muLayerName = descInput.Name
             muLayerPath = descInput.catalogPath
             if arcpy.Describe(os.path.dirname(muLayerPath)).datatype == "FeatureDataset":
                 outputFolder = os.path.dirname(os.path.dirname(os.path.dirname(muLayerPath)))
             else:
                 outputFolder = os.path.dirname(os.path.dirname(muLayerPath))
+            textFilePath = outputFolder + os.sep + muLayerName + ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
 
         elif muLayerDT in ("SHAPEFILE"):
-            muLayerName = descInput.Name
             muLayerPath = descInput.catalogPath
             outputFolder = os.path.dirname(muLayerPath)
+            textFilePath = outputFolder + os.sep + muLayerName[0:len(muLayerName)-4] + ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
 
         else:
             raise ExitError,"Invalid input data type (" + muLayerDT + ")"
 
-        #textFilePath = outputFolder + os.sep + os.path.basename(os.path.splitext(str(muLayer))[0]) + ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
-        textFilePath = outputFolder + os.sep + muLayerName[0:len(muLayerName)-4] + ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
         if os.path.isfile(textFilePath):
             os.remove(textFilePath)
 
@@ -3866,7 +3831,6 @@ if __name__ == '__main__':
             # ------------- Report how many polygons will be processed; exit if input is empty -------------------------
             totalPolys = int(arcpy.GetCount_management(muLayerPath).getOutput(0))
             selectedPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
-            bSubset = False
 
             if totalPolys == 0:
                 raise ExitError, "\nNo Polygons found to process.  Empty Feature layer"
@@ -3876,7 +3840,6 @@ if __name__ == '__main__':
 
             else:
                 AddMsgAndPrint("\n" + str(splitThousands(totalPolys)) + " polygons will be assessed",0)
-
 
             """ if muLayer input is a feature layer then copy the features into a feature class in the scratch.gdb.
                 if muLayer input is a feature class create a feature layer from it.  These will be used in case
@@ -3898,14 +3861,15 @@ if __name__ == '__main__':
                 arcpy.env.extent = tempMuLayer
                 arcpy.env.mask = tempMuLayer
 
-            if FindField(muLayerPath,"MUNAME"): munamePresent = True
-            if FindField(muLayerPath,"AREASYMBOL"): areasymPresent = True
-            if FindField(muLayerPath,"MUKEY"): mukeyPresent = True
+            bMunamePresent = FindField(muLayerPath,"MUNAME")
+            bAreasymPresent = FindField(muLayerPath,"AREASYMBOL")
+            bMukeyPresent = FindField(muLayerPath,"MUKEY")
 
             totalAcres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642))
             AddMsgAndPrint("\tTotal Acres = " + str(splitThousands(float("%.1f" %(totalAcres)))) + " ac.",0)
 
-            # if analysisType is by Mapunit MUKEY, create a list of unique MUKEYs to inform the user
+            """ ---------------------------- if analysisType is by Mapunit MUKEY, create a list of unique MUKEYs to inform the user -------------------------"""
+            muDict = dict()
             if zoneField != "MLRA_Temp":
 
                 mukeys = set([row[0] for row in arcpy.da.SearchCursor(muLayer, (zoneField))])
@@ -3916,7 +3880,7 @@ if __name__ == '__main__':
                     AddMsgAndPrint("\nThere is " + str(len(mukeys)) + " unique mapunit found:")
 
                 # Get muname and areasym from input shapefile if they are present
-                if munamePresent and areasymPresent:
+                if bMunamePresent and bAreasymPresent:
                     for key in mukeys:
                         if not muDict.has_key(key):
                             expression = arcpy.AddFieldDelimiters(muLayer,zoneField) + " = '" + key + "'" # expression to select the MUKEY from muLayer layer
@@ -3945,8 +3909,8 @@ if __name__ == '__main__':
                 # muname & areasymbol & mukey were all present, report mapunit breakdown -- Ideal Scenario
                 if len(muDict) > 0:
 
-                    munamePresent = True
-                    areasymPresent = True
+                    bMunamePresent = True
+                    bAreasymPresent = True
 
                     # strictly for formatting
                     maxMunameLength = sorted([muinfo[3] for mukey,muinfo in muDict.iteritems()],reverse=True)[0]
@@ -3975,8 +3939,7 @@ if __name__ == '__main__':
                             for compMsg in compList:
                                 AddMsgAndPrint("\t\t" + compMsg,1)
 
-                        del areasym,muName,muCount,firstSpace,secondSpace,thirdSpace,fourthSpace,muPcntAcres,compList
-
+                        del areasym,muName,acres,muCount,firstSpace,secondSpace,thirdSpace,fourthSpace,muPcntAcres,compList
                     del maxMunameLength, maxAcreLength
 
                 # Report mukey breakdown -- muname & areasymbol were not present AND SSURGO FGDB was missing as well.
@@ -3987,7 +3950,8 @@ if __name__ == '__main__':
                         acres = float("%.1f" % (sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"), where_clause = expression)]) / 4046.85642))
                         muPcntAcres = float("%.1f" %((acres / totalAcres) * 100))
                         AddMsgAndPrint("\t" + str(key) + " -- " + str(muCount) + " polygons  --  " + splitThousands(acres) + " ac. -- " + str(muPcntAcres) + " %",0)
-
+                        del expression,muCount,acres,muPcntAcres
+                del mukeys
 
             """----------------------------- Start Adding pedon points and records---------------------------------------"""
             arcpy.SetProgressor("step", "Beginning Rapid Mapunit Assesment", 0, 18, 1)
@@ -3998,113 +3962,111 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire Climate Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
-##            """ --------------------  NLCD Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
-##            if not processNLCD():
-##                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ --------------------  NASS Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
-##            if not processNASS():
-##                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ --------------------  EcoSystem Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
-##            if not processNatureServe():
-##                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ --------------------  LandFire Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
-##            if not processLandFire():
-##                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ ---------------------  Get Original Elevation Source ------------------------------ """
-##            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
-##            if not getElevationSource():
-##                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Elevation Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Elevation Information")
-##            if not processElevation():
-##                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ -------------------- Aspect Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Calculating Aspect Information")
-##            if not processAspect():
-##                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ -------------------- Slope Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Calculating Slope Information")
-##            if not processSlope():
-##                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Component Composition % - Total Area ------------------------------ """
-##            arcpy.SetProgressorLabel("Calculating Component Composition Percent -- Weighted by Area")
-##            if arcpy.ListFields(muLayerPath, "MUKEY") > 0:
-##                if not processComponentComposition():
-##                    AddMsgAndPrint("\n\tFailed to Calculate Component Composition % of all mapunits",2)
-##                arcpy.SetProgressorPosition()
-##            else:
-##                AddMsgAndPrint("\nCannot calculate component composition % -- MUKEY is missing from " + muLayerName,2)
-##                arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Adjacent Component Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Itemizing Major Components mapped in adjacent polygons")
-##            if not processAdjacentComponents(zoneField):
-##                AddMsgAndPrint("\n\tFailed to Acquire Adjacent Mapunit Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ --------------------  NCSS Characterization Data ------------------------------------ """
-##            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
-##            if not processPedons():
-##                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
-##
-##            """ ---------------------  LRR Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
-##            if not processLRRInfo():
-##                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  MLRA Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
-##            if not processMLRAInfo():
-##                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
-##            if not processEcoregions():
-##                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Ownership Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
-##            if not processLandOwnership():
-##                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Hydro Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
-##            if not processHydro():
-##                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Wetland Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
-##            if not processNWI():
-##                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
-##            arcpy.SetProgressorPosition()
+            """ --------------------  NLCD Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Land Use - Land Cover (NLCD) Information ")
+            if not processNLCD():
+                AddMsgAndPrint("\n\tFailed to Acquire Land Use - Land Cover (NLCD) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  NASS Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Agricultural Land Cover (NASS-CDL) Information")
+            if not processNASS():
+                AddMsgAndPrint("\n\tFailed to Acquire Agricultural Land Cover (NASS) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  EcoSystem Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Computing Terrestrial Ecological Systems (NatureServ) Information")
+            if not processNatureServe():
+                AddMsgAndPrint("\n\tFailed to Acquire Terrestrial Ecological Systems (NatureServ) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ --------------------  LandFire Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring LANDFIRE Vegetation (LANDFIRE - USGS) Information")
+            if not processLandFire():
+                AddMsgAndPrint("\n\tFailed to Acquire LANDFIRE Vegetation (LANDFIRE - USGS) Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ ---------------------  Get Original Elevation Source ------------------------------ """
+            arcpy.SetProgressorLabel("Getting Original Elevation Source Information")
+            if not getElevationSource():
+                AddMsgAndPrint("\n\tFailed to Acquire Original Elevation Source Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Elevation Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Elevation Information")
+            if not processElevation():
+                AddMsgAndPrint("\n\tFailed to Acquire Elevation Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Aspect Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Aspect Information")
+            if not processAspect():
+                AddMsgAndPrint("\n\tFailed to Acquire Aspect Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ -------------------- Slope Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Slope Information")
+            if not processSlope():
+                AddMsgAndPrint("\n\tFailed to Acquire Slope Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Component Composition % - Total Area ------------------------------ """
+            arcpy.SetProgressorLabel("Calculating Component Composition Percent -- Weighted by Area")
+            if arcpy.ListFields(muLayerPath, "MUKEY") > 0:
+                if not processComponentComposition():
+                    AddMsgAndPrint("\n\tFailed to Calculate Component Composition % of all mapunits",2)
+                arcpy.SetProgressorPosition()
+            else:
+                AddMsgAndPrint("\nCannot calculate component composition % -- MUKEY is missing from " + muLayerName,2)
+                arcpy.SetProgressorPosition()
+
+            """ ---------------------  Adjacent Component Data ------------------------------ """
+            arcpy.SetProgressorLabel("Itemizing Major Components mapped in adjacent polygons")
+            if not processAdjacentComponents(zoneField):
+                AddMsgAndPrint("\n\tFailed to Acquire Adjacent Mapunit Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ --------------------  NCSS Characterization Data ------------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring NCSS Lab Pedon Information")
+            if not processPedons():
+                AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ ---------------------  LRR Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
+            if not processLRRInfo():
+                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  MLRA Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
+            if not processMLRAInfo():
+                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
+            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
+            if not processEcoregions():
+                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Ownership Data ------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
+            if not processLandOwnership():
+                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Hydro Data ------------------------------ """
+            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
+            if not processHydro():
+                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Wetland Data ------------------------------ """
+            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
+            if not processNWI():
+                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
+            arcpy.SetProgressorPosition()
 
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
@@ -4112,14 +4074,13 @@ if __name__ == '__main__':
             if zoneField == "MLRA_Temp" and arcpy.ListFields(muLayerPath, "MLRA_Temp") > 0:
                 arcpy.DeleteField_management(muLayerPath, "MLRA_Temp")
 
-            if bSubset and arcpy.Exists(muLayerExtent):
+            if bFeatureLyr and arcpy.Exists(muLayerExtent):
                 arcpy.Delete_management(muLayerExtent)
 
-            if not bSubset and arcpy.Exists(tempMuLayer):
+            if not bFeatureLyr and arcpy.Exists(tempMuLayer):
                 arcpy.Delete_management(tempMuLayer)
 
-            # Add blank line for formatting
-            AddMsgAndPrint("\n",0)
+            AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
             arcpy.Compact_management(arcpy.env.scratchGDB)
 
         else:

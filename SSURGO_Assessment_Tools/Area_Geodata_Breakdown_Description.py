@@ -275,7 +275,7 @@ def determineOverlap(muLayer):
 
         if not os.path.exists(soilsFolder):
             AddMsgAndPrint("\t\"soils\" folder was not found in your MLRAGeodata Folder -- Cannot determine Overlap\n",2)
-            return 0
+            return False
         else:
             arcpy.env.workspace = soilsFolder
 
@@ -298,7 +298,6 @@ def determineOverlap(muLayer):
 
         # Intersect the soils and input layer
         outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-        print "OutIntersect: " + str(outIntersect)
         arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
 
         totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
@@ -346,7 +345,6 @@ def determineOverlap(muLayer):
             if arcpy.Exists(outIntersect):arcpy.Delete_management(outIntersect)
             del soilsFolder, workspaces,saPolygonPath,outIntersect,totalMUacres,totalIntAcres
             return False
-
 
     except:
         AddMsgAndPrint(" \nFailed to determine overlap with " + muLayer + ". (determineOverlap)",1)
@@ -1764,11 +1762,12 @@ def processClimate():
         arcpy.env.workspace = workspaces[0]
 
         climateDict = dict()
-        climateLyrs = ["TempAvg_Annual","TempMax_AvgAnnual","TempMin_AvgAnnual","PrecipAvg_Annual"]
-        climateLyrDef = ["Average Annual Temperature:","Average Max Annual Temp:","Average Min Annual Temp:","Average Annual Precipitation:"]
+        climateLyrs = ["TempAvg_Annual","PrecipAvg_Annual"]
+        climateLyrDef = ["Min Average Annual Temp:","Mean Average Annual Temperature:","Max Average Annual Temp:","Average Annual Precipitation:"]
+        zoneTableFields = ["MIN","MEAN","MAX"]
         uniqueZones = set([row[0] for row in arcpy.da.SearchCursor(muLayer, (zoneField))])
 
-        """ ---------------------  Run Zonal Statistics ------------------------------ """
+        """ --------------------------------------------  Run Zonal Statistics ------------------------------------------- """
         for climateLyr in climateLyrs:
 
             raster = arcpy.ListRasters(climateLyr + "*","GRID")
@@ -1777,29 +1776,27 @@ def processClimate():
                 AddMsgAndPrint("\t\"" + climateLyr + "\" raster was not found in the Climate.gdb File Geodatabase",2)
                 return False
 
-            # output Zonal Statistics Table
+            # output Zonal Statistics Table; Don't use the createScrachName here
             outZoneTable = scratchWS + os.sep + climateLyr
-            #outZoneTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB + os.sep + climateLyr)
+            if arcpy.Exists(outZoneTable): arcpy.Delete_management(outZoneTable)
 
-            # Delete Zonal Statistics Table if it exists
-            if arcpy.Exists(outZoneTable):
-                arcpy.Delete_management(outZoneTable)
-
-            # Run Zonal Statistics on the muLayer agains the climate layer
+            # Run Zonal Statistics on the muLayer against the climate layer
             # NODATA cells are not ignored;
             try:
                 outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
             except:
                 if bFeatureLyr:
+                    arcpy.env.extent = muLayerExtent
+                    arcpy.env.mask = muLayerExtent
                     outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, raster[0], outZoneTable, "DATA", "ALL")
                 else:
+                    arcpy.env.extent = tempMuLayer
+                    arcpy.env.mask = tempMuLayer
                     outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
 
-            zoneTableFields = [zoneField,"MEAN"]
             del raster, outZoneTable
 
-        """ ---------------------  Report by Zone b/c there are multiple tables ------------------------------ """
-
+        """ -----------------------------------------  Report by Zone b/c there are multiple tables -------------------------------- """
         for zone in uniqueZones:
 
             # Add heading if analysis is done by MUKEY
@@ -1836,19 +1833,25 @@ def processClimate():
                 with arcpy.da.SearchCursor(outZoneTable, (zoneTableFields), where_clause = expression) as cursor:
 
                     for row in cursor:
-                        value = row[1]
-                        firstSpace = " " * (30 - len(climateLyrDef[i]))
 
-                        if i < 3:
-                            field1 = str(round(((float(value) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
-                            field2 = str(round(float(value) / 100)) + " C"                         # Temp Celsius converted from values
+                        # TempAvg_Annual Layer
+                        if i < 1:
 
+                            #iterate through the zoneTableFields of min,mean,max,mean which correspond to the climateLyrDef
+                            for j in range(0,3):
+                                firstSpace = " " * (32 - len(climateLyrDef[j]))
+                                field1 = str(round(((float(row[j]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
+                                field2 = str(round(float(row[j]) / 100)) + " C"                         # Temp Celsius converted from values
+                                AddMsgAndPrint(theTab + climateLyrDef[j] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
+
+                        # PrecipAvg_Annual Layer
                         else:
-                            field1 = str(int(round(float(value) / 100))) + " mm"                 # Precip units in MM rounded to the nearest mm
-                            field2 = str(int(round((float(value) / 100) * 0.0393701))) + " inches"    # Precip units in inches
+                            firstSpace = " " * (32 - len(climateLyrDef[3]))
+                            field1 = str(int(round(float(row[1]) / 100))) + " mm"                 # Precip units in MM rounded to the nearest mm
+                            field2 = str(int(round((float(row[1]) / 100) * 0.0393701))) + " inches"    # Precip units in inches
+                            AddMsgAndPrint(theTab + climateLyrDef[3] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
-                        AddMsgAndPrint(theTab + climateLyrDef[i] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
-                        del value,firstSpace,field1,field2
+                        del firstSpace,field1,field2
 
                     i += 1
                 del outZoneTable, expression
@@ -2268,7 +2271,6 @@ def processNatureServe():
                 acreConv = 1
 
             # output Zonal Statistics Table
-            #outTAtable = scratchWS + os.sep + "rasterTAtable"
             outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
             # Delete Zonal Statistics Table if it exists
