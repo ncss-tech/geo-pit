@@ -1402,7 +1402,7 @@ def processComponentComposition():
             for row in cursor:
 
                 firstSpace = " " * (maxCompNameLength - len(row[0]))
-                AddMsgAndPrint("\nError: " + str(row[1]))
+                #AddMsgAndPrint("\nError: " + str(row[1]))
                 acres = splitThousands(float("%.1f" %(row[1])))
                 compPercent = str(float("%.1f" %((row[1]/totalAcres) * 100))) + " %"
                 secondSpace = " " * (7 - len(str(compPercent))) # 100.0 %
