@@ -1242,8 +1242,8 @@ def processAdjacentComponents(zoneField):
         if len(arcpy.ListFields(muLayer,"acres")) > 0:
             arcpy.DeleteField_management(muLayer,"acres")
 
-        del soilsFolder, workspaces, fcList, muPolygonPath, mukeyField, compTable, compName, compMukey, majorField, compTablePath
-        del compFields, compTablefields, fieldinfo, majCompFlagYes, compView, outBuffer,outIntersect, totalIntPolys, zoneField
+        del soilsFolder,workspaces,fcList,muPolygonPath,mukeyField,compTable,compName,compMukey,majorField,compTablePath,
+        compFields,compTablefields,fieldinfo,majCompFlagYes,compView,outBuffer,outIntersect,totalIntPolys,zoneField
 
         return True
 
@@ -3635,7 +3635,8 @@ def processPedons():
             AddMsgAndPrint("\tPedons feature class is missing necessary fields -- PedonName",2)
             return False
 
-        pedonPath = arcpy.Describe(fcList[0]).catalogPath
+        #pedonPath = arcpy.Describe(fcList[0]).catalogPath
+        pedonPath = fcList[0]
 
         tempPedonLayer = "tempPedon"
         if arcpy.Exists(tempPedonLayer):
@@ -3646,12 +3647,14 @@ def processPedons():
         # national extent.  Not sure why!  I was forced to count the # of pedons to make sure the layer was correct.
         # A 2nd attempt at making a layer in case the pedon count is extremely low.
         if int(arcpy.GetCount_management(tempPedonLayer).getOutput(0)) < 500:
-##            AddMsgAndPrint("\tFailed to properly create feature layer from " + fcList[0],2)
-##            AddMsgAndPrint("\tCount is: " + str(int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))))
+            AddMsgAndPrint("\tFailed to properly create feature layer from " + fcList[0],2)
+            AddMsgAndPrint("\tCount is: " + str(int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))))
+            AddMsgAndPrint("\tCount should be: " + str(int(arcpy.GetCount_management(pedonPath).getOutput(0))))
 ##            AddMsgAndPrint("\tPedon Path: " + pedonPath)
 
             arcpy.Delete_management(tempPedonLayer)
             arcpy.CopyFeatures_management(pedonPath,scratchWS + os.sep + "tempPedonLayer")
+            AddMsgAndPrint("\n\tMade a copy to " + scratchWS + os.sep + "tempPedonLayer",2)
             arcpy.MakeFeatureLayer_management(scratchWS + os.sep + "tempPedonLayer",tempPedonLayer)
 
             if int(arcpy.GetCount_management(tempPedonLayer).getOutput(0)) < 500:
@@ -4032,41 +4035,41 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
-            """ ---------------------  LRR Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
-            if not processLRRInfo():
-                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  MLRA Data ------------------------------ """
-            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
-            if not processMLRAInfo():
-                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
-            arcpy.SetProgressorPosition() # Update the progressor position
-
-            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
-            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
-            if not processEcoregions():
-                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Ownership Data ------------------------------ """
-            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
-            if not processLandOwnership():
-                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Hydro Data ------------------------------ """
-            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
-            if not processHydro():
-                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
-            arcpy.SetProgressorPosition()
-
-            """ ---------------------  Wetland Data ------------------------------ """
-            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
-            if not processNWI():
-                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
-            arcpy.SetProgressorPosition()
+##            """ ---------------------  LRR Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
+##            if not processLRRInfo():
+##                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  MLRA Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
+##            if not processMLRAInfo():
+##                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
+##            arcpy.SetProgressorPosition() # Update the progressor position
+##
+##            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
+##            if not processEcoregions():
+##                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Ownership Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
+##            if not processLandOwnership():
+##                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Hydro Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
+##            if not processHydro():
+##                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
+##            arcpy.SetProgressorPosition()
+##
+##            """ ---------------------  Wetland Data ------------------------------ """
+##            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
+##            if not processNWI():
+##                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
+##            arcpy.SetProgressorPosition()
 
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
