@@ -1583,11 +1583,17 @@ def processElevation():
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
         try:
+            arcpy.env.extent = muLayer
+            arcpy.env.mask = muLayer
             outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
         except:
             if bFeatureLyr:
+                arcpy.env.extent = muLayerExtent
+                arcpy.env.mask = muLayerExtent
                 outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
             else:
+                arcpy.env.extent = tempMuLayer
+                arcpy.env.mask = tempMuLayer
                 outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN"]
@@ -1687,11 +1693,17 @@ def processSlope():
         # Run Zonal Statistics on the muLayer against the DEM
         # NODATA cells are not ignored;
         try:
+            arcpy.env.extent = muLayer
+            arcpy.env.mask = muLayer
             outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
         except:
             if bFeatureLyr:
+                arcpy.env.extent = muLayerExtent
+                arcpy.env.mask = muLayerExtent
                 outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
             else:
+                arcpy.env.extent = tempMuLayer
+                arcpy.env.mask = tempMuLayer
                 outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN","STD"]
@@ -1810,11 +1822,14 @@ def processAspect():
         cellSize = arcpy.Describe(aspectRaster[0]).meanCellWidth
 
         try:
+            arcpy.env.extent = muLayer
             TabulateArea(muLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
         except:
             if bFeatureLyr:
+                arcpy.env.extent = muLayerExtent
                 TabulateArea(muLayerExtent, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
             else:
+                arcpy.env.extent = tempMuLayer
                 TabulateArea(tempMuLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
 
         # list of unique VALUE fields generated from tabulate areas
@@ -1964,6 +1979,8 @@ def processClimate():
             # Run Zonal Statistics on the muLayer against the climate layer
             # NODATA cells are not ignored;
             try:
+                arcpy.env.extent = muLayer
+                arcpy.env.mask = muLayer
                 outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
             except:
                 if bFeatureLyr:
@@ -3635,8 +3652,8 @@ def processPedons():
             AddMsgAndPrint("\tPedons feature class is missing necessary fields -- PedonName",2)
             return False
 
-        #pedonPath = arcpy.Describe(fcList[0]).catalogPath
         pedonPath = fcList[0]
+        arcpy.env.extent = pedonPath
 
         tempPedonLayer = "tempPedon"
         if arcpy.Exists(tempPedonLayer):
@@ -3854,8 +3871,8 @@ if __name__ == '__main__':
                 muLayerExtent = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
                 arcpy.CopyFeatures_management(muLayer, muLayerExtent)
                 muLayerPath = muLayerExtent
-                arcpy.env.extent = muLayerPath
-                arcpy.env.mask = muLayerPath
+                arcpy.env.extent = muLayerExtent
+                arcpy.env.mask = muLayerExtent
 
             else:
                 if arcpy.Exists(tempMuLayer):
@@ -4035,41 +4052,41 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to Acquire NCSS Lab Pedon Information",2)
             arcpy.SetProgressorPosition() # Update the progressor position
 
-##            """ ---------------------  LRR Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
-##            if not processLRRInfo():
-##                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  MLRA Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
-##            if not processMLRAInfo():
-##                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
-##            arcpy.SetProgressorPosition() # Update the progressor position
-##
-##            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
-##            if not processEcoregions():
-##                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Ownership Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
-##            if not processLandOwnership():
-##                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Hydro Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
-##            if not processHydro():
-##                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
-##            arcpy.SetProgressorPosition()
-##
-##            """ ---------------------  Wetland Data ------------------------------ """
-##            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
-##            if not processNWI():
-##                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
-##            arcpy.SetProgressorPosition()
+            """ ---------------------  LRR Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Land Resource Region (LRR) Information")
+            if not processLRRInfo():
+                AddMsgAndPrint("\n\tFailed to Acquire LRR Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  MLRA Data ------------------------------ """
+            arcpy.SetProgressorLabel("Gathering Major Land Resource Region (MLRA) Information")
+            if not processMLRAInfo():
+                AddMsgAndPrint("\n\tFailed to Acquire MLRA Information",2)
+            arcpy.SetProgressorPosition() # Update the progressor position
+
+            """ ---------------------  EcoRegion Subsection Data ------------------------------ """
+            arcpy.SetProgressorLabel("Ecoregion Subsection Information")
+            if not processEcoregions():
+                AddMsgAndPrint("\n\tFailed to Acquire Ecoregion Subsection Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Ownership Data ------------------------------ """
+            arcpy.SetProgressorLabel("Acquiring Land Ownership Information")
+            if not processLandOwnership():
+                AddMsgAndPrint("\n\tFailed to Acquire Land Ownership Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Hydro Data ------------------------------ """
+            arcpy.SetProgressorLabel("Processing 24k Hydro Information")
+            if not processHydro():
+                AddMsgAndPrint("\n\tFailed to Acquire 24k Hydro Information",2)
+            arcpy.SetProgressorPosition()
+
+            """ ---------------------  Wetland Data ------------------------------ """
+            arcpy.SetProgressorLabel("Processing Wetland (NWI) Hydro Information")
+            if not processNWI():
+                AddMsgAndPrint("\n\tFailed to Acquire Wetlands (NWI) Information",2)
+            arcpy.SetProgressorPosition()
 
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
