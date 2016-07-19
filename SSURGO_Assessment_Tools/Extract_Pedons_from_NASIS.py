@@ -20,12 +20,7 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-        #print msg
-
-##        f = open(textFilePath,'a+')
-##        f.write(msg + " \n")
-##        f.close
-##        del f
+        print msg
 
         #for string in msg.split('\n'):
             #Add a geoprocessing message (in case this is run as a tool)
@@ -372,6 +367,7 @@ def getWebExportPedon(URL):
     """ This function will send the bounding coordinates to the 'Web Export Pedon Box' NASIS report
         and return a list of pedons within the bounding coordinates.  Pedons include regular
         NASIS pedons and LAB pedons.  Each record in the report will contain the following values:
+
             Row_Number,upedonid,peiid,pedlabsampnum,Longstddecimaldegrees,latstddecimaldegrees
             24|S1994MN161001|102861|94P0697|-93.5380936|44.0612717
 
@@ -438,8 +434,128 @@ def getWebExportPedon(URL):
             AddMsgAndPrint("\tThere are a total of " + str(totalPedonCnt) + " pedons found in this area:")
             AddMsgAndPrint("\t\tLAB Pedons: " + str(labPedonCnt))
             AddMsgAndPrint("\t\tNASIS Pedons: " + str(totalPedonCnt - labPedonCnt))
-
             return True
+
+    except:
+        errorMsg()
+        return False
+
+## ================================================================================================================
+def getPedonHorizon(URL):
+    """ Example of phorizon report for 1 pedon:
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml">
+        <head><title>
+        </title><link href="basepage.css" rel="stylesheet" type="text/css" />
+        	<title></title>
+        </head>
+        <body>
+        	<form name="aspnetForm" method="post" action="./limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&amp;pedonid_list=36186" id="aspnetForm">
+        <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKLTM2NDk4NDg3MA9kFgJmD2QWAgIDD2QWAgIBD2QWAgIDDw8WAh4HVmlzaWJsZWdkZGSXwAn7Hr8Ukd9anjbL9XSl6aCmiPociSQIHE2w0AyWNg==" />
+        <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DCF944DC" />
+        	<div>
+        	<div id="ctl00_ContentPlaceHolder1_pnlReportOutput">
+        	<div id="ReportData">@begin phorizon
+        seqnum,obsmethod,hzname,hzname_s,desgndisc,desgnmaster,desgnmasterprime,
+        1,,"A",,,,,,0,28,,,,"GR-L",1,0,,,,,,,,0,,,,3,,,,,,,,,,,,,,,7.2,14,,,,,,,,,,       ------ START Here
+        2,,"Bw",,,,,,28,36,,,,"GR-L",1,0,,,,,,,,0,,,,3,,,,,,,,,,,,,,,7.8,14,,3,,,,,
+        3,,"C",,,,,,36,152,,,,"GRV-S GRV-LS",1,0,,,,,,,,0,,,,1,,,,,,,,,,,,,,,8.0,14
+        @end                                                                              ------- PAUSE Here
+        desgnvert,hzdept,hzdepb,hzthk_l,hzthk_r,hzthk_h,texture,texture_s,                ------- PAUSE Here
+        ,,,,,,0,2,4,,,,,,,36186,166637
+        ,,,,,,,,,0,1,4,,,,,,,36186,166638
+        ,,3,,,,,,,,,,,,,,0,,,,,,,,,36186,166639
+        stratextsflag,claytotest,claycarbest,silttotest,sandtotest,carbdevstagefe,        ------- STOP Here
+        carbdevstagecf,fragvoltot,horcolorvflag,fiberrubbedpct,fiberunrubbedpct,
+        obssoimoiststat,rupresblkmst,rupresblkdry,rupresblkcem,rupresplate,
+        mannerfailure,stickiness,plasticity,toughclass,penetrres,penetorient,
+        ksatpedon,ksatstddev,ksatrepnum,horzpermclass,obsinfiltrationrate,phfield,
+        phdetermeth,phnaf,effclass,efflocation,effagent,mneffclass,mneffagent,
+        reactadipyridyl,dipyridylpct,dipyridylloc,ecmeasured,ecdeterminemeth,ec15,
+        excavdifcl,soilodor,soilodorintensity,rmonosulfidep,bounddistinct,boundtopo
+        ,horzvoltotpct_l,horzvoltotpct_r,horzvoltotpct_h,horzlatareapct_l,
+        horzlatareapct_r,horzlatareapct_h,peiidref,phiid
+        </div>
+        </div>
+        	</div>
+        	</form>
+        </body>
+        </html>
+        """
+    try:
+        # Open a network object using the URL with the search string already concatenated
+        theReport = urllib.urlopen(URL)
+
+        bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
+        bFirstString = False
+        bSecondString = False
+        pHorizonList = list()
+        i = 0
+
+        # iterate through the report until a valid record is found
+        for theValue in theReport:
+
+            theValue = theValue.strip() # remove whitespace characters
+
+            # Iterating through the lines in the report
+            if bValidRecord:
+                if theValue.startswith('</div>'):  # this report doesn't really have a hard stop or stopping indicator.
+                    break
+
+                # The line after this is where the first half of data begins
+                elif theValue.startswith("seqnum,obsmethod,hzname"):
+                    bFirstString = True
+                    continue
+
+                # benchmark indicators of when to stop appending to pHorizonlist
+                elif theValue.startswith(("@end","stratextsflag,claytotest,claycarbest,silttotest")):
+                    bFirstString = False
+                    bSecondString = False
+                    continue
+
+                # The line after this is where the second half of data begins
+                elif theValue.startswith("desgnvert,hzdept,hzdepb,hzthk_l"):
+                    bSecondString = True
+                    continue
+
+                # Add the first set of pHorizon data to the pHorizonList
+                elif bFirstString:
+                    tempList = list()
+
+                    for val in theValue.split(","):
+                        if val is None:
+                            tempList.append(None)
+                        else:
+                            tempList.append(val.strip("\""))
+
+                    pHorizonList.append(tempList)
+                    del tempList
+
+                # Add the second set of pHorizon data to the last list in pHorizonList
+                elif bSecondString:
+
+                    for val in theValue.split(","):
+                        if val is None:
+                            pHorizonList[i].append(None)
+                        else:
+                            pHorizonList[i].append(val.strip("\""))
+
+                    i+=1
+                    if i+1 == len(pHorizonList):
+                        break
+
+            else:
+                # This is where the real report starts; earlier lines are html fluff
+                if theValue.startswith('<div id="ReportData">@begin phorizon'):
+                    bValidRecord = True
+
+        if not pHorizonList:
+            AddMsgAndPrint("\tThere were no Pedon Horizon records returned from the web report",2)
+            return False
+        else:
+            AddMsgAndPrint("\tThere are " + str(len(pHorizonList)) + " pedon horizon records that will be added",0)
+
+        del theReport,bValidRecord,bFirstString,bSecondString,pHorizonList,i
 
     except:
         errorMsg()
@@ -490,10 +606,10 @@ if __name__ == '__main__':
         raise ExitError, "\n Failed to scratch workspace; Try setting it manually"
 
     """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------"""
-##    pedonFGDB = createPedonFGDB()
-##
-##    if pedonFGDB == "":
-##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+    pedonFGDB = createPedonFGDB()
+
+    if pedonFGDB == "":
+        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
     #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484
@@ -512,8 +628,6 @@ if __name__ == '__main__':
     if not getWebExportPedon(getPedonIDURL):
         raise ExitError, "\t Failed to get a list of pedonIDs from NASIS"
 
-    AddMsgAndPrint("\n" + str(pedonDict))
-
     """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
     pedonIDstr = ""
 
@@ -524,7 +638,11 @@ if __name__ == '__main__':
         else:
             pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
 
-    getPedonInfoURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=" + pedonIDstr
+    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=" + pedonIDstr
     pedonInfoDict = dict()
 
+    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=36186"
+
+    if not getPedonHorizon(getPedonHorizonURL):
+        raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
 
