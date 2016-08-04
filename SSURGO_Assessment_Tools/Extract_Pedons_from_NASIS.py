@@ -292,6 +292,7 @@ def getBoundingCoordinates(feature):
 
     try:
 
+
         AddMsgAndPrint("\nCalculating bounding coordinates of features",0)
 
         """ Set Projection and Geographic Transformation environments in order
@@ -483,6 +484,7 @@ def getPedonHorizon(URL):
         </html>
         """
     try:
+
         # Open a network object using the URL with the search string already concatenated
         theReport = urllib.urlopen(URL)
 
@@ -556,11 +558,13 @@ def getPedonHorizon(URL):
             AddMsgAndPrint("\tThere are " + str(len(pHorizonList)) + " pedon horizon records that will be added",0)
 
         del theReport,bValidRecord,bFirstString,bSecondString,pHorizonList,i
+        return True
 
     except:
         errorMsg()
         return False
 
+#===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
 
 """ --------------- Column Headers
@@ -581,16 +585,18 @@ Column order
 # This report will contain pedon information to be parsed into a FGDB.
 
 # Raw URL
-# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=1188914
+# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=    OLD one
+# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=    NEW one
 
-# Complete URL with
-# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=36186,59976,60464,60465,101219,102867,106105,106106
+# Sample complete URL with pedonIDs:
+# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=36186,59976,60464,60465,101219,102867,106105,106106
+#===================================================================================================================================
+
 
 # =========================================== Main Body ==========================================
 # Import modules
 import sys, string, os, traceback, urllib, re, arcpy
 from arcpy import env
-from arcpy.sa import *
 
 if __name__ == '__main__':
 
@@ -606,10 +612,10 @@ if __name__ == '__main__':
         raise ExitError, "\n Failed to scratch workspace; Try setting it manually"
 
     """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------"""
-    pedonFGDB = createPedonFGDB()
-
-    if pedonFGDB == "":
-        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+##    pedonFGDB = createPedonFGDB()
+##
+##    if pedonFGDB == "":
+##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
     #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484
@@ -629,20 +635,30 @@ if __name__ == '__main__':
         raise ExitError, "\t Failed to get a list of pedonIDs from NASIS"
 
     """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
+    i = 1
+    charLength = 0
     pedonIDstr = ""
 
-    i = 1
+    AddMsgAndPrint("\nRequesting pedon horizon information")
+
     for pedonID in pedonDict:
         if i == len(pedonDict):
             pedonIDstr = pedonIDstr + str(pedonID);i+=1
+
         else:
-            pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
+            if len(pedonIDstr) > 1870:
+                pedonIDstr = pedonIDstr + str(pedonID);i+=1
+                getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
 
-    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=" + pedonIDstr
+            else:
+                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
+
+    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
+    AddMsgAndPrint("\nLength of characters for URL: " + str(len(getPedonHorizonURL)),1)
+    AddMsgAndPrint("\n\n\n" + getPedonHorizonURL + "\n\n\n")
     pedonInfoDict = dict()
-
-    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&pedonid_list=36186"
 
     if not getPedonHorizon(getPedonHorizonURL):
         raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+
 
