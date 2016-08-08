@@ -16,7 +16,7 @@ from arcpy import env
 if __name__ == '__main__':
 
     sampleURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=36186"
-    pedonGDB = r'G:\ESRI_stuff\python_scripts\SSR10\SSR10\Nasis_Pedons.gdb'
+    pedonGDB = r'C:\python_scripts\SSR10\SSR10\Nasis_Pedons.gdb'
 
     theReport = urllib.urlopen(sampleURL)
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     pHorizonList = list()
     i = 0
 
-    tableDict = dict()
+    nasisDict = dict()
     tempTableName = ""
 
     # iterate through the report until a valid record is found
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         # Iterating through the report
         if bFieldNameRecord:
 
-            tableDict[tempTableName] = (theValue.split(','))
+            nasisDict[tempTableName] = (theValue.split(','))
             tempTableName = ""
             bFieldNameRecord = False
 
@@ -49,19 +49,56 @@ if __name__ == '__main__':
         else:
             continue
 
-    arcpy.env.workspace(pedonGDBTables)
+    arcpy.env.workspace = pedonGDB
     pedonGDBTables = arcpy.ListTables('*')
+    missingTables = list()
 
-    for nasisTable in tableDict.keys():
+    for nasisTable in nasisDict.keys():
 
         # Check if NASIS table exists in Pedon FGDB
         if nasisTable not in pedonGDBTables:
-            print nasisTable + " does NOT exist in the GDB"
+            missingTables.append(nasisTable)
             continue
 
-        tableFields = arcpy.ListFields(pedonGDB + os.sep + nasisTable)
+        gdbTableFields = [f.name for f in arcpy.ListFields(pedonGDB + os.sep + nasisTable)]   # List of GDB table fields
+        nasisFields = [value for value in nasisDict.get(nasisTable)]                          # List of NASIS table fields
 
+        # remove OBJECTID from gdbTableFields list
+        if 'OBJECTID' in gdbTableFields:
+            gdbTableFields.remove('OBJECTID')
 
+        gdbTableFieldsTotal = len(gdbTableFields)
+        nasisFieldsTotal = len(nasisFields)
 
+        if gdbTableFieldsTotal == nasisFieldsTotal:
+            sameNumOfFields = True
+        else:
+            sameNumOfFields = False
+
+        # Check for NASIS fields missing in the GDB
+        fieldsMissingGDB = list()
+        for nasisField in nasisDict.get(nasisTable):
+
+            if not str(nasisField) in gdbTableFields:
+                fieldsMissingGDB.append(nasisField)
+            else:
+                gdbTableFields.remove(nasisField)
+
+        # Notify user of missing fields
+        if len(fieldsMissingGDB):
+            print "\n============================================================================================="
+            print nasisTable + " Table:"
+            print "\tThe following NASIS report fields do NOT exist in the GDB"
+            print "\t\t" + str(fieldsMissingGDB)
+
+        if len(gdbTableFields):
+            print "\n\tThese GDB fields were not present in the NASIS report but exist in the GDB:"
+            print "\t\t" + str(gdbTableFields)
+
+        #del gdbTableFields, fieldsMissingGDB
+
+    if len(missingTables):
+        print "\nThe following Tables are missing from the GDB:"
+        print "\t" + str(missingTables)
 
 
