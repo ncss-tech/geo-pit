@@ -442,7 +442,7 @@ def getWebExportPedon(URL):
         return False
 
 ## ================================================================================================================
-def getPedonHorizon(URL):
+def getPedonHorizonOLD(URL):
     """ Example of phorizon report for 1 pedon:
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
         <html xmlns="http://www.w3.org/1999/xhtml">
@@ -564,6 +564,190 @@ def getPedonHorizon(URL):
         errorMsg()
         return False
 
+## ================================================================================================================
+def getPedonHorizon(URL):
+
+    """ Example of phorizon report for 1 pedon:
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml">
+        <head><title>
+        </title><link href="basepage.css" rel="stylesheet" type="text/css" />
+        <title></title>
+        </head>
+        <body>
+        <form name="aspnetForm" method="post" action="./limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&amp;pedonid_list=36186" id="aspnetForm">
+        <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKLTM2NDk4NDg3MA9kFgJmD2QWAgIDD2QWAgIBD2QWAgIDDw8WAh4HVmlzaWJsZWdkZGSw4UyY2tA6B555egB7tpATxNUfl13LgVfcZNwmy2YnRQ==" />
+        <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DCF944DC" />
+        <div>
+        <div id="ctl00_ContentPlaceHolder1_pnlReportOutput">
+        <div id="ReportData">@begin site
+        siteiid,siteuid,usiteid,latdegrees,latminutes,latseconds,latdir,latdir_s,longdegrees,longminutes,longseconds,longdir,longdir_s,horizdatnm,horizdatnm_s,locdesc,plsssdetails,plsssection,plsstownship,plssrange,plssmeridian,utmzone,utmnorthing,utmeasting,elev,geomposhill,geomposmntn,geompostrce,geomposflats,hillslopeprof,geomslopeseg,slope,aspect,slopelenusle,shapeacross,shapedown,slopecomplex,locphysnm,geoform,bedrckdepth,bedrckkind,bedrckhardness,bedrckfractint,bedrckweather,bedrckstrike,bedrckdip_h,bedrckdip_l,drainagecl,siteperm,runoff,pmgroupname,plantassocnm,climstaid,climstanm,climstatype,ffd,map,reannualprecip,airtempa,soiltempa,airtemps,soiltemps,airtempw,soiltempw,flodfreqcl,floddurcl,flodmonthbeg,pondfreqcl,ponddurcl,pondmonthbeg,wtabledur,sdbsidref,sdbiidref,grpiidref,useriidref,wlupdated
+        36242,36242,"94IL111028",42,18,45.00,1,"North",88,13,43.00,2,"West",1,"North American Datum of 1927","500 feet south and 2,600 feet east of the northwest corner of sec. 7, T. 44 N., R. 9 E.",,,,,,,,,229.0,"Side Slope",,,,"Backslope",,27.0,270,,"Linear","Linear",,,,,,,,,,,,"Excessively drained","Very rapid","Very high",,,,,,,,,,,,,,,,,,,,,,139,139,1298,1237,8/14/2013 2:46:24 AM
+        @end
+        @begin siteobs
+        seqnum,obsdate,obsdatekind,photoid,swaterkind,swaterdepth,geomicrorelief,geommicelev,geommicpat,yldstudyid,sdbsidref,siteiidref,siteobsiid,siteobsuid
+        ,"10/14/1994 12:00:00 AM","Actual Site Observation Date","BXA-2-41",,,,,,,139,36242,36165,36165
+        @end
+        @begin siteerosionacc
+        seqnum,erokind,sdbsidref,siteobsiidref,siteeroacciid
+        ,"Water erosion",139,36165,4703
+        @end
+        @begin siteexistveg
+        seqnum,lplantdbsidref,lplantiidref,sdbsidref,siteobsiidref,siteexistvegiid,lplantuidref
+        @end
+        @begin sitegeomordesc
+        seqnum,geomftdbsidref,geomftname,geofname,geomfmod,geomfeatid,existsonfeat,sdbsidref,siteiidref,sitegeomdiid
+        ,1,"Landform","kame terrace",,,,139,36242,52245
+        @end
+        @begin siteobstext
+        seqnum,recdate,recauthor,siteobstextkind,textcat,textsubcat,text,sdbsidref,siteobsiidref,siteobstextiid
+        @end
+        @begin siteaoverlap
+        seqnum,atdbsidref,areatypename,areaname,sdbsidref,siteiidref,sareaoviid
+        ,1,"Non-MLRA Soil Survey Area","La Salle County, Illinois",139,36242,1050900
+        ,1,"Non-MLRA Soil Survey Area","McHenry County, Illinois",139,36242,1050901
+        ,1,"Country","United States",139,36242,1050899
+        @end
+        @begin sitemuoverlap
+        seqnum,musym,muname,sdbsidref,sareaoviidref,smuoviid
+        ,"969F","Casco-Rodman complex, 20 to 30 percent slopes",139,36242,124012
+        @end
+        @begin sitepm
+        seqnum,pmorder,pmmodifier,pmgenmod,pmkind,pmorigin,pmweathering,sdbsidref,siteiidref,sitepmiid
+        @end
+        @begin sitesoilmoist
+        seqnum,soimoistdept,soimoistdepb,obssoimoiststat,obssoimoist,soimoistten,sdbsidref,siteobsiidref,sitesmiid
+        @end
+        @begin sitesoiltemp
+        seqnum,soitempdep,soitemp,sdbsidref,siteobsiidref,sitestiid
+        @end
+        @begin sitetext
+        seqnum,recdate,recauthor,sitetextkind,textcat,textsubcat,text,sdbsidref,siteiidref,sitetextiid
+        ,"9/5/2000 12:00:00 AM",,"Conversion problem",,,"Obsolete Landscape: Glaciofluvial Landform *
+        Obsolete Landuse: forest land not grazed
+        Invalid county symbol and name combination
+        County symbol:  County name: McHenry
+        Invalid Quad Name: 42088C2
+        Invalid SSA symbol and name combination
+        SSA symbol: 111 SSA name: McHenry",139,36242,71202
+        ,"9/5/2000 12:00:00 AM",,"Pedon conversion","Map Unit Symbol/Name",,"Map Unit Symbol: 93F
+        Map Unit Name:   Rodman gravelly loam, 20 to 30 percent slopes",139,36242,71352
+        ,"4/6/2012 12:00:00 AM","Tonie Endres","Miscellaneous notes",,,"Site ownership changed from Illinois 108A_108B Shared to 11-04 Aurora MLRA in order to assign ownership to an established MLRA SSO.",139,36242,494955
+        @end
+        @begin transect
+        tsectdbsidref,tsectiid,utransectid,tsectauth,tsectkind,tsectselmeth,tsectdelinsize,tsectdir,tsectdbiidref,grpiidref,useriidref,wlupdated,tsectuid
+        @end
+        @begin transecttext
+        seqnum,recdate,recauthor,transecttextkind,textcat,textsubcat,text,tsectdbsidref,tsectiidref,transecttextiid
+        @end
+        @begin pediagfeatures
+        seqnum,featkind,featdept,featdepb,featthick_l,featthick_r,featthick_h,pedbsidref,peiidref,pediagfeatiid
+        @end
+        @begin pefmp
+        seqnum,fmpname,fmpvalue,fmpunits,pedbsidref,peiidref,pefmpiid
+        @end
+        @begin pedon
+        upedonid,pedrecorigin,descname,sdbsidref,siteiidref,siteobsiidref,tsectdbsidref,tsectiidref,tsectstopnum,tsectinterval,soinmassamp,soinmascorr,compkind,pedontype,pedonpurpose,pedonunit,relexpsize,relexpuom,earthcovkind1,earthcovkind2,erocl,taxclname,taxorder,taxsuborder,taxgrtgroup,taxsubgrp,taxpartsize,taxpartsizemod,taxceactcl,taxreaction,taxtempcl,taxmoistscl,taxtempregime,soiltaxedition,psctopdepth,pscbotdepth,currweathcond,currairtemp,labsourceid,pedlabsampnum,pedbiidref,grpiidref,useriidref,wlupdated,pedbsidref,peiid,peuid,siteobsuidref,tsectuidref
+        "94IL111028","Converted from PDP 3.x","JAD, DEC",139,36242,36165,,,,,"Rodman","Rodman",,,"Full pedon description",,,,,,"Class 1","Sandy-skeletal, mixed, mesic Typic Hapludolls","Mollisols","Udolls","Hapludolls","Typic Hapludolls","sandy-skeletal",,,,"mesic",,"mesic","tenth edition",,,,,,,139,1298,1216,4/6/2012 11:42:51 AM,139,36186,36186,36165,
+        @end
+        @begin perestrictions
+        seqnum,reskind,reshard,resdept,resdepb,resthk_l,resthk_r,resthk_h,pedbsidref,peiidref,perestrictiid
+        @end
+        @begin pesurffrags
+        seqnum,sfragcov,distrocks,sfragkind,sfragsize_l,sfragsize_r,sfragsize_h,sfragshp,sfraground,sfraghard,pedbsidref,peiidref,pesurffragsiid
+        @end
+        @begin petaxfmmin
+        seqnum,taxminalogy,pedbsidref,peiidref,petaxfmminiid
+        ,"mixed",139,36186,32434
+        @end
+        @begin petxfmother
+        seqnum,taxfamother,pedbsidref,peiidref,petaxfoiid
+        @end
+        @begin petaxmoistcl
+        seqnum,taxmoistcl,pedbsidref,peiidref,petaxmciid
+        ,"Udic",139,36186,33763
+        @end
+        @begin petext
+        seqnum,recdate,recauthor,pedontextkind,textcat,textsubcat,text,pedbsidref,peiidref,petextiid
+        ,4/6/2012 12:00:00 AM,"Tonie Endres","Miscellaneous notes",,,"Pedon ownership changed from Illinois 108A_108B Shared to 11-04 Aurora MLRA PO in order to assign ownership to an established MLRA SSO.",139,36186,511099
+        @end
+        @begin phcemagent
+        seqnum,ruprescem,pedbsidref,phiidref,phcemagentiid
+        @end
+        @begin phcolor
+        seqnum,colorpct,colorphysst,colorhue,colorvalue,colorchroma,colormoistst,pedbsidref,phiidref,phcoloriid
+        1,,,"10YR","3","1","Moist",139,166637,220346
+        2,,,"10YR","4","2","Dry",139,166637,220347
+        2,50,,"10YR","4","3","Moist",139,166638,220335
+        1,50,,"10YR","3","3","Moist",139,166638,220348
+        1,,,"10YR","4","4","Moist",139,166639,220336
+        @end
+        @begin phconccolor
+        seqnum,colorpct,colorhue,colorvalue,colorchroma,colormoistst,pedbsidref,phconceniidref,phconcencoloriid
+        @end
+        @begin phconcs
+        seqnum,concpct,concsize,conccntrst,conchardness,concshape,conckind,conclocation,concboundary,pedbsidref,phiidref,phconceniid
+        @end
+        @begin phdesgnsuffix
+        seqnum,desgnsuffix,pedbsidref,phiidref,phdesgnsfxiid
+        @end
+        @begin phfeatures
+        seqnum,horfeatkind,horfeatvtpct_l,horfeatvtpct_r,horfeatvtpct_h,horfeatlapct_l,horfeatlapct_r,horfeatlapct_h,pedbsidref,phiidref,phfeatsiid
+        @end
+        @begin phfeatcolor
+        seqnum,colorpct,colorhue,colorvalue,colorchroma,colormoistst,pedbsidref,phfeatiidref,phfeatcoloriid
+        @end
+        @begin phfmp
+        seqnum,fmpname,fmpvalue,fmpunits,pedbsidref,phiidref,phfmpiid
+        @end
+        @begin phfrags
+        seqnum,fragvol,fragkind,fragsize_l,fragsize_r,fragsize_h,fragshp,fraground,fraghard,pedbsidref,phiidref,phfragsiid
+        1,17.0,,2,39,75,,,,139,166637,26160
+        1,25.0,,2,39,75,,,,139,166638,26161
+        1,50.0,,2,39,75,,,,139,166639,26162
+        @end
+        @begin phmottles
+        seqnum,mottlepct,mottlesize,mottlecntrst,colorhue,colorvalue,colorchroma,mottleshape,colormoistst,mottleloc,pedbsidref,phiidref,phmottlesiid
+        @end
+        @begin phpores
+        seqnum,poreqty,poresize,porecont,poreshp,pedbsidref,phiidref,phporesiid
+        @end
+        @begin phpvsf
+        seqnum,pvsfpct,pvsfdistinct,pvsfcont,pvsfkind,pvsflocation,pedbsidref,phiidref,phpvsfiid
+        1,50,"Distinct",,"Organic stains","On faces of peds",139,166638,57799
+        @end
+        @begin phpvsfcolor
+        seqnum,colorpct,colorhue,colorvalue,colorchroma,colormoistst,pedbsidref,phpvsfiidref,phpvsfcoloriid
+        ,,"10YR","3","2",,139,57799,33932
+        @end
+        @begin phrdxfeatures
+        seqnum,rdxfeatpct,rdxfeatsize,rdxfeatcntrst,rdxfeathardness,rdxfeatshape,rdxfeatkind,rdxfeatlocation,rdxfeatboundary,pedbsidref,phiidref,phrdxfiid
+        @end
+        @begin phroots
+        seqnum,rootsquantity,rootssize,rootslocation,pedbsidref,phiidref,phrootsiid
+        1,14.0,"Very fine and fine",,139,166637,52228
+        1,4.0,"Very fine",,139,166638,52241
+        1,2.0,"Very fine",,139,166639,51616
+        @end
+        @begin phsample
+        seqnum,labsampnum,pedbsidref,phiidref,phlabsampiid
+        @end
+        @begin phstructure
+        seqnum,structgrade,structsize,structtype,structid,structpartsto,pedbsidref,phiidref,phstructureiid
+        2,"Strong","Fine and medium","Granular",,,139,166637,176463
+        2,"Weak","Fine","Granular",,,139,166638,176464
+        2,,,"Single grain",,,139,166639,176465
+        @end
+        @begin phtext
+        seqnum,recdate,recauthor,phorizontextkind,textcat,textsubcat,text,pedbsidref,phiidref,phtextiid
+        @end
+        </div>
+        </div>
+        </div>
+        </form>
+        </body>
+        </html>"""
+
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
 
@@ -641,12 +825,15 @@ if __name__ == '__main__':
 
     AddMsgAndPrint("\nRequesting pedon horizon information")
 
+    # There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
+    # available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
+    # 6 characters.  This would mean an average max request of 265 pedons at a time.
     for pedonID in pedonDict:
         if i == len(pedonDict):
             pedonIDstr = pedonIDstr + str(pedonID);i+=1
 
         else:
-            if len(pedonIDstr) > 1870:
+            if len(pedonIDstr) > 1860:
                 pedonIDstr = pedonIDstr + str(pedonID);i+=1
                 getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
 
