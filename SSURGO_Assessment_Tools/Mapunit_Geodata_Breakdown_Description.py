@@ -1,6 +1,9 @@
 #-------------------------------------------------------------------------------
 # Name:        Generate Mapunit Geodata Report
-# Purpose:     This tool serves as an exploratary tool that mines Region 10's MLRA Geodata
+# Purpose:     This tool will generate a compositional or statistical breakdown
+#              of various MLRAGeodata layers for a user-defined polygon layer.
+#              The output information will be written to a text file for future
+#              reference located in the same directory as the input mapunit layer.
 #
 # Author:      Adolfo.Diaz
 #              Region 10 GIS Specialist
@@ -8,6 +11,7 @@
 #              adolfo.diaz@wi.usda.gov
 #
 # Created:     8.28.2014
+# Last Modified 9.15.2014
 # Copyright:   (c) Adolfo.Diaz 2014
 #
 #

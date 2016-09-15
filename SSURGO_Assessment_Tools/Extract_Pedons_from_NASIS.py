@@ -1,12 +1,13 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
+# Name:        Extract Pedons from NASIS
 #
-# Author:      Adolfo.Diaz
+# Author: Adolfo.Diaz
+# e-mail: adolfo.diaz@wi.usda.gov
+# phone: 608.662.4422 ext. 216
 #
-# Created:     27/04/2016
+# Created:     7/04/2016
+# Last Modified: 9/15/2016
 # Copyright:   (c) Adolfo.Diaz 2016
-# Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
 ## ===================================================================================
@@ -819,9 +820,11 @@ if __name__ == '__main__':
         raise ExitError, "\t Failed to get a list of pedonIDs from NASIS"
 
     """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
-    i = 1
-    charLength = 0
+
+    i = 1  ## Total Count
+    j = 1  ## Intermediate Count
     pedonIDstr = ""
+    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
 
     AddMsgAndPrint("\nRequesting pedon horizon information")
 
@@ -829,16 +832,24 @@ if __name__ == '__main__':
     # available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
     # 6 characters.  This would mean an average max request of 265 pedons at a time.
     for pedonID in pedonDict:
+
+        ## End of pedon list has been reached
         if i == len(pedonDict):
-            pedonIDstr = pedonIDstr + str(pedonID);i+=1
+            pedonIDstr = pedonIDstr + str(pedonID);i+=1;j+=1
 
         else:
+            ## Max URL length reached - retrieve pedon data and start over
             if len(pedonIDstr) > 1860:
-                pedonIDstr = pedonIDstr + str(pedonID);i+=1
-                getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
+                pedonIDstr = pedonIDstr + str(pedonID);i+=1;j+=1
 
+                if not getPedonHorizon(getPedonHorizonURL + pedonIDstr):
+                    raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+                pedonIDstr = ""
+                j = 1
+
+            ## concatenate pedonID to string and continue
             else:
-                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
+                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1;j+=1
 
     getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
     AddMsgAndPrint("\nLength of characters for URL: " + str(len(getPedonHorizonURL)),1)

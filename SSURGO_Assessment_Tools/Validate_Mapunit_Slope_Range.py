@@ -2,10 +2,21 @@
 # Name:        Validate Mapunit Slope Range
 # Purpose:
 #
-# Author:      Adolfo.Diaz
+# Author: Adolfo.Diaz
+# e-mail: adolfo.diaz@wi.usda.gov
+# phone: 608.662.4422 ext. 216
+#
+# This tool is intended to help validate a user-defined slope range that is assigned
+# to the input mapunit layer by calculating area summary statistics and basic statistics
+# such as slope mean, median, mode, standard deviation, minimum and maximum and a histogram
+# illustrating the distribution of slope values within the input mapunit polygons.
+#
+# The tool will produce a 2-page PDF containing a histogram of the distribution of slope
+# values along with a summary of statistics. The PDF will be will be created in the same
+# directory as the user-defined Mapunit Layer.
 #
 # Created:        03/02/2015
-# Last Modified:  02/22/2016
+# Last Modified:  09/15/2016
 # Copyright:   (c) Adolfo.Diaz 2015
 
 #-------------------------------------------------------------------------------
