@@ -2,6 +2,8 @@
 #A. Stephens
 #08/25/2016
 #works better when your Default.gdb is NOT C:/Users/YOUR USERNAME/Documents/ArcGIS
+#need to add selection MUSYM <> ORIG_MUSYM - so only have to add in MUPOLYGON
+#need to add editor field selection? would have to wild card
 
 import arcpy
 
