@@ -749,6 +749,88 @@ def getPedonHorizon(URL):
         </body>
         </html>"""
 
+    try:
+
+        # Open a network object using the URL with the search string already concatenated
+        theReport = urllib.urlopen(URL)
+
+        bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
+        bFirstString = False
+        bSecondString = False
+        pHorizonList = list()
+        i = 0
+
+        # iterate through the report until a valid record is found
+        for theValue in theReport:
+
+            theValue = theValue.strip() # remove whitespace characters
+
+            # Iterating through the lines in the report
+            if bValidRecord:
+                if theValue.startswith('</div>'):  # this report doesn't really have a hard stop or stopping indicator.
+                    break
+
+                # The line after this is where the first half of data begins
+                elif theValue.startswith("seqnum,obsmethod,hzname"):
+                    bFirstString = True
+                    continue
+
+                # benchmark indicators of when to stop appending to pHorizonlist
+                elif theValue.startswith(("@end","stratextsflag,claytotest,claycarbest,silttotest")):
+                    bFirstString = False
+                    bSecondString = False
+                    continue
+
+                # The line after this is where the second half of data begins
+                elif theValue.startswith("desgnvert,hzdept,hzdepb,hzthk_l"):
+                    bSecondString = True
+                    continue
+
+                # Add the first set of pHorizon data to the pHorizonList
+                elif bFirstString:
+                    tempList = list()
+
+                    for val in theValue.split(","):
+                        if val is None:
+                            tempList.append(None)
+                        else:
+                            tempList.append(val.strip("\""))
+
+                    pHorizonList.append(tempList)
+                    del tempList
+
+                # Add the second set of pHorizon data to the last list in pHorizonList
+                elif bSecondString:
+
+                    for val in theValue.split(","):
+                        if val is None:
+                            pHorizonList[i].append(None)
+                        else:
+                            pHorizonList[i].append(val.strip("\""))
+
+                    i+=1
+                    if i+1 == len(pHorizonList):
+                        break
+
+            else:
+                # This is where the real report starts; earlier lines are html fluff
+                if theValue.startswith('<div id="ReportData">@begin phorizon'):
+                    bValidRecord = True
+
+        if not pHorizonList:
+            AddMsgAndPrint("\tThere were no Pedon Horizon records returned from the web report",2)
+            return False
+        else:
+            AddMsgAndPrint("\tThere are " + str(len(pHorizonList)) + " pedon horizon records that will be added",0)
+
+        del theReport,bValidRecord,bFirstString,bSecondString,pHorizonList,i
+        return True
+
+    except:
+        errorMsg()
+        return False
+
+
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
 
@@ -785,7 +867,8 @@ from arcpy import env
 
 if __name__ == '__main__':
 
-    inputFeatures = arcpy.GetParameter(0)
+    #inputFeatures = arcpy.GetParameter(0)
+    inputFeatures = r'O:\scratch\scratch.gdb\Pedon_boundary_Test'
     GDBname = arcpy.GetParameter(1)
     outputFolder = arcpy.GetParameterAsText(2)
 
@@ -796,11 +879,6 @@ if __name__ == '__main__':
     if not scratchWS:
         raise ExitError, "\n Failed to scratch workspace; Try setting it manually"
 
-    """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------"""
-##    pedonFGDB = createPedonFGDB()
-##
-##    if pedonFGDB == "":
-##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
     #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484
@@ -808,6 +886,7 @@ if __name__ == '__main__':
 
     if not Lat1:
         raise ExitError, "\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature"
+
 
     """ ---------------------------- Get a list of PedonIDs that are within the bounding box from NASIS -----------------------"""
     coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
@@ -819,14 +898,23 @@ if __name__ == '__main__':
     if not getWebExportPedon(getPedonIDURL):
         raise ExitError, "\t Failed to get a list of pedonIDs from NASIS"
 
-    """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
 
+    """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
     i = 1  ## Total Count
     j = 1  ## Intermediate Count
     pedonIDstr = ""
     getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
 
     AddMsgAndPrint("\nRequesting pedon horizon information")
+
+##    requestNum = 0
+##    urlLength = 123
+##    i=1
+##    for pedonID in pedonDict:
+##        if urlLength < 1860:
+##            urlLength += len(pedonID) + 1;i+=1
+##        elif i == len(pedonDict) or urlLength > 1860:
+##            requestNum +=1;urlLength = 123
 
     # There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
     # available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
@@ -835,28 +923,36 @@ if __name__ == '__main__':
 
         ## End of pedon list has been reached
         if i == len(pedonDict):
-            pedonIDstr = pedonIDstr + str(pedonID);i+=1;j+=1
+            pedonIDstr = pedonIDstr + str(pedonID)
 
         else:
             ## Max URL length reached - retrieve pedon data and start over
             if len(pedonIDstr) > 1860:
-                pedonIDstr = pedonIDstr + str(pedonID);i+=1;j+=1
+                pedonIDstr = pedonIDstr + str(pedonID)
 
                 if not getPedonHorizon(getPedonHorizonURL + pedonIDstr):
-                    raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+				    raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+
                 pedonIDstr = ""
-                j = 1
+                i+=1;j=1
 
             ## concatenate pedonID to string and continue
             else:
                 pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1;j+=1
 
-    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
-    AddMsgAndPrint("\nLength of characters for URL: " + str(len(getPedonHorizonURL)),1)
-    AddMsgAndPrint("\n\n\n" + getPedonHorizonURL + "\n\n\n")
-    pedonInfoDict = dict()
+##    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
+##    AddMsgAndPrint("\nLength of characters for URL: " + str(len(getPedonHorizonURL)),1)
+##    AddMsgAndPrint("\n\n\n" + getPedonHorizonURL + "\n\n\n")
+##    pedonInfoDict = dict()
+##
+##    if not getPedonHorizon(getPedonHorizonURL):
+##        raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
 
-    if not getPedonHorizon(getPedonHorizonURL):
-        raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+##    """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------
+##        This should only be invoked if there are pedons in the report."""
+##    pedonFGDB = createPedonFGDB()
+##
+##    if pedonFGDB == "":
+##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
 
 
