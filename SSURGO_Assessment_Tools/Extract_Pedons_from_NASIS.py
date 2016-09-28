@@ -293,7 +293,6 @@ def getBoundingCoordinates(feature):
 
     try:
 
-
         AddMsgAndPrint("\nCalculating bounding coordinates of features",0)
 
         """ Set Projection and Geographic Transformation environments in order
@@ -829,7 +828,6 @@ def getPedonHorizon(URL):
     except:
         errorMsg()
         return False
-
 
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
