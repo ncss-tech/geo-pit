@@ -119,6 +119,9 @@ if __name__ == '__main__':
         discrepancies = 0
         for nasisTable in nasisDict.keys():
 
+            # Skip any Metadata table
+            if nasisTable.find("Metadata") > -1: continue
+
             # Check if NASIS table exists in Pedon FGDB; log and continue if it doesn't
             if nasisTable not in pedonGDBTables:
                 missingTables.append(nasisTable)
