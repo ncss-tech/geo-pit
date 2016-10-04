@@ -6,6 +6,11 @@
 #              nasis 7.3.3 model.  If everything goes haywire use the 'NASIS_Schema_ODBC.mdb'
 #              access database that was created using and ODBC connection to NASIS.
 #
+#              Relationships will also be created.  The MetadataRelationshipDetail is used for this.
+#              4 columns were added to this table in order to simplify the process.  This table had to
+#              be joined with the MetadataTableColumn and MetadataTable tables in order to populate
+#              the 4 new fields.
+#
 #              This script is not intended for distribution.  It is intended for prepartion of the
 #              XML workspace
 #
@@ -14,7 +19,7 @@
 # phone: 608.662.4422 ext. 216
 #
 # Created:     9/29/2016
-# Last Updated: 9/30/2016
+# Last Updated: 10/4/2016
 # Copyright:   (c) Adolfo.Diaz 2016
 #-------------------------------------------------------------------------------
 
@@ -95,12 +100,16 @@ if __name__ == '__main__':
     nasisPedons = os.path.dirname(sys.argv[0]) + os.sep + "Nasis_Pedons.gdb"
     aliasTable = nasisPedons + os.sep + "MetadataTable"
     aliasFieldTbl = nasisPedons + os.sep + "MetadataTableColumn"
+    relateTable = nasisPedons + os.sep + "MetadataRelationshipDetail"
 
     if not arcpy.Exists(aliasTable):
         raise ExitError, "\nTable to extract table aliases does NOT exist: Metadata Table"
 
     if not arcpy.Exists(aliasFieldTbl):
         raise ExitError, "\nTable to extract field aliases does NOT exist: Metadata Table Column"
+
+    if not arcpy.Exists(relateTable):
+        raise ExitError, "\nTable to establish Relationships does NOT exist: Metadata Relationship Detail"
 
     arcpy.env.workspace = nasisPedons
     nasisPedonsTables = arcpy.ListTables()
@@ -147,7 +156,7 @@ if __name__ == '__main__':
 
         if tblAliasDict.has_key(table):
             arcpy.AlterAliasName(table,tblAliasDict.get(table))
-            AddMsgAndPrint("\n" + table + ": " + tblAliasDict.get(table)) # first value represents Alias name
+            AddMsgAndPrint("\n" + table + ": " + tblAliasDict.get(table))
         else:
             AddMsgAndPrint("\n" + table + ": No alias found!")
 
@@ -161,10 +170,12 @@ if __name__ == '__main__':
                 alias = fldAliasDict.get(field.name)
                 arcpy.AlterField_management(table,field.name,"#",alias)
                 AddMsgAndPrint("\t\t" + str(i) + ". " + field.name + " - " + alias)
+                #AddMsgAndPrint(table + "," + tblAliasDict.get(table) + "," + field.name + "," + alias + "," + str(i))    # Use this line to create a comma seperated file
                 i += 1
 
             else:
                 AddMsgAndPrint("\t\t" + str(i) + ". " + field.name + " - NO ALIAS FOUND")
+                #AddMsgAndPrint(table + "," + tblAliasDict.get(table) + "," + field.name + ",NO ALIAS FOUND," + str(i))   # Use this line to create a comma seperated file
 
                 if not missingAliases.has_key(table):
                     missingAliases[table] = [field.name]
@@ -174,3 +185,63 @@ if __name__ == '__main__':
 
     if len(missingAliases):
         AddMsgAndPrint("\nSummary of Missing aliases:")
+        AddMsgAndPrint("\t" + str(missingAliases),2)
+
+    """ ------------------------------------------ Establish Relationships ------------------------------------"""
+    for table in nasisPedonsTables:
+
+        fields = ["LeftTable_TableName","LeftTable_FieldName","RightTable_TableName","RightTable_FieldName"]
+        for field in fields:
+            if not arcpy.ListFields(relateTable,field):
+                raise ExitError, field + " NOT Found in " + relateTable + " table!"
+
+        AddMsgAndPrint("\n" + table + " Table")
+
+        expression = arcpy.AddFieldDelimiters(relateTable,"LeftTable_TableName") + ' = \'' + table + "\'"
+        with arcpy.da.SearchCursor(relateTable, (fields),where_clause=expression) as cursor:
+            for row in cursor:
+
+                destinationTable = row[2]
+
+                if destinationTable in nasisPedonsTables:
+
+                    originTable = row[0]
+                    originPKey = row[1]
+                    originFKey = row[3]
+
+                    originTablePath = nasisPedons + os.sep + originTable
+                    destinationTablePath = nasisPedons + os.sep + destinationTable
+
+                    if not arcpy.ListFields(originTablePath,originPKey):
+                        AddMsgAndPrint("\t" + originPKey + " NOT FOUND")
+                        continue
+
+                    if not arcpy.ListFields(destinationTablePath,originFKey):
+                        AddMsgAndPrint("\t" + originFKey + " NOT FOUND")
+                        continue
+
+                    relName = "x" + originTable.capitalize() + "_" + destinationTable.capitalize()
+                    theCardinality = "ONE_TO_MANY"
+
+                    # create Forward Label i.e. "> Horizon AASHTO Table"
+                    if tblAliasDict.has_key(destinationTable):
+                        fwdLabel = "> " + tblAliasDict.get(destinationTable) + " Table"
+
+                    else:
+                        fwdLabel = destinationTable + " Table"
+
+                    # create Backward Label i.e. "< Horizon Table"
+                    if tblAliasDict.has_key(originTable):
+                        backLabel = "<  " + tblAliasDict.get(originTable) + " Table"
+
+                    else:
+                        backLabel = "<  " + originTable + " Table"
+
+                    if not arcpy.Exists(relName):
+                        arcpy.CreateRelationshipClass_management(originTablePath, destinationTablePath, relName, "SIMPLE", fwdLabel, backLabel, "NONE", theCardinality, "NONE", originPKey, originFKey, "","")
+                        AddMsgAndPrint("\t" + relName)
+
+                    else:
+                        AddMsgAndPrint("\t" + relName)
+
+
