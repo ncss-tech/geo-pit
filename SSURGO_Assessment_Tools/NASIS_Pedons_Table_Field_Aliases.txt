@@ -1,0 +1,2464 @@
+
+MetadataCardinality: Cardinality Metadata 
+		1. Cardinality - Cardinality 
+		2. CardinalityName - Cardinality Name 
+
+MetadataColumnLookup: Column Lookup Metadata 
+		1. TableID - Table ID 
+		2. ColumnID - Column ID 
+		3. TableColumnSequence - Table Column Sequence 
+		4. RelationshipID - Relationship ID 
+		5. DisplaySequence - Display Sequence 
+		6. Branch - Branch 
+		7. DisplayTableID - Display Table ID 
+		8. DisplayColumnID - DisplayColumn ID 
+		9. DisplayTableColumnSequence - Display Table Column Sequence 
+		10. DisplayColumnLabel - Display Column Label 
+		11. DisplayOnlyInChoiceList - Display Only in Choice List? 
+
+MetadataIndexDetail: Index Detail Metadata 
+		1. IndexID - Index ID 
+		2. IndexColumnSequence - Index Column Sequence 
+		3. TableID - Table ID 
+		4. ColumnID - Column ID 
+		5. TableColumnSequence - Table Column Sequence 
+
+MetadataRelationshipDetail: Relationship Detail Metadata 
+		1. RelationshipID - Relationship ID 
+		2. LeftTableID - Left Table ID 
+		3. LeftColumnID - Left Column ID 
+		4. LeftTableColumnSequence - Left Table Column Sequence 
+		5. RightTableID - Right Table ID 
+		6. RightColumnID - Right Column ID 
+		7. RightTableColumnSequence - Right Table Column Sequence 
+
+MetadataRelationshipMaster: Relationship Master Metadata 
+		1. RelationshipID - Relationship ID 
+		2. LeftTableID - Left Table ID 
+		3. RightTableID - Right Table ID 
+		4. RelationshipName - Relationship Name 
+		5. ForeignKeyConstraintName - Foreign Key Constraint Name 
+		6. Cardinality - Cardinality 
+		7. CardinalityMinimum - Cardinality Minimum 
+		8. CardinalityMaximum - Cardinality Maximum 
+		9. Mandatory - Mandatory? 
+		10. DeleteFail - Delete Fail? 
+		11. InHierarchy - In Hierarchy? 
+		12. FavoriteChild - Favorite Child? 
+		13. LoadFindRelated - Load/Find Related? 
+		14. Paste - Paste? 
+		15. ConstraintDeferrable - Constraint Deferrable? 
+
+MetadataTable: Table Metadata 
+		1. TableID - Table ID 
+		2. TablePhysicalName - Table Physical Name 
+		3. TableLogicalName - Table Logical Name 
+		4. TableLabel - Table Label 
+		5. TableDescription - Table Description 
+		6. ImportExportFileName - Import/Export File Name 
+		7. TableCollectionID - Table Collection ID 
+		8. DAGLevel - Directed Acyclic Graph Level 
+		9. Visible - Visible? 
+		10. Selectable - Selectable? 
+		11. Editable - Editable? 
+		12. NoInsertOrDelete - No Insert or Delete? 
+		13. RootTable - Root Table? 
+		14. CreateAsView - Create As View? 
+		15. ClientDatabaseOnly - Client Database Only 
+		16. ServerDatabaseOnly - Server Database Only 
+
+MetadataTableColumn: Table Column Metadata 
+		1. TableID - Table ID 
+		2. ColumnID - Column ID 
+		3. TableColumnSequence - Table Column Sequence 
+		4. BaseColumnPhysicalName - Base Column Physical Name 
+		5. ColumnPhysicalName - Column Physical Name 
+		6. ColumnLogicalName - Column Logical Name 
+		7. ColumnGroupLabel - Column Group Label 
+		8. ColumnLabel - Column Label 
+		9. PhysicalDataType - Physical Data Type 
+		10. LogicalDataType - Logical Data Type 
+		11. DomainID - Domain ID 
+		12. ColumnDescription - Column Description 
+		13. ColumnHelpText - Column Help Text 
+		14. FieldSize - Field Size 
+		15. DecimalPrecision - Decimal Precision 
+		16. DatetimePrecision - Datetime Precision 
+		17. Minimum - Minimum 
+		18. Maximum - Maximum 
+		19. DefaultType - Default Type 
+		20. DefaultValue - Default Value 
+		21. Alignment - Alignment 
+		22. DisplaySize - Display Size 
+		23. SortSequence - Sort Sequence 
+		24. SortType - Sort Type 
+		25. SortDirection - Sort Direction 
+		26. UnitsOfMeasureUnabbreviated - Units of Measure Unabbreviated 
+		27. UnitsOfMeasureAbbreviated - Units of Measure Abbreviated 
+		28. NotNull - Not Null? 
+		29. Visible - Visible? 
+		30. Protected - Protected? 
+		31. SetDefaultOnObjectChange - Set Default on Object Change? 
+		32. SetDefaultOnRowChange - Set Default on Row Change? 
+		33. IncludeInReplicationSelectList - Include in Replication Select List? 
+		34. FileContentColumnID - File Content Column ID 
+
+ncsslayerlabdata: NCSS Layer Lab Data 
+		1. ncsspedonlabdataiidref - Lineage 
+		2. layerseqnum - Layer Seq 
+		3. labsampnum - Lab Sample # 
+		4. hzdept - Top Depth 
+		5. hzdepb - Bottom Depth 
+		6. layertype - Layer Type 
+		7. hzname - Designation 
+		8. hznameoriginal - Designation - Orig 
+		9. stratextsflag - Stratified? 
+		10. moistprepstate - Moisture State 
+		11. texcl - Texture 
+		12. sandvcmeasured - VC Sand - Measured 
+		13. sandcomeasured - Co. Sand - Measured 
+		14. sandmedmeasured - Med. Sand - Measured 
+		15. sandfinemeasured - Fine Sand - Measured 
+		16. sandvfmeasured - VF Sand - Measured 
+		17. sandtotmeasured - Total Sand - Measured 
+		18. siltcomeasured - Co. Silt - Measured 
+		19. siltfinemeasured - Fine Silt - Measured 
+		20. silttotmeasured - Total Silt - Measured 
+		21. claycarbmeasured - CaCO3 Clay - Measured 
+		22. clayfinemeasured - Fine Clay - Measured 
+		23. claytotmeasured - Total Clay - Measured 
+		24. carbonorganicpctmeasured - Organic Carbon % 
+		25. carbontotalpctmeasured - Total Carbon % 
+		26. ompctest - OM % Est. 
+		27. fiberrubbedpct - Rubbed Fiber % 
+		28. fiberunrubbedpct - Unrubbed Fiber % 2 
+		29. fragwt25 - Frag%, 2-5 mm, by wt. 
+		30. fragwt520 - Frag%, 5-20 mm, by wt. 
+		31. fragwt2075 - Frag%, 20-75 mm, by wt. 
+		32. fragwt275 - Frag%, 2-75 mm, by wt. 
+		33. wtpct0175 - Wt %, 0.1-75 mm 
+		34. wtpctgt2ws - Wt %, =>2 mm, ws 
+		35. ph1to1h2o - pH 1:1 water 
+		36. ph01mcacl2 - pH .01M CaCl2 
+		37. phnaf - pH NaF 
+		38. phoxidized - pH Oxidized 
+		39. resistivity - Resistivity 
+		40. ecmeasured - EC 
+		41. esp - ESP 
+		42. sar - SAR 
+		43. cecsumcations - CEC, sum of cations 
+		44. cec7 - CEC-7 
+		45. ecec - ECEC 
+		46. sumbases - Sum of Bases 
+		47. basesatsumcations - BS, sum of cations 
+		48. basesatnh4oac - BS, NH4OAc 
+		49. caco3equivmeasured - CaCO3 Equiv. Measured 
+		50. caco3lt20measured - CaCO3 <20 mm 
+		51. gypsumequivlt2measured - Gypsum <2 mm 
+		52. gypsumequivmeasured - Gypsum <20 mm 
+		53. feoxalatemeasured - Oxalate Fe 
+		54. feextractable - Extractable Fe 
+		55. fetotal - Total Fe 
+		56. sioxalatemeasured - Oxalate Si 
+		57. extracid - Extractable Acidity 
+		58. extral - KCl Extractable Al 
+		59. aloxalatemeasured - Oxalate Al 
+		60. altotal - Total Al 
+		61. pmehlich3 - Mechlich 3 P 
+		62. ph2osolublemeasured - Water Soluble P 
+		63. poxalatemeasured - Oxalate P 
+		64. polsenmeasured - Olsen P 
+		65. ptotalmeasured - Total P 
+		66. nzpretention - NZ Phos Retention 
+		67. dbthirdbar - Db 0.33 bar H2O 
+		68. dbovendry - Db oven dry 
+		69. aggstabpct - Aggregate Stab % 
+		70. wtenthbarclod - H2O 1/10 bar clod 
+		71. wtenthbarsieve - H2O 1/10 bar sieve 
+		72. wthirdbarclod - H2O 1/3 bar clod 
+		73. wthirdbarsieve - H20 1/3 bar sieve 
+		74. wfifteenbarmeasured - H2O 15 bar 
+		75. wretentiondiffws - WRD 
+		76. wfifteenbartoclay - H2O 15 bar:clay ratio 
+		77. adod - ADOD ratio 
+		78. lep - LEP 
+		79. cole - COLE 
+		80. liquidlimitmeasured - LL - Measured 
+		81. pi - PI 
+		82. recwlupdated - Record Last Updated 
+		83. recuseriidref - Record Last Updated By 
+		84. ncsslayerlabdataiid - Rec ID 
+
+ncsspedonlabdata: NCSS Pedon Lab Data 
+		1. pedlabsampnum - Lab Pedon # 
+		2. peiidref - Lineage 
+		3. psctopdepth - PSC Top Depth 
+		4. psctopdepth_s - S 
+		5. pscbotdepth - PSC Bottom Depth 
+		6. pscbotdepth_s - S 
+		7. noncarbclaywtavg - Noncarb. Clay % - wt avg 
+		8. claytotwtavg - Clay Total % - wt avg 
+		9. le0to100 - LE 0-100 cm 
+		10. wf0175wtavgpsc - Wt Fraction 0.1 to 75 mm - wt avg 
+		11. volfractgt2wtavg - Vol. >2 mm - wt avg 
+		12. cec7clayratiowtavg - CEC7 to Clay Ratio - wt avg 
+		13. labdatasheeturl - Data Sheet URL 
+		14. ncsspedbiidref - NCSS Pedon NASIS Site 
+		15. grpiidref - NASIS Group 
+		16. objwlupdated - Object Last Updated 
+		17. objuseriidref - Object Last Updated By 
+		18. recwlupdated - Record Last Updated 
+		19. recuseriidref - Record Last Updated By 
+		20. ncsspedonlabdataiid - Rec ID 
+
+pediagfeatures: Pedon Diagnostic Features 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. featdept - Top Depth 
+		4. featdepb - Bottom Depth 
+		5. featthick_l - Low 
+		6. featthick_r - RV 
+		7. featthick_h - High 
+		8. featkind - Kind 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. pediagfeatiid - Rec ID 
+
+pedon: Pedon 
+		1. siteobsiidref - Site/Site Observation 
+		2. upedonid - User Pedon ID 
+		3. pedrecorigin - Pedon Record Origin 
+		4. descname - Describer's Name 
+		5. taxonname - Current Taxon Name 
+		6. taxonname_s - S 
+		7. localphase - Local Phase 
+		8. taxclname - Taxonomic Class 
+		9. taxclname_s - S 
+		10. taxonkind - Current Taxon Kind 
+		11. taxonkind_s - S 
+		12. pedontype - Pedon Type 
+		13. pedonpurpose - Pedon Purpose 
+		14. pedonunit - Pedon # 
+		15. labdatadescflag - Certified Lab Pedon Description ? 
+		16. relexpsize - Exposure Size 
+		17. relexpuom - Exposure UOM 
+		18. earthcovkind1 - Cover Kind 1 
+		19. earthcovkind2 - Cover Kind 2 
+		20. erocl - Erosion Class 
+		21. labsourceid - Lab Source ID 
+		22. pedlabsampnum - Lab Pedon # 
+		23. tsectiidref - Transect 
+		24. tsectstopnum - Transect Stop Number 
+		25. tsectinterval - Transect Interval 
+		26. rcapointnumber - RaCA Point # 
+		27. soilreplicatenumber - Soil Replicate # 
+		28. azimuthfromplotcenter - Azimuth From Plot Center 
+		29. distancefromplotcenter - Distance From Plot Center 
+		30. rectangularplotlinenumber - Rectangular Plot Line # 
+		31. distancefrombaseline - Distance From Baseline 
+		32. pedodermclass - Pedoderm Class 
+		33. pedodermcovind - Pedoderm Loose Cover Indicator 
+		34. biolcrusttypedom - Biol. Crust Type Dominant 
+		35. biolcrusttypesecond - Biol. Crust Type Secondary 
+		36. physcrustsubtype - Phys Crust Subtype 
+		37. crustdevcl - Crust Dev Class 
+		38. rangevegcanopytypedom - Range Veg. Canopy Type Dominant 
+		39. rangevegcanopytypesec - Range Veg. Canopy Type Secondary 
+		40. forestoverstoryvegtype - Forest Overstory Veg. Type 
+		41. forestunderstoryvegtype - Forest Understory Veg. Type 
+		42. forestgroundcovvegtypedom - Forest Groundcover Veg. Type Dominant 
+		43. forestgroundcovvegtypesec - Forest Groundcover Veg. Type Secondary 
+		44. agronomicfeature - Agronomic Feature 
+		45. otherfeaturedescription - Other Feature Description 
+		46. currentcropname - Current Crop 
+		47. littercoverpct - Litter Cover % 
+		48. residuedescription - Residue Description 
+		49. pedonhydricrating - Hydric? 
+		50. pecertstatus - Certification Status 
+		51. peqcstatus - QC Status 
+		52. peqastatus - QA Status 
+		53. saspipelengthtot - SAS Pipe Length Total 
+		54. saspipelengthext - SAS Pipe Length External 
+		55. saspipelengthunfilled - SAS Pipe Length Unfilled 
+		56. sascoresettlement - SAS Core Settlement 
+		57. sascorelength - SAS Core Length 
+		58. sascorestoragesite - SAS Core Storage Site 
+		59. sasexposurebegin - SAS Exposure Begin 
+		60. sasexposureend - SAS Exposure End 
+		61. pedbiidref - Pedon NASIS Site 
+		62. grpiidref - NASIS Group 
+		63. objwlupdated - Object Last Updated 
+		64. objuseriidref - Object Last Updated By 
+		65. recwlupdated - Record Last Updated 
+		66. recuseriidref - Record Last Updated By 
+		67. peiid - Rec ID 
+
+pedondbcolumnmetadata: Pedon Database Column Metadata 
+		1. pedondbtableid - Pedon Database Table ID 
+		2. pedondbcolumnid - Pedon Database Column ID 
+		3. pedondbcolumnsequence - Pedon Database Column Sequence 
+		4. pedondbcolumnname - Pedon Database Column Name 
+		5. ipdiagmsgcolumnlabel - Import Pedon Diagnostic Message Column Label 
+
+pedondbtablemetadata: Pedon Database Table Metadata 
+		1. pedondbtableid - Pedon Database Table ID 
+		2. pedondbtablename - Pedon Database Table Name 
+		3. pedondbobjectname - Pedon Database Object Name 
+		4. ipdiagmsgtablelabel - Import Pedon Diagnostic Message Table Label 
+		5. ipdiagmsgsqlstmt - Import Pedon Diagnostic Message SQL Statement 
+
+pefmp: Pedon Field Measured Property 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. fmpname - Name 
+		4. fmpvalue - Value 
+		5. fmpunits - Unit of Measure 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. pefmpiid - Rec ID 
+
+pehydricfieldindicator: Pedon Hydric Field Indicator 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. hydricsoilfieldindicator - Hydric Field Indicator 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. pehydricfieldindiid - Rec ID 
+
+peinfiltrationch: Pedon Infiltration Constant Head 
+		1. peinfilsumiidref - Lineage 
+		2. testdate - Test Date 
+		3. repnum - Rep # 
+		4. infiltrationmeasured - Infiltration Rate 
+		5. infiltrationringconfig - Ring Configuration 
+		6. ringinsertiondepth - Ring Insertion Depth 
+		7. ringradius - Ring Radius 
+		8. waterponddepth - Water Ponding Depth 
+		9. mariottebottleradius - Mariotte Bottle Radius 
+		10. notes - Notes 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. peinfilconstheadiid - Rec ID 
+
+peinfiltrationchdata: Pedon Infiltration Constant Head Data 
+		1. peinfilconstheadiidref - Lineage 
+		2. infiltrationrunnum - Run # 
+		3. waterdrop - Water Drop 
+		4. deltatime - Delta Time 
+		5. infiltrationmeasured - Infiltration Rate 
+		6. steadystateflag - Steady State ? 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. peinfilchdataiid - Rec ID 
+
+peinfiltrationfh: Pedon Infiltration Falling Head 
+		1. peinfilsumiidref - Lineage 
+		2. testdate - Test Date 
+		3. repnum - Rep # 
+		4. infiltrationmeasured - Infiltration Rate 
+		5. infiltrationringconfig - Ring Configuration 
+		6. ringinsertiondepth - Ring Insertion Depth 
+		7. ringradius - Ring Radius 
+		8. notes - Notes 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. peinfilfallheadiid - Rec ID 
+
+peinfiltrationfhdata: Pedon Infiltration Falling Head Data 
+		1. peinfilfallheadiidref - Lineage 
+		2. infiltrationrunnum - Run # 
+		3. deltatime - Delta Time 
+		4. infiltrationwatervolume - Water Volume 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. pedoninfilfhdataiid - Rec ID 
+
+peinfiltrationsummary: Pedon Infiltration Summary 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. testdate - Test Date 
+		4. datacollector - Data Collector 
+		5. infiltrationmean - Infiltration Mean 
+		6. infiltrationstddev - Infiltation Std. Dev. 
+		7. infiltrationtestmethod - Test Method 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. pedoninfilsumiid - Rec ID 
+
+pepenetrationresistance: Pedon Penetration Resistance 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. penetrometerdepth - Depth 
+		4. obssoimoiststat - Observed Moisture State 
+		5. penetrometertiptype - Tip Type 
+		6. penetrometerspringtype - Spring Type 
+		7. penetorient - Penetration Orientation 
+		8. penetrometerreading1 - Reading 1 
+		9. penetrometerreading2 - Reading 2 
+		10. penetrometerreading3 - Reading 3 
+		11. penetrometerreading4 - Reading 4 
+		12. datacollector - Data Collector 
+		13. recwlupdated - Record Last Updated 
+		14. recuseriidref - Record Last Updated By 
+		15. pepenetrometeriid - Rec ID 
+
+perestrictions: Pedon Restrictions 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. resdept - Top Depth 
+		4. resdepb - Bottom Depth 
+		5. resthk_l - Low 
+		6. resthk_r - RV 
+		7. resthk_h - High 
+		8. reskind - Kind 
+		9. reshard - Hardness 
+		10. recwlupdated - Record Last Updated 
+		11. recuseriidref - Record Last Updated By 
+		12. perestrictiid - Rec ID 
+
+pesoilstability: Pedon Soil Stability 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. soilstabilitydepth - Depth 
+		4. samplecollector - Sample Collector 
+		5. datacollector - Data Collector 
+		6. testdate - Test Date 
+		7. soilstabilityclass1 - Stability Class Rep 1 
+		8. soilstabilityclass2 - Stability Class Rep 2 
+		9. soilstabilityclass3 - Stability Class Rep 3 
+		10. soilstabilityclasspredom - Stability Class Predominant 
+		11. soilhydrophobicind1 - Rep 1 Hydrophobic? 
+		12. soilhydrophobicind2 - Rep 2 Hydrophobic? 
+		13. soilhydrophobicind3 - Rep 3 Hydrophobic? 
+		14. recwlupdated - Record Last Updated 
+		15. recuseriidref - Record Last Updated By 
+		16. pesoilstabilityiid - Rec ID 
+
+petaxhistfmmin: Pedon Taxonomic History Family Mineralogy 
+		1. pedtaxhistoryiidref - Lineage 
+		2. seqnum - Seq 
+		3. minorder - Vertical Order 
+		4. taxminalogy - Mineralogy 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. petaxfmminiid - Rec ID 
+
+petaxhistmoistcl: Pedon Taxonomic History Moisture Class 
+		1. pedtaxhistoryiidref - Lineage 
+		2. seqnum - Seq 
+		3. taxmoistcl - Moisture Class 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. petaxmciid - Rec ID 
+
+petaxhistory: Pedon Taxonomic History 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. classdate - Classification Date 
+		4. classtype - Classification Type 
+		5. classifier - Classifier 
+		6. taxonname - Current Taxon Name 
+		7. localphase - Local Phase 
+		8. taxonkind - Current Taxon Kind 
+		9. seriesstatus - Series Status 
+		10. taxclname - Taxonomic Class 
+		11. taxclname_s - S 
+		12. taxorder - Order 
+		13. taxsuborder - Suborder 
+		14. taxgrtgroup - Great Group 
+		15. taxsubgrp - Subgroup 
+		16. taxpartsize - Particle Size 
+		17. taxpartsizemod - Particle Size Mod 
+		18. taxceactcl - CEC Activity Cl 
+		19. taxreaction - Reaction 
+		20. taxtempcl - Temp Class 
+		21. taxmoistscl - Moist Subclass 
+		22. taxtempregime - Temp Regime 
+		23. taxfamhahatmatcl - HAHT Material Class 
+		24. soiltaxedition - Keys to Taxonomy Edition Used 
+		25. psctopdepth - PSC Top Depth 
+		26. pscbotdepth - PSC Bottom Depth 
+		27. osdtypelocflag - OSD Type Location ? 
+		28. recwlupdated - Record Last Updated 
+		29. recuseriidref - Record Last Updated By 
+		30. petaxhistoryiid - Rec ID 
+
+petext: Pedon Text 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. recdate - Date 
+		4. recauthor - Author 
+		5. pedontextkind - Kind 
+		6. textcat - Category 
+		7. textsubcat - Subcategory 
+		8. textentry - Text Entry 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. petextiid - Rec ID 
+
+petxhistfmother: Pedon Taxonomic History Family Other Criteria 
+		1. pedtaxhistoryiidref - Lineage 
+		2. seqnum - Seq 
+		3. taxfamother - Family Other 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. petaxfoiid - Rec ID 
+
+phcemagent: Pedon Horizon Cementing Agent 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. ruprescem - Cementing Agent 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. phcemagentiid - Rec ID 
+
+phcoledata: Pedon Horizon COLE Data 
+		1. phlabresultiidref - Lineage 
+		2. seqnum - Seq 
+		3. repnum - Rep # 
+		4. phcolereading - COLE Reading 
+		5. phcolemethod - COLE Method 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. phcoledataiid - Rec ID 
+
+phcolor: Pedon Horizon Color 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. colorpct - Color % 
+		4. colorhue - Hue 
+		5. colorvalue - Value 
+		6. colorchroma - Chroma 
+		7. colorphysst - Phys State 
+		8. colormoistst - Moist State 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. phcoloriid - Rec ID 
+
+phconccolor: Pedon Horizon Concentrations Color 
+		1. phconceniidref - Lineage 
+		2. seqnum - Seq 
+		3. colorpct - Color % 
+		4. colorhue - Hue 
+		5. colorvalue - Value 
+		6. colorchroma - Chroma 
+		7. colormoistst - Moist State 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phconcencoloriid - Rec ID 
+
+phconcs: Pedon Horizon Concentrations 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. concpct - Percent 
+		4. concsize - Size 
+		5. conccntrst - Contrast 
+		6. conchardness - Hardness 
+		7. concshape - Shape 
+		8. conckind - Kind 
+		9. conclocation - Location 
+		10. concboundary - Boundary 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. phconceniid - Rec ID 
+
+phcracks: Pedon Horizon Cracks 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. crackfreq - Frequency 
+		4. crackkind - Kind 
+		5. crackdepth - Depth 
+		6. crackwidth - Width 
+		7. crackextabove - Extends to Horizon Above? 
+		8. crackextbelow - Extends to Horizon Below? 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. phcracksiid - Rec ID 
+
+phdb: Pedon Horizon Bulk Density 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. bddepthtop - Depth to Top 
+		4. bddepthbottom - Depth to Bottom 
+		5. bdmethod - Method 
+		6. datacollector - Data Collector 
+		7. samplevolfieldmoist - Field Moist Volume 
+		8. totalsamplewtfm - Field Moist Sample Wt. 
+		9. totalsamplewtairdry - Air Dry Sample Wt 
+		10. coarsefragwtfm - Field Moist Co. Fragment Wt. 
+		11. coarsefragwtairdry - Air Dry Fragment Wt. 
+		12. coarsefragdensity - Fragment Density 
+		13. coarsefragvolmeasured - Coarse Fragment Volume 
+		14. subsamplewtairdry - Air Dry Subsample Wt. 
+		15. subsamplewtod - Oven Dry Subsample Wt. 
+		16. obsgrsoimoist - Grav. Soil Moist % Whole Soil 
+		17. obsgrsoimoist_s - S 
+		18. obsgravsoilmoistfe - Grav. Soil Moist % Fine Earth 
+		19. obsgravsoilmoistfe_s - S 
+		20. bdfieldmoistfineearth - Bulk Density FM Fine Earth 
+		21. bdfieldmoistwhole - Bulk Density FM Whole Soil 
+		22. bdovendrywhole - Bulk Density OD Whole Soil 
+		23. bdovendrywhole_s - S 
+		24. bdovendryfineearth - Bulk Density OD Fine Earth 
+		25. bdovendryfineearth_s - S 
+		26. bdsatiated - Bulk Density Satiated 
+		27. recwlupdated - Record Last Updated 
+		28. recuseriidref - Record Last Updated By 
+		29. phbulkdensityiid - Rec ID 
+
+phdbcompliantcavity: Pedon Horizon Bulk Density Compliant Cavity 
+		1. phbulkdensityiidref - Lineage 
+		2. bulkdensitycavitydiameter - Cavity Diameter 
+		3. bulkdensitycavitylength - Cavity Length 
+		4. bulkdensitycavitywidth - Cavity Width 
+		5. bulkdensitycavityinitvol - Cavity Initial Volume 
+		6. bulkdensitycavityinitvol_s - S 
+		7. bulkdensitycavityfinalvol - Cavity Final Volume 
+		8. bulkdensitycavityfinalvol_s - S 
+		9. cavityavedepthpredig - Cavity Depth Pre Dig 
+		10. cavityavedepthpostdig - Cavity Depth Post Dig 
+		11. bulkdensitycavitysampvol - Sample Volume 
+		12. bulkdensitycavitysampvol_s - S 
+		13. recwlupdated - Record Last Updated 
+		14. recuseriidref - Record Last Updated By 
+		15. phbulkdencavityiid - Rec ID 
+
+phdbcore: Pedon Horizon Bulk Density Core 
+		1. phbulkdensityiidref - Lineage 
+		2. sampletubelength - Total Tube Length 
+		3. unfilledtubelength - Unfilled Tube Length 
+		4. unfilledtubelength_s - S 
+		5. coresamplelength - Core Sample Length 
+		6. coresamplelength_s - S 
+		7. sampletubediameter - Tube Diameter 
+		8. coresamplevolume - Core Sample Volume 
+		9. coresamplevolume_s - S 
+		10. recwlupdated - Record Last Updated 
+		11. recuseriidref - Record Last Updated By 
+		12. phbulkdencoreiid - Rec ID 
+
+phdbcorereading: Pedon Horizon Bulk Density Core Reading 
+		1. phbulkdencoreiidref - Lineage 
+		2. bulkdensitytubeheadspace - Unfilled Tube Length 
+		3. recwlupdated - Record Last Updated 
+		4. recuseriidref - Record Last Updated By 
+		5. phbdcorereadingiid - Rec ID 
+
+phdbscoop: Pedon Horizon Bulk Density Scoop 
+		1. phbulkdensityiidref - Lineage 
+		2. scooplength - Scoop Length 
+		3. scoopwidth - Scoop Width 
+		4. scoopdepthtotal - Scoop Depth 
+		5. scoopvolume - Scoop Volume 
+		6. scoopvolume_s - S 
+		7. scoopdepthunfilled - Scoop Depth Unfilled 
+		8. scoopdepthunfilled_s - S 
+		9. scoopsamplevolume - Sample Volume 
+		10. scoopsamplevolume_s - S 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. phbulkdenscoopiid - Rec ID 
+
+phdbscoopreading: Pedon Horizon Bulk Density Scoop Reading 
+		1. phbulkdenscoopiidref - Lineage 
+		2. scoopheadspace - Unfilled Scoop Depth 
+		3. recwlupdated - Record Last Updated 
+		4. recuseriidref - Record Last Updated By 
+		5. phbulkdenscoopreadiid - Rec ID 
+
+phdesgnsuffix: Pedon Horizon Designation Suffix 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. desgnsuffix - Suffix 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. phdesgnsfxiid - Rec ID 
+
+phfeatcolor: Pedon Horizon Features Color 
+		1. phfeatsiidref - Lineage 
+		2. seqnum - Seq 
+		3. colorpct - Color % 
+		4. colorhue - Hue 
+		5. colorvalue - Value 
+		6. colorchroma - Chroma 
+		7. colormoistst - Moist State 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phfeatcoloriid - Rec ID 
+
+phfeatures: Pedon Horizon Features 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. horfeatkind - Kind 
+		4. horfeatvtpct_l - Low 
+		5. horfeatvtpct_r - RV 
+		6. horfeatvtpct_h - High 
+		7. horfeatlapct_l - Low 
+		8. horfeatlapct_r - RV 
+		9. horfeatlapct_h - High 
+		10. recwlupdated - Record Last Updated 
+		11. recuseriidref - Record Last Updated By 
+		12. phfeatsiid - Rec ID 
+
+phfmp: Pedon Horizon Field Measured Property 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. fmpname - Name 
+		4. fmpvalue - Value 
+		5. fmpunits - Unit of Measure 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. phfmpiid - Rec ID 
+
+phfrags: Pedon Horizon Fragments 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. fragvol - Vol % 
+		4. fragweight - Weight % 
+		5. fragsize_l - Low 
+		6. fragsize_r - RV 
+		7. fragsize_h - High 
+		8. fragkind - Kind 
+		9. fragshp - Shape 
+		10. fraground - Roundness 
+		11. fraghard - Hardness 
+		12. fragestmethod - Estimate Method 
+		13. recwlupdated - Record Last Updated 
+		14. recuseriidref - Record Last Updated By 
+		15. phfragsiid - Rec ID 
+
+phgrcountdata: Pedon Horizon Grain Count Data 
+		1. phgrcountsumiidref - Lineage 
+		2. testdate - Test Date 
+		3. repnum - Rep # 
+		4. phgrcounttotal - Total Grain Count 
+		5. phgrcountquartz - Quartz 
+		6. phgrcountmica - Micaceous 
+		7. phgrcountglass - Glass 
+		8. phgrcountglasscoated - Glass Coated Minerals 
+		9. phgrcountglassagg - Glass Aggregate 
+		10. phgrcountother - Other Minerals 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. phgrcountiid - Rec ID 
+
+phgrcountsummary: Pedon Horizon Grain Count Summary 
+		1. phlabresultiidref - Lineage 
+		2. seqnum - Seq 
+		3. phgrcountquartz - Quartz 
+		4. phgrcountmica - Micaceous 
+		5. phgrcountglass - Glass 
+		6. phgrcountglasscoated - Glass Coated Minerals 
+		7. phgrcountglassagg - Glass Aggregate 
+		8. phgrcountother - Other Minerals 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. phgrcountsumiid - Rec ID 
+
+phhuarts: Pedon Horizon Human Artifacts 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. huartvol - Vol % 
+		4. huartsize_l - Low 
+		5. huartsize_r - RV 
+		6. huartsize_h - High 
+		7. huartkind - Kind 
+		8. huartco - Cohesion 
+		9. huartshp - Shape 
+		10. huartrnd - Roundness 
+		11. huartpen - Penetrability 
+		12. huartsafety - Safety 
+		13. huartper - Persistence 
+		14. recwlupdated - Record Last Updated 
+		15. recuseriidref - Record Last Updated By 
+		16. phhuartiid - Rec ID 
+
+phhydrometeranalysis: Pedon Horizon Hydrometer Analysis 
+		1. phlabresultiidref - Lineage 
+		2. seqnum - Seq 
+		3. testdate - Test Date 
+		4. hydrosamplewt - Sample Weight 
+		5. hydroshmpconc - SHMP Concentration 
+		6. hydroblankread - Blank Reading 
+		7. hydromethod - Method 
+		8. obsgrsoimoist - Grav. Soil Moist % Whole Soil 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. phhydromanalysisiid - Rec ID 
+
+phhydrometerdata: Pedon Horizon Hydrometer Data 
+		1. phhydromanalysisiidref - Lineage 
+		2. hydroreadingnum - Reading # 
+		3. deltatime - Delta Time 
+		4. hydrotemp - Temperature 
+		5. hydroreading - Hydrometer Reading 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. phhydrometerdataiid - Rec ID 
+
+phksatamoozedata: Pedon Horizon Ksat Amoozemeter Data 
+		1. peksatamoozeiidref - Lineage 
+		2. ksatreadingnum - Reading # 
+		3. waterdrop - Water Drop 
+		4. deltatime - Delta Time 
+		5. outflowchamberconvfact - Conversion Factor 
+		6. sathydcondmeasured - Ksat Measured 
+		7. steadystateflag - Steady State ? 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. peksatamoozedataiid - Rec ID 
+
+phksatamoozemeter: Pedon Horizon Ksat Amoozemeter 
+		1. phksatsumiidref - Lineage 
+		2. repnum - Rep # 
+		3. testdate - Test Date 
+		4. sathydcondrepmean - Ksat Mean 
+		5. sathydcondrepstd - Ksat Std. Dev. 
+		6. sathydcondclass - Ksat Class 
+		7. boreholedepth - Borehole Depth 
+		8. boreholeradius - Borehole Radius 
+		9. boreholewaterlevelinit - Initial Water Level 
+		10. boreholewaterlevelfinal - Final Water Level 
+		11. notes - Notes 
+		12. recwlupdated - Record Last Updated 
+		13. recuseriidref - Record Last Updated By 
+		14. phksatamoozemeteriid - Rec ID 
+
+phksatring: Pedon Horizon Ksat Ring 
+		1. phksatsumiidref - Lineage 
+		2. repnum - Rep # 
+		3. testdate - Test Date 
+		4. sathydcondrepmean - Ksat Mean 
+		5. sathydcondrepstd - Ksat Std. Dev. 
+		6. sathydcondclass - Ksat Class 
+		7. ringconfiguration - Ring Configuration 
+		8. ringinsertiondepth - Ring Insertion Depth 
+		9. ringradius - Ring Radius 
+		10. waterponddepth - Water Ponding Depth 
+		11. mariottebottleradius - Mariotte Bottle Radius 
+		12. texturestructurecat - Texture/Structure Category 
+		13. notes - Notes 
+		14. recwlupdated - Record Last Updated 
+		15. recuseriidref - Record Last Updated By 
+		16. phksatringiid - Rec ID 
+
+phksatringdata: Pedon Horizon Ksat Ring Data 
+		1. peksatringiidref - Lineage 
+		2. ksatreadingnum - Reading # 
+		3. waterdrop - Water Drop 
+		4. deltatime - Delta Time 
+		5. sathydcondmeasured - Ksat Measured 
+		6. steadystateflag - Steady State ? 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. peksatringdataiid - Rec ID 
+
+phksatsummary: Pedon Horizon Ksat Summary 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. testdate - Test Date 
+		4. datacollector - Data Collector 
+		5. sathydcondmean - Ksat Mean 
+		6. sathydcondstd - Ksat Std Dev 
+		7. sathydcondmethod - Test Method 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. pedonksatsummaryiid - Rec ID 
+
+phlabresults: Pedon Horizon Lab Results 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. sampledepthtop - Top Depth 
+		4. sampledepthbottom - Bottom Depth 
+		5. sampleid - Sample ID 
+		6. datacollector - Data Collector 
+		7. claytotmeasured - Total Clay - Measured 
+		8. claycarbmeasured - CaCO3 Clay - Measured 
+		9. silttotmeasured - Total Silt - Measured 
+		10. siltfinemeasured - Fine Silt - Measured 
+		11. siltcomeasured - Co. Silt - Measured 
+		12. sandtotmeasured - Total Sand - Measured 
+		13. sandtotmethod - Total Sand Method 
+		14. sandvcmeasured - VC Sand - Measured 
+		15. sandcomeasured - Co. Sand - Measured 
+		16. sandmedmeasured - Med. Sand - Measured 
+		17. sandfinemeasured - Fine Sand - Measured 
+		18. sandvfmeasured - VF Sand - Measured 
+		19. sandvfmethod - VF Sand Method 
+		20. textureclfieldlab - Texture Class - Field Lab 
+		21. fiberrubbedpct - Rubbed Fiber % 
+		22. fiberunrubbedpct - Unrubbed Fiber % 2 
+		23. ph1to1h2o - pH 1:1 water 
+		24. ph01mcacl2 - pH .01M CaCl2 
+		25. phnaf - pH NaF 
+		26. phoxidized - pH Oxidized 
+		27. phdeltah2o2 - Delta pH - H2O2 
+		28. liquidlimitmeasured - LL - Measured 
+		29. plasticlimitmeasured - PL - Measured 
+		30. pi - PI 
+		31. atterbergsampcond - Atterberg Sample Condition 
+		32. cole - COLE 
+		33. esttotpotacidityetpa - Est. Pot. Acidity - ETPA 
+		34. camgmeh2 - Ca + Mg - Meh 2 
+		35. potassiummeh2 - Potassium - Meh 2 
+		36. camgsatpaste - Ca + Mg - Sat. Paste 
+		37. extractaciditykcl - KCl Extract. Acidity 
+		38. basesatmeh2 - Base Sat. - Meh 2 
+		39. cec7 - CEC-7 
+		40. cec82 - CEC-8.2 
+		41. ecec - ECEC 
+		42. phosphatephos - Phosphate Phosphorous 
+		43. nitratenitrogen - NO3-N 
+		44. ecmeasured - EC 
+		45. ecdeterminemeth - EC Method 
+		46. ec15 - EC 1:5 by volume 
+		47. caco3equivmeasured - CaCO3 Equiv. Measured 
+		48. gypsumequiv - Equiv. Gypsum 
+		49. sodium - Sodium 
+		50. sar - SAR 
+		51. gypsumreq - Gypsum Req. 
+		52. humiccolor - Humic Color 
+		53. fulviccolor - Fulvic Color 
+		54. humicfulviccolor - Humic+Fulvic Color 
+		55. alummeasured - Aluminum 
+		56. pyrophoshue - Pyrophosphate Hue 
+		57. pyrophosvalue - Pyrophosphate Value 
+		58. pyrophoschroma - Pyrophosphate Chroma 
+		59. melanicindex - Melanic Index 
+		60. recwlupdated - Record Last Updated 
+		61. recuseriidref - Record Last Updated By 
+		62. phlabresultiid - Rec ID 
+
+phmottles: Pedon Horizon Mottles 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. mottlepct - Percent 
+		4. mottlesize - Size 
+		5. mottlecntrst - Contrast 
+		6. colorhue - Hue 
+		7. colorvalue - Value 
+		8. colorchroma - Chroma 
+		9. mottleshape - Shape 
+		10. colormoistst - Moist State 
+		11. mottleloc - Location - obsolete 
+		12. recwlupdated - Record Last Updated 
+		13. recuseriidref - Record Last Updated By 
+		14. phmottlesiid - Rec ID 
+
+phorizon: Pedon Horizon 
+		1. peiidref - Lineage 
+		2. seqnum - Seq 
+		3. hzdept - Top Depth 
+		4. hzdepb - Bottom Depth 
+		5. hzthk_l - Low 
+		6. hzthk_r - RV 
+		7. hzthk_h - High 
+		8. obsmethod - Observation Method 
+		9. hzname - Designation 
+		10. hzname_s - S 
+		11. desgndisc - Disc 
+		12. desgnmaster - Master 
+		13. desgnmasterprime - Prime 
+		14. desgnvert - Sub 
+		15. texture - Tex Mod & Class 
+		16. texture_s - S 
+		17. stratextsflag - Stratified? 
+		18. claytotest - Est Clay % 
+		19. claycarbest - Carbonate Clay - Est. 
+		20. silttotest - Est Silt % 
+		21. sandtotest - Est Sand % 
+		22. fragvoltot - Total Fragment Volume 
+		23. horcolorvflag - Variegated Colors? 
+		24. obssoimoiststat - Observed Moisture State 
+		25. rupresblkmst - Rupture Moist 
+		26. rupresblkdry - Rupture Dry 
+		27. rupresblkcem - Rupture Cement 
+		28. rupresplate - Rupture Plate 
+		29. mannerfailure - Manner of Failure 
+		30. stickiness - Stickiness 
+		31. plasticity - Plasticity 
+		32. toughclass - Tough Class 
+		33. penetrres - Penetration Resistance 
+		34. penetorient - Penetration Orientation 
+		35. ksatpedon - Ksat 
+		36. ksatstddev - Ksat Std Dev 
+		37. ksatrepnum - Ksat Rep # 
+		38. horzpermclass - Permeability Class 
+		39. obsinfiltrationrate - Infiltration Rate 
+		40. phfield - Field pH 
+		41. phdetermeth - pH Method 
+		42. effclass - Efferv Class 
+		43. efflocation - Efferv Loc - obsolete 
+		44. effagent - Efferv Agent 
+		45. carbdevstagefe - Carbonate Dev Stage - FE 
+		46. carbdevstagecf - Carbonate Dev Stage - CF 
+		47. mneffclass - MN Efferv Class 
+		48. mneffagent - MN Efferv Agent 
+		49. reactadipyridyl - A-A Dipyridyl Reaction 
+		50. dipyridylpct - A-A Dipyridyl Percent 
+		51. dipyridylloc - A-A Dipyridyl Location 
+		52. excavdifcl - Excav Diff 
+		53. soilodor - Odor 
+		54. soilodorintensity - Odor Intensity 
+		55. rmonosulfidep - Reduced Monosulfide Presence 
+		56. bounddistinct - Boundary Distinctness 
+		57. boundtopo - Boundary Topography 
+		58. horzvoltotpct_l - Low 
+		59. horzvoltotpct_r - RV 
+		60. horzvoltotpct_h - High 
+		61. horzlatareapct_l - Low 
+		62. horzlatareapct_r - RV 
+		63. horzlatareapct_h - High 
+		64. dspcomplayerid - Comp Layer ID 
+		65. aashtocl - AASHTO 
+		66. unifiedcl - Unified 
+		67. recwlupdated - Record Last Updated 
+		68. recuseriidref - Record Last Updated By 
+		69. phiid - Rec ID 
+
+phpores: Pedon Horizon Pores 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. poreqty - Quantity 
+		4. poreqtyclass - Quantity Class 
+		5. poresize - Size 
+		6. porecont - Continuity 
+		7. poreshp - Shape 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phporesiid - Rec ID 
+
+phpvsf: Pedon Horizon Ped Void Surface Features 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. pvsfpct - Percent 
+		4. pvsfkind - Kind 
+		5. pvsfdistinct - Distinctness 
+		6. pvsfcont - Continuity (Obsolete) 
+		7. pvsflocation - Location 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phpvsfiid - Rec ID 
+
+phpvsfcolor: Pedon Horizon Ped Void Surface Features Color 
+		1. phpvsfiidref - Lineage 
+		2. seqnum - Seq 
+		3. colorpct - Color % 
+		4. colorhue - Hue 
+		5. colorvalue - Value 
+		6. colorchroma - Chroma 
+		7. colormoistst - Moist State 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phpvsfcoloriid - Rec ID 
+
+phrdxfeatures: Pedon Horizon Redoximorphic Features 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. rdxfeatpct - Percent 
+		4. rdxfeatsize - Size 
+		5. rdxfeatcntrst - Contrast 
+		6. rdxfeathardness - Hardness 
+		7. rdxfeatshape - Shape 
+		8. rdxfeatkind - Kind 
+		9. rdxfeatlocation - Location 
+		10. rdxfeatboundary - Boundary 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. phrdxfiid - Rec ID 
+
+phredoxfcolor: Pedon Horizon Redoximorphic Features Color 
+		1. phrdxfiidref - Lineage 
+		2. seqnum - Seq 
+		3. colorpct - Color % 
+		4. colorhue - Hue 
+		5. colorvalue - Value 
+		6. colorchroma - Chroma 
+		7. colormoistst - Moist State 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phrdxfcoloriid - Rec ID 
+
+phroots: Pedon Horizon Roots 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. rootsquantity - Quantity 
+		4. rootsquantityclass - Quantity Class 
+		5. rootssize - Size 
+		6. rootslocation - Location 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. phrootsiid - Rec ID 
+
+phsample: Pedon Horizon Sample 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. labsampnum - Lab Sample # 
+		4. fldsampid - Field Sample ID 
+		5. layerdepthtop - Depth to Top 
+		6. layerdepthbottom - Depth to Bottom 
+		7. numberofbulksampbags - Number of Bulk Sample Bags 
+		8. numberofbulkdensityclods - Number of Bulk Density Clods 
+		9. numberofnaturalfabricclods - Number of Natural Fabric Clods 
+		10. numberofothersamples - Number of Other samples 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. phlabsampiid - Rec ID 
+
+phstructure: Pedon Horizon Soil Structure 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. structgrade - Grade 
+		4. structsize - Size 
+		5. structtype - Type 
+		6. structid - Structure ID 
+		7. structpartsto - Parts to Structure ID 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phstructureiid - Rec ID 
+
+phtext: Pedon Horizon Text 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. recdate - Date 
+		4. recauthor - Author 
+		5. phorizontextkind - Kind 
+		6. textcat - Category 
+		7. textsubcat - Subcategory 
+		8. textentry - Text Entry 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. phtextiid - Rec ID 
+
+phtexture: Pedon Horizon Texture 
+		1. phiidref - Lineage 
+		2. seqnum - Seq 
+		3. texcl - Texture 
+		4. lieutex - In Lieu 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. phtiid - Rec ID 
+
+phtexturemod: Pedon Horizon Texture Modifier 
+		1. phtiidref - Lineage 
+		2. seqnum - Seq 
+		3. texmod - Modifier 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. phtexmodiid - Rec ID 
+
+phvnirscan: Pedon Horizon VNIR Scan 
+		1. phiidref - Lineage 
+		2. vnirdepthtop - Depth to Top 
+		3. vnirdepthbottom - Depth to Bottom 
+		4. vnirsamplecondition - Sample Condition 
+		5. vnirlightsource - Light Source 
+		6. vnirscandate - VNIR Scan Date 
+		7. vnirfilename - VNIR File Name 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phvnirscaniid - Rec ID 
+
+phvnirscanresult: Pedon Horizon VNIR Scan Result 
+		1. phvnirscaniidref - Lineage 
+		2. vnirmodelid - VNIR Model ID 
+		3. vnirmodelrundate - Date 
+		4. carbontotalpct - Total Carbon % 
+		5. carboninorganicpct - Inorganic Carbon % 
+		6. carbonorganicpct - Organic Carbon % 
+		7. carbonorganicpct_s - S 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. phvnirscanresultiid - Rec ID 
+
+plotdisturbance: Plot Disturbance 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. disturbancetype - Disturbance Type 
+		4. disturbancefrequency - Frequency 
+		5. disturbanceimpact - Disturbance Impact 
+		6. disturbancelastapplied - When Last Applied ? 
+		7. notes - Notes 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. plotdisturbanceiid - Rec ID 
+
+plotgrazinguse: Plot Grazing Use 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. animalkind - Animal Kind 
+		4. usefrequency - Frequency of Use 
+		5. seasonofuse - Season of Use 
+		6. stockingratecl - Stocking Rate 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. plotgrazinguseiid - Rec ID 
+
+plotmainforeststanddetails: Main Forest Stand Details 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. transectpointlocation - Transect Point Location 
+		4. distancefromprevious - Distance From Previous Point 
+		5. plantiidref - Lineage 
+		6. treediameterbreastheight - Tree DBH 
+		7. treeconditions - Tree Condition 
+		8. notes - Notes 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. plotmainforstanddetailiid - Rec ID 
+
+plotplantinventory: Plot Plant Inventory 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantiidref - Lineage 
+		4. planttypegroup - Plant Type Group 
+		5. akstratumcoverclass - AK Stratum Cover Class 
+		6. plantheightcllowerlimit - Plant Ht Class Lower Limit 
+		7. plantheightclupperlimit - Plant Ht Class Upper Limit 
+		8. plantnativity - Plant Nativity 
+		9. sociabilityclass - Sociability Class 
+		10. livecanopyhtbottom - Live Canopy Ht. Bottom 
+		11. livecanopyhttop - Live Canopy Ht. Top 
+		12. overstorydbhmin - Overstory DBH Minimum 
+		13. overstorydbhmax - Overstory DBH Maximum 
+		14. speciescancovpct - Species Canopy Cover % 
+		15. speciescancovclass - Species Canopy Cover Class 
+		16. speciestraceamtflag - Spp Trace Amt Flag 
+		17. speciesbasalarea - Basal Area 
+		18. understorygrcovpct - Understory Ground Cover % 
+		19. understorygrcovclass - Understory Ground Cover Class 
+		20. seedlingdensityclass - Seedling Density Class 
+		21. maturedensityclass - Mature Density Class 
+		22. vegetationstratalevel - Vegetation Strata Level 
+		23. orderofdominance - Order of Dominance 
+		24. outsideplotindicator - Observed Outside Plot ? 
+		25. estannualprod - Estimated Annual Prod. 
+		26. esdannualprod - ESD Annual Prod. 
+		27. allowableannualprod - Allowable Prod. 
+		28. palatableannualprod - Palatable Prod. 
+		29. akfunctionalgroup - AK Functional Group 
+		30. recwlupdated - Record Last Updated 
+		31. recuseriidref - Record Last Updated By 
+		32. plotplantinventoryiid - Rec ID 
+
+plotplanttypecanopycover: Plot Plant Type Canopy Cover 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. planttypegroup - Plant Type Group 
+		4. plantheightcllowerlimit - Plant Ht Class Lower Limit 
+		5. plantheightclupperlimit - Plant Ht Class Upper Limit 
+		6. planttypecancovpct - Canopy Cover % 
+		7. planttypecancovclass - Canopy Cover Class 
+		8. cancovassessmethod - Assessment Method 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. plotplanttypecancoviid - Rec ID 
+
+plotsamplingprotocolused: Plot Sampling Protocol Used 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. plotsampprotocolname - Protocol Name 
+		4. datacollector - Data Collector 
+		5. datarecorder - Data Recorder 
+		6. samplingintensity - Sampling Intensity 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. plotsampprotocolusediid - Rec ID 
+
+plotspeciesbasalarea: Plot Species Basal Area 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantiidref - Lineage 
+		4. basalareafactor - Basal Area Factor 
+		5. speciesnumbertreesin - # of Trees In 
+		6. speciesbasalarea - Basal Area 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. plotspeciebasalareaiid - Rec ID 
+
+plottreeinventory: Plot Tree Inventory 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantiidref - Lineage 
+		4. speciestreecount - # of Trees 
+		5. speciescomppct - Composition % 
+		6. speciesdbhaverage - DBH Average 
+		7. speciesbasalarea - Basal Area 
+		8. plottreeinventoryiid - Rec ID 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+
+plottreescounted: Plot Trees Counted 
+		1. plottreeinventoryiidref - Lineage 
+		2. seqnum - Seq 
+		3. dbhclassmidpoint - DBH Class Midpoint 
+		4. dbhclassspeciestreecount - # of Trees 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. plottreescountediid - Rec ID 
+
+plottreesiteindexdetails: Plot Tree Site Index Details 
+		1. plottreesiteindsumiidref - Lineage 
+		2. seqnum - Seq 
+		3. treenumber - Tree # 
+		4. crownclass - Crown Class 
+		5. reproductionsource - Reproduction Source 
+		6. treediameterbreastheight - Tree DBH 
+		7. tenyeargrowthradius - 10 Yr. Growth Radius 
+		8. growthringcount - Growth Ring Count 
+		9. growthringcountheight - Growth Ring Count Height 
+		10. growthringcountage - Growth Ring Count Age 
+		11. treeage - Tree Age 
+		12. treecanopyhtbottom - Canopy Ht. Bottom 
+		13. treecanopyhttop - Canopy Ht. Top 
+		14. aknoringsinlastinch - AK Number of Rings in Last Inch 
+		15. recwlupdated - Record Last Updated 
+		16. recuseriidref - Record Last Updated By 
+		17. plottreesiteinddetailsiid - Rec ID 
+
+plottreesiteindexsummary: Plot Tree Site Index Summary 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantiidref - Lineage 
+		4. plantnativity - Plant Nativity 
+		5. siteindexbase - Site Index Base 
+		6. speciestreecount - # of Trees 
+		7. siteindexplotave - Average Site Index 
+		8. speciesdbhaverage - DBH Average 
+		9. treeageave - Average Tree Age 
+		10. treecanopyhttopave - Average Canopy Top Ht. 
+		11. recwlupdated - Record Last Updated 
+		12. recuseriidref - Record Last Updated By 
+		13. plottreesiteindsumiid - Rec ID 
+
+plottreesummary: Plot Tree Summary 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. dbhclassmidpoint - DBH Class Midpoint 
+		4. dbhclasstreecount - # of Trees 
+		5. dbhclassbasalarea - DBH Class Basal Area 
+		6. dbhclasstreedensity - DBH Class Tree Density 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. plottreesummaryiid - Rec ID 
+
+siteaoverlap: Site Area Overlap 
+		1. seqnum - Seq 
+		2. areaiidref - Area 
+		3. siteiidref - Lineage 
+		4. sareaoviid - Rec ID 
+
+sitebedrock: Site Bedrock 
+		1. seqnum - Seq 
+		2. bedrockorder - Vertical Order 
+		3. geogroup - Geologic Group 
+		4. geoform - Geologic Formation 
+		5. geomember - Geologic Member 
+		6. bedrckdepth - Bedrock Depth 
+		7. bedrckkind - Bedrock Kind 
+		8. bedrckhardness - Bedrock Hardness 
+		9. bedrckfractint - Bedrock Fracture Interval 
+		10. bedrckweather - Bedrock Weathering 
+		11. bedrckstrike - Bedrock Strike 
+		12. bedrckdip_l - Low 
+		13. bedrckdip_h - High 
+		14. siteiidref - Lineage 
+		15. sitebedrockiid - Rec ID 
+
+siteassocsoi: Site Associated Soils 
+		1. seqnum - Seq 
+		2. assocsoi - Associated Soil 
+		3. siteiidref - Lineage 
+		4. siteassocsoiiid - Rec ID 
+
+siteecositehistory: Site Ecological Site History 
+		1. ecositecorrdate - Correlation Date 
+		2. classifier - Classifier 
+		3. ecositeiidref - Ecological Site 
+		4. siteiidref - Lineage 
+		5. siteecositehistoryiid - Rec ID 
+
+siteassocsite: Site Association Site 
+		1. seqnum - Seq 
+		2. siteiidref - Lineage 
+		3. siteassociidref - Lineage 
+		4. siteasiteiid - Rec ID 
+
+sitegeomordesc: Site Geomorphic Description 
+		1. seqnum - Seq 
+		2. geomfiidref - Geomorphic Feature 
+		3. geomfmod - Feature Modifier 
+		4. geomfeatid - Feature ID 
+		5. existsonfeat - Exists On Feature ID 
+		6. siteiidref - Lineage 
+		7. sitegeomdiid - Rec ID 
+
+siteobs: Site Observation 
+		1. seqnum - Seq 
+		2. obsdate - Observation Date 
+		3. obsdatekind - Observation Date Kind 
+		4. datacollector - Data Collector 
+		5. photoid - Air Photo ID 
+		6. swaterkind - Surface Water Kind 
+		7. swaterdepth - Surface Water Depth 
+		8. hydrologystatus - Hydrology Status 
+		9. geomicrorelief - Microrelief Kind 
+		10. geommicelev - Microrelief Elevation 
+		11. geommicpat - Microrelief Pattern (obsolete) 
+		12. ecostateid - Ecol. State ID 
+		13. ecostatename - Ecol. State Name 
+		14. commphaseid - Comm. Phase ID 
+		15. commphasename - Comm. Phase Name 
+		16. plantassocnm - Plant Association Name 
+		17. earthcovkind1 - Cover Kind 1 
+		18. earthcovkind2 - Cover Kind 2 
+		19. resourceretentionclass - Res. Retention Class 
+		20. bareareamaxwidth - Bare Area Max. Width 
+		21. pedodermclass - Pedoderm Class 
+		22. pedodermcovind - Pedoderm Loose Cover Indicator 
+		23. biolcrusttypedom - Biol. Crust Type Dominant 
+		24. biolcrusttypesecond - Biol. Crust Type Secondary 
+		25. physcrustsubtype - Phys Crust Subtype 
+		26. crustdevcl - Crust Dev Class 
+		27. soilredistributionclass - Soil Redistribution Class 
+		28. exposedsoilpct - Exposed Soil Percent 
+		29. localdisturbancedistance - Local Disturb. Distance 
+		30. localdisturbancedescription - Local Disturb. Description 
+		31. drainedflag - Drained? 
+		32. beddingflag - Bedded Soil? 
+		33. plantationflag - Forest Plantation? 
+		34. forestrotationstage - Forest Rotation Stage 
+		35. yldstudyid - Yield Study ID 
+		36. currweathcond - Current Weather 
+		37. currairtemp - Current Air Temp 
+		38. tidalperiod - Tidal Period 
+		39. bottomtype - Bottom Type 
+		40. saswatertempupper - Water Temp - Upper 
+		41. saswatertemplower - Water Temp - Lower 
+		42. saswaterphupper - Water pH - Upper 
+		43. saswaterphlower - Water pH - Lower 
+		44. phdetermeth - pH Method 
+		45. sasdissolvedoxyupper - Dissolved Oxygen - Upper 
+		46. sasdissolvedoxylower - Dissolved Oxygen - Lower 
+		47. saswatersalinityupper - Water Salinity - Upper 
+		48. saswatersalinitylower - Water Salinity - Lower 
+		49. siteiidref - Lineage 
+		50. siteobsiid - Rec ID 
+
+sitepm: Site Parent Material 
+		1. seqnum - Seq 
+		2. pmorder - Vertical Order 
+		3. pmdept - Top Depth 
+		4. pmdepb - Bottom Depth 
+		5. pmmodifier - Textural Modifier 
+		6. pmgenmod - General Modifier 
+		7. pmkind - Kind 
+		8. pmorigin - Origin 
+		9. pmweathering - Weathering (Obsolete) 
+		10. siteiidref - Lineage 
+		11. sitepmiid - Rec ID 
+
+sitetext: Site Text 
+		1. seqnum - Seq 
+		2. recdate - Date 
+		3. recauthor - Author 
+		4. sitetextkind - Kind 
+		5. textcat - Category 
+		6. textsubcat - Subcategory 
+		7. textentry - Text Entry 
+		8. siteiidref - Lineage 
+		9. sitetextiid - Rec ID 
+
+siteassoc: Site Association 
+		1. usiteassocid - User Site Association ID 
+		2. sadbiidref - Site Association NASIS Site 
+		3. siteassociid - Rec ID 
+
+siteerosionacc: Site Erosion Accelerated 
+		1. seqnum - Seq 
+		2. erokind - Kind 
+		3. siteobsiidref - Site/Site Observation 
+		4. siteeroacciid - Rec ID 
+
+siteobstext: Site Observation Text 
+		1. seqnum - Seq 
+		2. recdate - Date 
+		3. recauthor - Author 
+		4. siteobstextkind - Kind 
+		5. textcat - Category 
+		6. textsubcat - Subcategory 
+		7. textentry - Text Entry 
+		8. siteobsiidref - Site/Site Observation 
+		9. siteobstextiid - Rec ID 
+
+sitesoilmoist: Site Soil Moisture 
+		1. seqnum - Seq 
+		2. soimoistdept - Top Depth 
+		3. soimoistdepb - Bottom Depth 
+		4. soilmoistsensordepth - Sensor Depth 
+		5. soilmoistsensorkind - Sensor Kind 
+		6. obssoimoiststat - Observed Moisture State 
+		7. obssoimoist - Vol Moisture % 
+		8. obsgrsoimoist - Grav. Soil Moist % Whole Soil 
+		9. soimoistten - Moisture Tension 
+		10. siteobsiidref - Site/Site Observation 
+		11. sitesmiid - Rec ID 
+
+sitesoiltemp: Site Soil Temperature 
+		1. seqnum - Seq 
+		2. soitempdep - Depth 
+		3. soiltempsensorkind - Sensor Kind 
+		4. soitemp - Temperature 
+		5. siteobsiidref - Site/Site Observation 
+		6. sitestiid - Rec ID 
+
+sitesurffrags: Site Surface Fragments 
+		1. seqnum - Seq 
+		2. sfragcov - Cover % 
+		3. distrocks - Spacing 
+		4. sfragkind - Kind 
+		5. sfragsize_l - Low 
+		6. sfragsize_r - RV 
+		7. sfragsize_h - High 
+		8. sfragshp - Shape 
+		9. sfraground - Roundness 
+		10. sfraghard - Hardness 
+		11. siteobsiidref - Site/Site Observation 
+		12. sitesurffragsiid - Rec ID 
+
+siteassoctext: Site Association Text 
+		1. seqnum - Seq 
+		2. recdate - Date 
+		3. recauthor - Author 
+		4. siteassoctextkind - Kind 
+		5. textcat - Category 
+		6. textsubcat - Subcategory 
+		7. textentry - Text Entry 
+		8. siteassociidref - Lineage 
+		9. siteatextiid - Rec ID 
+
+transect: Transect 
+		1. utransectid - User Transect ID 
+		2. tsectauth - Transect Author 
+		3. tsectkind - Transect Kind 
+		4. tsectselmeth - Transect Selection Method 
+		5. tsectdelinsize - Transect Delineation Size 
+		6. tsectdir - Transect Direction 
+		7. tsectcertstatus - Certification Status 
+		8. tsectdbiidref - Transect NASIS Site 
+		9. tsectiid - Rec ID 
+
+transectestcomposition: Transect Estimated Composition 
+		1. seqnum - Seq 
+		2. compname - Component Name 
+		3. localphase - Local Phase 
+		4. comppct - Comp % 
+		5. slope_l - Low 
+		6. slope_h - High 
+		7. tsectiidref - Transect 
+		8. tsectestcompiid - Rec ID 
+
+transecttext: Transect Text 
+		1. seqnum - Seq 
+		2. recdate - Date 
+		3. recauthor - Author 
+		4. transecttextkind - Kind 
+		5. textcat - Category 
+		6. textsubcat - Subcategory 
+		7. textentry - Text Entry 
+		8. tsectiidref - Transect 
+		9. transecttextiid - Rec ID 
+
+beltdata: Belt Data 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantheightcllowerlimit - Plant Ht Class Lower Limit 
+		4. plantheightclupperlimit - Plant Ht Class Upper Limit 
+		5. plantcount - # of Plants 
+		6. speciesdensity - Species Density 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. beltdataiid - Rec ID 
+
+daubenmirecancovclasssumm: Daubenmire Canopy Cover Class Summary 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. daubcancovclass - Canopy Cover Class 
+		4. cancovclassmidpoint - Class Midpoint % 
+		5. cancovclasscount - # of Quadrat Hits 
+		6. cancovproduct - Canopy Cover Product 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. daubcancovclsummiid - Rec ID 
+
+daubenmirecancovquaddetail: Daubenmire Canopy Cover Quad Details 
+		1. daubcancovclsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. daubcancovquaddetailiid - Rec ID 
+
+densityquadratdetails: Density Quadrat Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. maturecount - # of Mature Plants 
+		6. maturedensityclass - Mature Density Class 
+		7. seedlingcount - # of Seedling Plants 
+		8. seedlingdensityclass - Seedling Density Class 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. densityquaddetailsiid - Rec ID 
+
+dwrquadratdetails: Dry Weight Rank Quadrat Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. dwrone - DWR 1 ? 
+		6. dwrtwo - DWR 2 ? 
+		7. dwrthree - DWR 3 ? 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. dwrquaddetailsiid - Rec ID 
+
+frequencyquadratdetails: Frequency Quadrat Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. speciespresentindicator - Species Present ? 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. freqquaddetailsiid - Rec ID 
+
+nestedfreqquadratdetails: Nested Frequency Quadrat Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. smallestquadratin - Smallest Quadrat In ? 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. nestedfreqquaddetailsiid - Rec ID 
+
+nestedfrequencysummary: Nested Frequency Summary 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. subquadratnumber - Subquadrat # 
+		4. subquadratsize - Subquadrat Size 
+		5. subquadrathitcount - # of Subquadrat Hits 
+		6. subquadratspeciesfreq - Species Frequency 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. nestedfreqsummaryiid - Rec ID 
+
+windbreakrowdata: Windbreak Row Data 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. windbreakrowid - Row ID 
+		4. plantiidref - Lineage 
+		5. growingseasoncount - # of Growing Seasons 
+		6. speiescondition - Species Condition 
+		7. crownspreadleft - Crown Spread Left 
+		8. crownspreadright - Crown Spread Right 
+		9. spacingbetweenrows - Spacing Between Rows 
+		10. spacingwithinrow - Spacing Within Row 
+		11. cultivationpast - Cultivation Past 
+		12. cultivationpresent - Cultivation Present 
+		13. speciesdbhaverage - DBH Average 
+		14. diseasekind - Disease Kind 
+		15. diseasedamagedegree - Disease Damage Degree 
+		16. injurykind - Injury Kind 
+		17. injurydamagedegree - Injury Damage Degree 
+		18. insectkind - Insect Kind 
+		19. insectdamagedegree - Insect Damage Degree 
+		20. groundcoverextent - Ground Cover Extent 
+		21. heightlivecrownleft - Ht. to Live Crown Left 
+		22. heightlivecrownright - Ht. to Live Crown Right 
+		23. survivalpct - Survival % 
+		24. windbreakrowhtave - Row Ht. Average 
+		25. windbreakrowhtmaxave - Row Ht. Max. Aveage 
+		26. reprodabundanceclass - Reproduction Abundance Class 
+		27. rootdepthfew - Rooting Depth Few 
+		28. rootdepthcommon - Rooting Depth Common 
+		29. rootdepthmany - Root Depth Many 
+		30. suppressiondegreeleft - Suppression Degree Left 
+		31. suppressionrowleft - Suppression Row ID Left 
+		32. suppressiondegreeright - Suppression Degree Right 
+		33. suppressionrowright - Suppression Row ID Right 
+		34. vitalnotesindicator - Vital Notes ? 
+		35. soiltaxonrangeindicator - Within Soil Taxon Range ? 
+		36. notes - Notes 
+		37. recwlupdated - Record Last Updated 
+		38. recuseriidref - Record Last Updated By 
+		39. windbreakrowdataiid - Rec ID 
+
+comparativeyielddata: Comparative Yield Data 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. yieldrank - Yield Rank 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. compyielddataiid - Rec ID 
+
+comparativeyieldrefquadrats: Comparative Yield Reference Quadrats 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. refyieldrank - Ref Yeild Rank 
+		4. quadratsize - Quadrat Size 
+		5. quadratshape - Quadrat Shape 
+		6. clippedwtrefquadrat - Clipped Wieght 
+		7. compyldconvfactor - Conversion Factor 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. compyldrefquadiid - Rec ID 
+
+croptreedetails: Crop Tree Details 
+		1. croptreesummiidref - Lineage 
+		2. seqnum - Seq 
+		3. treenumber - Tree # 
+		4. plantiidref - Lineage 
+		5. treediameterbreastheight - Tree DBH 
+		6. croptreeprimarycat - Primary Category 
+		7. croptreesecondarycat - Secondary Category 
+		8. cuttreeindicator - Cut Tree ? 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. croptreedetailsiid - Rec ID 
+
+croptreesubplotdetails: Crop Tree Subplot Details 
+		1. croptreesummiidref - Lineage 
+		2. seqnum - Seq 
+		3. subplotnumber - Subplot # 
+		4. leavetreebasalarea - Leave Tree Basal Area 
+		5. cuttreebasalarea - Cut Tree Basal Area 
+		6. basalareasubplottotal - Total Basal Area 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. croptreesubplotdetailsiid - Rec ID 
+
+croptreesummary: Crop Tree Summary 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. treecounttotal - # of Trees Counted 
+		4. currenttreedensity - Current Tree Density 
+		5. currentbasalarea - Current Basal Area 
+		6. currentplotavedbh - Current Plot Ave DBH 
+		7. cuttreebasalareaave - Cut Tree Basal Area Ave. 
+		8. leavetreebasalareaave - Leave Tree Basal Area Ave. 
+		9. cuttreecount - # of Cut Trees 
+		10. cuttreedensity - Cut Tree Density 
+		11. cuttreeavedbh - Cut Tree Ave. DBH 
+		12. recwlupdated - Record Last Updated 
+		13. recuseriidref - Record Last Updated By 
+		14. croptreesummaryiid - Rec ID 
+
+croptreetotals: Crop Tree Totals 
+		1. croptreesummiidref - Lineage 
+		2. seqnum - Seq 
+		3. croptreeprimarycat - Primary Category 
+		4. categorytreecount - # of Trees 
+		5. categorytreedensity - Tree Density 
+		6. categorydbhave - Ave. DBH 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. croptreetotalsiid - Rec ID 
+
+groundcovdetails: Ground Cover Details 
+		1. transectgrcoviidref - Lineage 
+		2. seqnum - Seq 
+		3. transectpointlocation - Transect Point Location 
+		4. quadratnumber - Quadrat # 
+		5. quadratcoverpct - Quadrat Cover % 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. groundcovdetailsiid - Rec ID 
+
+groundsurfcovdetails: Ground Surface Cover Details 
+		1. transectgrsurfcoviidref - Lineage 
+		2. seqnum - Seq 
+		3. transectpointlocation - Transect Point Location 
+		4. quadratnumber - Quadrat # 
+		5. quadratcoverpct - Quadrat Cover % 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. groundsurfcovdetailsiid - Rec ID 
+
+plantprodquadratdetails: Plant Production Quadrat Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. quadratclippedindicator - Quadrat Clipped ? 
+		6. specieswtairdry - Species Wt. Air-dry 
+		7. specieswtclipped - Species Wt. Clipped 
+		8. specieswtestimated - Species Wt. Estimated 
+		9. speciestraceamtflag - Spp Trace Amt Flag 
+		10. weightunitcount - # of Weight Units 
+		11. speciescancovpct - Species Canopy Cover % 
+		12. speciescancovclass - Species Canopy Cover Class 
+		13. recwlupdated - Record Last Updated 
+		14. recuseriidref - Record Last Updated By 
+		15. plantprodquaddetailsiid - Rec ID 
+
+siteiristubedata: Site IRIS Tube Data 
+		1. siteobsiidref - Site/Site Observation 
+		2. iristubeid - Tube ID 
+		3. topdepthevaluated - Top Depth Evaluated 
+		4. bottomdepthevaluated - Bottom Depth Evaluated 
+		5. dateinstalled - Date Installed 
+		6. dateremoved - Date Removed 
+		7. ironpctremoved - Iron % Removed 
+		8. reducedsoilflag - Soil Reduced ? 
+		9. irisimagefilename - Scan Image File Name 
+		10. recwlupdated - Record Last Updated 
+		11. recuseriidref - Record Last Updated By 
+		12. siteiristubedataiid - Rec ID 
+
+sitemuoverlap: Site Mapunit Overlap 
+		1. siteiidref - Lineage 
+		2. seqnum - Seq 
+		3. lmapunitiidref - Legend Mapunit 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. smuoviid - Rec ID 
+
+siteothvegclass: Site Other Vegetative Classification 
+		1. siteiidref - Lineage 
+		2. seqnum - Seq 
+		3. ovegcliidref - Other Veg Class 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. siteovegcliid - Rec ID 
+
+sitetreescounted: Site Trees Counted 
+		1. sitewoodybasalareaiidref - Lineage 
+		2. seqnum - Seq 
+		3. treediameterbreastheight - Tree DBH 
+		4. treeheight - Tree Height 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. treescountediid - Rec ID 
+
+siteusgsquadrangleoverlap: Site USGS Quadrangle Overlap 
+		1. siteiidref - Lineage 
+		2. seqnum - Seq 
+		3. usgsquadrangleiidref - USGS Quadrangle 
+		4. recwlupdated - Record Last Updated 
+		5. recuseriidref - Record Last Updated By 
+		6. siteusgsquadoviid - Rec ID 
+
+sitewoodybasalarea: Site Woody Basal Area 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. basalareafactor - Basal Area Factor 
+		4. numberoftreesin - Number of Trees In 
+		5. recwlupdated - Record Last Updated 
+		6. recuseriidref - Record Last Updated By 
+		7. sitewoodybasalareaiid - Rec ID 
+
+soilmoistmonitordata: Soil Moisture Monitor Data 
+		1. soilmonitordataiidref - Lineage 
+		2. sensorid - Sensor ID 
+		3. soilmoistsensordepth - Sensor Depth 
+		4. soilmoistsensorkind - Sensor Kind 
+		5. soilmoistvoldailymin - Min Soil Moisture - Vol 
+		6. soilmoistvoldailyave - Ave Soil Moisture - Vol 
+		7. soilmoistvoldailymax - Max Soil Moisture - Max 
+		8. notes - Notes 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. soilmoistmonitordataiid - Rec ID 
+
+soilmonitordata: Soil Monitor Data 
+		1. peiidref - Lineage 
+		2. stationid - Station ID 
+		3. obsdate - Observation Date 
+		4. dailyprecipmeasured - Daily Precipitation 
+		5. airtempmin - Min Air Temp 
+		6. airtempave - Ave Air Temp 
+		7. airtempmax - Max Air Temp 
+		8. airtempsensorheight - Temp Sensor Height 
+		9. notes - Notes 
+		10. recwlupdated - Record Last Updated 
+		11. recuseriidref - Record Last Updated By 
+		12. soilmonitordataiid - Rec ID 
+
+soiltempmonitordata: Soil Temperature Monitor Data 
+		1. soilmonitordataiidref - Lineage 
+		2. sensorid - Sensor ID 
+		3. soiltempsensordepth - Sensor Depth 
+		4. soiltempsensorkind - Sensor Kind 
+		5. soiltempdailymin - Min Soil Temp 
+		6. soiltempdailyave - Ave Soil Temp 
+		7. soiltempdailymax - Max Soil Temp 
+		8. notes - Notes 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. soiltempmonitordataiid - Rec ID 
+
+subplotplantdetails: Subplot Plant Details 
+		1. plotplantinventoryiidref - Lineage 
+		2. seqnum - Seq 
+		3. subplotnumber - Subplot # 
+		4. subplotsize - Subplot Size 
+		5. stemcount - # of Stems 
+		6. stemdiameteraverage - Average Stem Diameter 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. subplotplantdetailsiid - Rec ID 
+
+totalquadratharvest: Total Quadrat Harvest 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. quadrattotwtclippedfresh - Total Clipped Wt - Fresh 
+		6. recuseriidref - Record Last Updated By 
+		7. recwlupdated - Record Last Updated 
+		8. totalquadratharvestiid - Rec ID 
+
+transectgapdetails: Transect Gap Details 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. gapnumber - Gap # 
+		4. gapkind - Gap Kind 
+		5. gapstartpoint - Gap Start Point 
+		6. gapendpoint - Gap End Point 
+		7. gaplength - Gap Length 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. transectgapdetailsiid - Rec ID 
+
+transectgroundcover: Transect Ground Cover 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. groundcovertype - Ground Cover Type 
+		4. groundcoverptcount - # of Points 
+		5. groundcoverptpct - Ground Cover % - Points 
+		6. quadratsize - Quadrat Size 
+		7. quadratshape - Quadrat Shape 
+		8. groundcoverquadpctave - Ground Cover % Ave. - Quadrats 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. transectgroundcoveriid - Rec ID 
+
+transectgroundcoverdatalegacy: Transect Ground Cover Data - Legacy 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. quadratbaregrpct - Bare Ground % 
+		5. quadratcancovpct - Canopy Cover % 
+		6. quadratrockfragcovpct - Rock Frag Cover % 
+		7. quadratmulchwt - Mulch Weight 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. transgrcovlegacydataiid - Rec ID 
+
+transectgroundsurfcover: Transect Ground Surface Cover 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. groundsurfcovtype - Ground Surface Cover Type 
+		4. groundcoverptcount - # of Points 
+		5. groundcoverptpct - Ground Cover % - Points 
+		6. quadratsize - Quadrat Size 
+		7. quadratshape - Quadrat Shape 
+		8. groundcoverquadpctave - Ground Cover % Ave. - Quadrats 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. transectgroundsurfcoveriid - Rec ID 
+
+transectoverstorycanopycover: Transect Overstory Canopy Cover 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. transectpointlocation - Transect Point Location 
+		4. overstorycanopypresent - Overstory Canopy Present ? 
+		5. densiometerquadscovered - # of Densiometer Quadrants Covered 
+		6. overstorycancovpctpoint - Overstory Canopy Cov % 
+		7. overstorycancovclpoint - Overstory Canopy Cov Class 
+		8. recwlupdated - Record Last Updated 
+		9. recuseriidref - Record Last Updated By 
+		10. transoverstorycancoviid - Rec ID 
+
+transectsamplingprotocolused: Transect Sampling Protocol Used 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. transsampprotocolname - Protocol Name 
+		4. datacollector - Data Collector 
+		5. datarecorder - Data Recorder 
+		6. samplingintensity - Sampling Intensity 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. transsampprotocolusediid - Rec ID 
+
+transectstandingbiomassdetails: Transect Standing Biomass Details 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. quadratnumber - Quadrat # 
+		4. transectpointlocation - Transect Point Location 
+		5. quadratsize - Quadrat Size 
+		6. quadratshape - Quadrat Shape 
+		7. herbbiomasswtgreen - Herbaceous Biomass Wt. Green 
+		8. herbbiomasswtairdry - Herbaceous Biomass Wt. Air-dry 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. transstandbiomassdetailiid - Rec ID 
+
+vegplottext: Vegetation Plot Text 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. recdate - Date 
+		4. recauthor - Author 
+		5. vegplottextkind - Kind 
+		6. textcat - Category 
+		7. textsubcat - Subcategory 
+		8. textentry - Text Entry 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. vegplottextiid - Rec ID 
+
+vegtransect: Vegetation Transect 
+		1. vegplotiidref - Lineage 
+		2. seqnum - Seq 
+		3. vegtransectid - Veg Transect ID 
+		4. transectstartlatitude - Start Latitude (WGS84) 
+		5. transectstartlongitude - Start Longitude (WGS84) 
+		6. transectendlatitude - End Latitude (WGS84) 
+		7. transectendlongitude - End Longitude (WGS84) 
+		8. transectazimuth - Transect Azimuth 
+		9. transectlength - Transect Length 
+		10. transectstartelevation - Start Elevation 
+		11. transectendelevation - End Elevation 
+		12. dblsampquadratssampled - # of Dbl. Samp. Quadrats Sampled 
+		13. dblsampquadratsclipped - # of Dbl. Samp. Quadrats Clipped 
+		14. nestedfreqquadratssampled - # of Nested Freq. Quadrats Sampled 
+		15. freqquadratssampled - # of Frequency Quadrats Sampled 
+		16. dwrquadratssampled - # of DWR Quadrats Sampled 
+		17. daubenmirequadratssampled - # of Daubenmire Quadrats Sampled 
+		18. quadratsizedomlegacy - Domiinant Quadrat Size - Legacy 
+		19. quadratsizeseclegacy - Secondary Quadrat Size - Legacy 
+		20. quadratshapedomlegacy - Dominant Quadrat Shape - Legacy 
+		21. quadratshapeseclegacy - Seconday Quadrat Shape - Legacy 
+		22. beltwidth - Belt Width 
+		23. dblsampannualprod - Dbl. Sampling Annual Prod 
+		24. totharvestannualprod - Total Harvest Annual Prod 
+		25. wtunitannualprod - Weight Unit Annual Prod 
+		26. dwrannualprod - DWR Annual Prod 
+		27. comparativeyieldprod - Comparative Yield Annual Prod 
+		28. comparativeyieldranktotal - Total Comparative Yield Rank 
+		29. comparativeyieldrankave - Ave. Comparative Yield Rank 
+		30. comparativerefclipwtave - Comparative Ref. Clipped Wt. Ave. 
+		31. abovegroundbiomasstotal - Total Above Ground Biomass 
+		32. standingherbbiomass - Standing Herbaceous Biomass 
+		33. transectbasalcovpct - Transect Basal Cover % 
+		34. basalcovpcttotal - Total Basal Cover % 
+		35. basalgapsizemin - Minimum Basal Gap Size 
+		36. canopygapsizemin - Minimum Canopy Gap Size 
+		37. gapsmeasuredbetween - Gaps Measured Between 
+		38. canopygaplengthtotal - Total Canopy Gap Length 
+		39. canopygappcttotal - Total Canopy Gap % 
+		40. basalgaplengthtotal - Total Basal Gap Length 
+		41. basalgappcttotal - Total Basal Gap % 
+		42. understoryreprodabundance - Understory Reprod. Abundance 
+		43. woodyunderstoryabundance - Woody Understory Abundance 
+		44. herbundertoryabundance - Herb. Understory Abundance 
+		45. lichensunderstoryabundance - Lichens Understory Abundance 
+		46. cancovpcttotaltrans - Transect Total Canopy Cover % 
+		47. cancovtotalclasstrans - Transect Total Canopy Cover Class 
+		48. cancovassessmethod - Assessment Method 
+		49. crowncanclosurepct - Crown Canopy Closure % 
+		50. crowncancloseassessmethod - Crown Can. Closure Assess. Meth. 
+		51. crowncompfactorlpp - LPP Crown Competition Factor 
+		52. crowncomplppavedbh - LPP Crown Comp. Ave DBH 
+		53. overstorycancovpcttrans - Overstory Canopy Cover % 
+		54. overstorycancovclasstrans - Overstory Canopy Cover Class 
+		55. groundcovassessmethod - Gr. Cover Assess. Method 
+		56. groundcovquadratssampled - # of Gr. Cover Quadrats Sampled 
+		57. groundcovpointssampled - # of Gr. Cover Points Sampled 
+		58. groundsurfcovassessmethod - Gr. Surf. Cover Assess. Method 
+		59. groundsurfcovquadratsamp - # of Gr. Surf. Cover Quadrats Sampled 
+		60. groundsurfcovpointssamp - # of Gr. Surf. Cover Points Sampled 
+		61. lpiobsinterval - LPI Observation Interval 
+		62. totalpointssampledcount - Total # of Points Sampled 
+		63. topcanopyhtave - Top Canopy Ht. Ave. 
+		64. topcanopyhtstddev - Top Canopy Ht. Std. Dev. 
+		65. totalnumplantsbelt - Total # Plants - Belt 
+		66. totalnumspeciesbelt - Total # Species - Belt 
+		67. totalplantdensitybelt - Total Density - Belt 
+		68. recwlupdated - Record Last Updated 
+		69. recuseriidref - Record Last Updated By 
+		70. vegtransectiid - Rec ID 
+
+vegtransectplantsummary: Vegetation Transect Plant Summary 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantiidref - Lineage 
+		4. plantnativity - Plant Nativity 
+		5. planttypegroup - Plant Type Group 
+		6. plantheightcllowerlimit - Plant Ht Class Lower Limit 
+		7. plantheightclupperlimit - Plant Ht Class Upper Limit 
+		8. sociabilityclass - Sociability Class 
+		9. specieslivecanhtbotave - Ave. Live Canopy Ht. Bottom 
+		10. specieslivecanhttopave - Ave. Live Canopy Ht. Top 
+		11. overstorydbhmin - Overstory DBH Minimum 
+		12. overstorydbhmax - Overstory DBH Maximum 
+		13. speciesovercancovpct - Overstory Canopy Cover % 
+		14. speciesovercancovclass - Overstory Canopy Cover Class 
+		15. plantprodquadratsize - Plant Prod Quadrat Size 
+		16. plantprodquadratshape - Plant Prod Quadrat Shape 
+		17. nestedfreqquadratsize - Nested Freq. Quadrat Size 
+		18. nestedfreqquadratshape - Nested Freq. Quadrat Shape 
+		19. frequencyquadratsize - Freq. Quadrat Size 
+		20. frequencyquadratshape - Freq. Quadrat Shape 
+		21. dwrquadratsize - DWR Quadrat Size 
+		22. dwrquadratshape - DWR Quadrat Shape 
+		23. densityquadratsize - Density Quadrat Size 
+		24. densityquadratshape - Density Quadrat Shape 
+		25. speciestotwtclippedest - Total Clipped Wt.- Estimated 
+		26. speciestotwtclippedfresh - Total Clipped Wt. - Fresh 
+		27. speciestotwtclippedairdry - Total Clipped Wt. - Air-dry 
+		28. speciestotwtairdry - Total Wt. - Air-dry 
+		29. speciestotwtest - Total Wt. - Estimated 
+		30. speciestotwtexisting - Total Wt. - Existing 
+		31. speciesdrywtpct - Dry Weight % 
+		32. speciestotwt - Species Total Wt. 
+		33. speciesaveyielddblsamp - Dbl. Sampling Ave. Yield 
+		34. speciescomppctdblsamp - Dbl. Sampling Composition % 
+		35. speciescomppctdaubenmire - Daubenmire Composition % 
+		36. speciescomppctlineintercept - Line Intercept Composition % 
+		37. speciestraceamtflag - Spp Trace Amt Flag 
+		38. weightconvfactor - Wt. Conversion Factor 
+		39. dblsampcorrectionfactor - Dbl. Sampling Correction Factor 
+		40. airdrywtadjustment - Air-dry Wt. Adjustment 
+		41. utilizationadjustment - Utilization Adjustment 
+		42. growthadjustment - Growth Adjustment 
+		43. weatheradjustment - Weather Adjustment 
+		44. numberofquadratsin - # of Quadrats In 
+		45. speciesfreqdaubenmire - Species Frequency - Daubenmire 
+		46. dwronetally - DWR 1 Tally 
+		47. dwrtwotally - DWR 2 Tally 
+		48. dwrthreetally - DWR 3 Tally 
+		49. dwrweightedtally - DWR Weighted Tally 
+		50. speciescomppctdwr - DWR Composition % 
+		51. speciesaveyielddwr - DWR Ave. Yield 
+		52. wtunitweight - Wt. Unit Weight 
+		53. wtunitcounttotal - Total # of Wt. Units 
+		54. speciesaveyieldwtunit - Wt. Unit Ave. Yield 
+		55. wtunitwtclippedtotal - Total Wt. Unit Weight Clipped 
+		56. speciescancovhitcount - # of Canopy Cover Hits 
+		57. speciescancovpct - Species Canopy Cover % 
+		58. speciescancovpctavedaub - Canopy Cover % Ave. - Daubenmire 
+		59. speciescancovaveclass - Canopy Cover Ave. Class 
+		60. speciesfoliarcovhitcount - # of Foliar Cover Hits 
+		61. speciesfoliarcovpctlineint - Foliar Cover % - Line Int. 
+		62. speciestotfoliarcovlineint - Total Foliar Cover - Line Int. 
+		63. speciesbasalcovhitcount - # of Basal Cover Hits 
+		64. speciesbasalcovpctlineint - Basal Cover % - Line Int. 
+		65. speciestotbasalcovlineint - Total Basal Cover - Line Int. 
+		66. maturecounttotal - Total # of Mature Plants 
+		67. maturedensityave - Average Mature Density 
+		68. maturedensityaveclass - Average Mature Density Class 
+		69. seedlingcounttotal - Total # of Seedling Plants 
+		70. seedlingdensityave - Average Seedling Density 
+		71. seedlingdensityaveclass - Average Seedling Density Class 
+		72. speciesgroundcovabundclass - Ground Cover Abundance Class 
+		73. speciescancovportion - % of Total Canopy Cover 
+		74. speciesbasalarea - Basal Area 
+		75. basalareaassessmethod - Basal Area Assess. Method 
+		76. recwlupdated - Record Last Updated 
+		77. recuseriidref - Record Last Updated By 
+		78. vegtransplantsummiid - Rec ID 
+
+vegtransecttext: Vegetation Transect Text 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. recdate - Date 
+		4. recauthor - Author 
+		5. vegtransecttextkind - Kind 
+		6. textcat - Category 
+		7. textsubcat - Subcategory 
+		8. textentry - Text Entry 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. vegtranstextiid - Rec ID 
+
+basalareatreescounted: Basal Area Trees Counted 
+		1. plotspeciebasalareaiidref - Lineage 
+		2. seqnum - Seq 
+		3. treenumber - Tree # 
+		4. treeheight - Tree Height 
+		5. treediameterbreastheight - Tree DBH 
+		6. recwlupdated - Record Last Updated 
+		7. recuseriidref - Record Last Updated By 
+		8. basalareatreescountediid - Rec ID 
+
+belttransectsummary: Belt Transect Summary 
+		1. vegtransectiidref - Lineage 
+		2. seqnum - Seq 
+		3. plantheightcllowerlimit - Plant Ht Class Lower Limit 
+		4. plantheightclupperlimit - Plant Ht Class Upper Limit 
+		5. plantcounttotal - Total # of Plants 
+		6. htclassplantdensity - Ht. Class Plant Density 
+		7. recwlupdated - Record Last Updated 
+		8. recuseriidref - Record Last Updated By 
+		9. belttranssummiid - Rec ID 
+
+pointplantcoverdetails: Point Plant Cover Details 
+		1. vegtransplantsummiidref - Lineage 
+		2. seqnum - Seq 
+		3. transectpointlocation - Transect Point Location 
+		4. livecanopyhtbottom - Live Canopy Ht. Bottom 
+		5. livecanopyhttop - Live Canopy Ht. Top 
+		6. canopycoverpresent - Canopy Cover Present ? 
+		7. foliarcoverpresent - Foliar Cover Present ? 
+		8. basalcoverpresent - Basal Cover Present ? 
+		9. recwlupdated - Record Last Updated 
+		10. recuseriidref - Record Last Updated By 
+		11. pointplantcovdetailsiid - Rec ID 
+
+vegplot: Vegetation Plot 
+		1. siteobsiidref - Site/Site Observation 
+		2. vegplotid - Vegetation Plot ID 
+		3. vegplotname - Vegetation Plot Name 
+		4. primarydatacollector - Primary Data Collector 
+		5. datacollectionpurpose - Data Collection Purpose 
+		6. vegdataorigin - Data Origin 
+		7. vegplotsize - Plot Size 
+		8. soilprofileindicator - Soil Profile ? 
+		9. assocuserpedonid - Assoc. User Pedon ID 
+		10. soil232idlegacy - Legacy Soil 232 ID 
+		11. ahorizondepth - A Horizon Depth 
+		12. alkalinesalineindicator - Alkaline/Saline Indicator 
+		13. alkalineaffected - Alkaline Affected ? 
+		14. salinityclass - Salinity Class 
+		15. restrictivelayerdepthlegacy - Legacy Restrictive Layer Depth 
+		16. legacysoilcompname - Legacy Soil Name 
+		17. legacysoilphase - Legacy Soil Phase 
+		18. legacylocalsoilphase - Legacy Local Soil Phase 
+		19. legacysoilsurftext - Legacy Surface Texture 
+		20. legacysurftextmod - Legacy Texture Modifier 
+		21. legacyterminlieu - Legacy Term In Lieu of Texture 
+		22. erosionclasslegacy - Legacy Erosion Class 
+		23. landformgrouplegacy - Legacy Landform Group 
+		24. cryptogamcovcllegacy - Legacy Cryptogam Cover Class 
+		25. rangelandusehistory - Rangeland Use History 
+		26. cancovpctplotave - Canopy Cover % - Ave. 
+		27. cancovtotalpct - Total Canopy Cover % 
+		28. cancovtotalclass - Total Canopy Cover Class 
+		29. overstorycancontotalpct - Total Overstory Canopy Cover % 
+		30. overstorycancovtotalclass - Total Overstory Canopy Cover Class 
+		31. dblsampannualprodave - Dbl. Sampling Ave. Annual Prod. 
+		32. compyieldproductionave - Comparative Yield Ave. Prod. 
+		33. abovegroundbiomasstotave - Total Above Ground Biomass - Ave. 
+		34. understoryreprodabundance - Understory Reprod. Abundance 
+		35. woodyunderstoryabundance - Woody Understory Abundance 
+		36. herbundertoryabundance - Herb. Understory Abundance 
+		37. lichensunderstoryabundance - Lichens Understory Abundance 
+		38. crowncanclosurepct - Crown Canopy Closure % 
+		39. crowncancloseassessmethod - Crown Can. Closure Assess. Meth. 
+		40. crowncompfactorlpp - LPP Crown Competition Factor 
+		41. crowncomplppavedbh - LPP Crown Comp. Ave DBH 
+		42. basalcoverpctave - Basal Cover % - Ave. 
+		43. basalareaplottotal - Total Basal Area 
+		44. basalareaassessmethod - Basal Area Assess. Method 
+		45. constreeshrubgrp - Cons Tree Shrub Group 
+		46. windbreakrowonedirection - Windbreak Row 1 Direction 
+		47. windbreaktrappedsoildepth - Windbreak Trapped Soil Depth 
+		48. windbreaktrappedsoiltexture - Windbreak Trapped Soil Texture 
+		49. understorydescindicator - Understory Description ? 
+		50. mensurationdataindicator - Mensuration Data ? 
+		51. vigorclasslegacy - Legacy Vigor Class 
+		52. siteconditionlegacy - Legacy Site Condition 
+		53. overstoryspecieslegacy - Legacy Overstory Species 
+		54. plantmoiststate - Plant Moisture State 
+		55. currenttreedensity - Current Tree Density 
+		56. currenttreespacing - Current Tree Spacing 
+		57. currentdxspacing - Current D+x Spacing 
+		58. currentplotavedbh - Current Plot Ave DBH 
+		59. plotbasalareafactor - Plot Basal Area Factor 
+		60. currentbasalarea - Current Basal Area 
+		61. foreststandtype - Forest Stand Type 
+		62. foreststratainventoried - Strata Inventoried 
+		63. foreststandregen - Stand Regeneration 
+		64. foreststandquality - Stand Quality 
+		65. desiredtreedensity - Desired Tree Density 
+		66. desireddxspacing - Desired D+x Spacing 
+		67. desiredbasalarea - Desired Basal Area 
+		68. excessbasalarea - Excess Basal Area 
+		69. excesstreedensity - Excess Tree Density 
+		70. stockingchangepct - % Stocking Change 
+		71. treepctgoodcondition - % Good Condition 
+		72. treepctfaircondition - % Fair Condition 
+		73. treepctpoorcondition - % Poor Condition 
+		74. treecounttotal - # of Trees Counted 
+		75. treesnagdensityhard - Hard Tree Snag Density 
+		76. treesnagdensitysoft - Soft Tree Snag Density 
+		77. rhiannualprod - RHI - Annual Production 
+		78. rhibareground - RHI - Bare Ground 
+		79. rhicompactionlayer - RHI - Compaction Layer 
+		80. rhifuncstructgroups - RHI - Func/Stuct Groups 
+		81. rhierosionresistance - RHI - Erosion Resistance 
+		82. rhigullies - RHI - Gullies 
+		83. rhirills - RHI - Rills 
+		84. rhipedastalsterracettes - RHI - Pedestals/Terracettes 
+		85. rhiinfilrunoff - RHI - Infiltration & Runoff 
+		86. rhilitteramount - RHI - Litter Amount 
+		87. rhilittermovement - RHI - Litter Movement 
+		88. rhiplantmortality - RHI - Plant Mortality 
+		89. rhireprodcapability - RHI - Reproductive Capability 
+		90. rhiinvasiveplants - RHI - Invasive Plants 
+		91. rhisoilsurfdegradation - RHI - Soil Surface Degradation 
+		92. rhiwaterflowpatterns - RHI - Water Flow Patterns 
+		93. rhiwindscourareas - RHI - Wind Scour Areas 
+		94. rhisoilsitestabsumm - RHI - Soil/Site Stabilty Summ. 
+		95. rhibioticintegritysumm - RHI - Biotic Integrity Summ. 
+		96. rhihydrofunctionsumm - RHI - Hydro. Function Summ. 
+		97. pastureforagetype - Pasture Forage Type 
+		98. pasturestanddensityave - Average Pasture Stand Density 
+		99. pastureplanthtave - Average Pasture Plant Ht. 
+		100. pastureprodave - Average Pasture Production 
+		101. pcidesirableplants - PCI - Desirable Plants 
+		102. pciplantcover - PCI - Plant Cover 
+		103. pciplantdiversity - PCI - Plant Diversity 
+		104. pcigroundcovresidue - PCI - Ground Cover Residue 
+		105. pcistandingdeadforage - PCI - Standing Dead Forage 
+		106. pciplantresiduecompscore - PCI - Plant Residue Comp. Score 
+		107. pciplantvigor - PCI - Plant Vigor 
+		108. pcilegumepctclass - PCI - Legume % 
+		109. pciuseuniformity - PCI - Use Uniformity 
+		110. pcilivestockconcareas - PCI - Livestock Conc. Areas 
+		111. pcisoilcompaction - PCI - Soil Compaction 
+		112. pcisheetrillerosion - PCI - Sheet & Rill Erosion 
+		113. pciwinderosion - PCI - Wind Erosion 
+		114. pcistreamshoreerosion - PCI - Stream/Shore Erosion 
+		115. pcigullyerosion - PCI - Gully Erosion 
+		116. pcierosioncompscore - PCI - Erosion Comp. Score 
+		117. pcipastureconditionscore - PCI - Pasture Condition Score 
+		118. refplantcommunity - Ref. Plant Community 
+		119. repannualprod - Representative Annual Prod. 
+		120. totestannualprod - Total Est. Annual Prod. 
+		121. totallowableannualprod - Total Allowable Prod. 
+		122. totpalatableannualprod - Total Palatable Prod. 
+		123. similarityindex - Similarity Index 
+		124. annualuseableprod - Annual Useable Prod. 
+		125. harvesteffpct - Harvest Efficiency % 
+		126. takehalfleavehalf - Take 1/2 Leave 1/2 
+		127. acresperaum - Acres/AUM 
+		128. aumperacre - AUM/acre 
+		129. audperacre - AUD/acre 
+		130. desirableplantvigor - Desirable Plant Vigor 
+		131. desirableseedlingabundance - Desirable Seedling Abundance 
+		132. decadentplantabundance - Decadent Plant Abundance 
+		133. plantresidueadequacy - Plant Residue Adequacy 
+		134. undesirableinvadingspecies - Undesirable Invading Species 
+		135. majorinvadingspecies - Major Invading Species 
+		136. invadingspeciescancovpct - Invading Species Can. Cov. % 
+		137. soilsurferosion - Soil Surface Erosion 
+		138. soilcrusting - Soil Crusting 
+		139. soilcompaction - Soil Compaction 
+		140. baregroundpct - Bare Ground % 
+		141. gullyrillpresence - Gully & Rill Presence 
+		142. soildegradationrating - Soil Degradation 
+		143. rangetrendcurrent - Current Range Trend 
+		144. rangetrendplanned - Planned Range Trend 
+		145. qcreviewperson - QC Review Person 
+		146. qcreviewdate - QC Review Date 
+		147. qareviewperson - QA Review Person 
+		148. qareviewdate - QA Review Date 
+		149. swcdlegacy - Legacy SWCD 
+		150. fieldofficelegacy - Legacy Field Office 
+		151. nrcsarealegacy - Legacy SCS/NRCS Area 
+		152. aktotallichencoverpct - AK Total Lichen Cover 
+		153. aktotallitter1coverpct - AK Total Litter1 Cover 
+		154. aktotallitter2coverpct - AK Total Litter2 Cover 
+		155. aktotalmosscoverpct - AK Total Moss Cover 
+		156. aktotalrockcoverpct - AK Total Surface Fragment Cover 
+		157. aktotalsoilcoverpct - AK Total Bare Soil Cover 
+		158. aktotalwatercoverpct - AK Total Surface Water Cover 
+		159. akecologicalsitestatus - AK Ecological Site Status 
+		160. aktotalbedrockcoverpct - AK Total Surface Bedrock Cover 
+		161. akfieldecositeid - NO ALIAS FOUND 
+		162. vegplotdbiidref - Veg Plot NASIS Site 
+		163. grpiidref - NASIS Group 
+		164. objwlupdated - Object Last Updated 
+		165. objuseriidref - Object Last Updated By 
+		166. recwlupdated - Record Last Updated 
+		167. recuseriidref - Record Last Updated By 
+		168. vegplotiid - Rec ID 
+
+site: Site 
+		1. SHAPE - NO ALIAS FOUND 
+		2. usiteid - User Site ID 
+		3. latdegrees - Lat. Degrees 
+		4. latminutes - Lat. Minutes 
+		5. latseconds - Lat. Seconds 
+		6. latdir - Lat. Direction 
+		7. longdegrees - Long. Degrees 
+		8. longminutes - Long. Minutes 
+		9. longseconds - Long. Seconds 
+		10. longdir - Long. Direction 
+		11. horizdatnm - Datum Name 
+		12. locdesc - Location Description 
+		13. plsssdetails - PLSS Section Details 
+		14. plsssection - PLSS Section 
+		15. plsstownship - PLSS Township 
+		16. plssrange - PLSS Range 
+		17. plssmeridian - PLSS Meridian 
+		18. utmzone - UTM Zone 
+		19. utmnorthing - UTM Northing 
+		20. utmeasting - UTM Easting 
+		21. geocoordsource - Coordinate Source 
+		22. elev - Elevation 
+		23. geomposhill - Geomorphic Component - Hills 
+		24. geomposmntn - Geomorphic Component - Mountains 
+		25. geompostrce - Geomorphic Component - Terraces 
+		26. geomposflats - Geomorphic Component - Flats 
+		27. hillslopeprof - Hillslope Profile 
+		28. geomslopeseg - Slope Position 
+		29. slope - Slope Gradient 
+		30. aspect - Aspect 
+		31. slopelenusle - Slope Length USLE 
+		32. slopelenuptro - Upslope Length 
+		33. shapeacross - Slope Shape Across 
+		34. shapedown - Slope Shape Up/Down 
+		35. slopecomplex - Slope Complexity 
+		36. locphysnm - Local Physiographic Name 
+		37. siteksatclassupper - Ksat Class Upper 
+		38. siteksatclasslower - Ksat Class Lower 
+		39. drainagecl - Drainage Class 
+		40. runoff - Local Runoff Class 
+		41. drainagepattern - Drainage Pattern 
+		42. pmgroupname - Parent Material Group Name 
+		43. pmgroupname_s - S 
+		44. climstaid - Climate Station ID 
+		45. climstanm - Climate Station Name 
+		46. climstatype - Climate Station Type 
+		47. ffd - Frost Free Days 
+		48. map - MAP 
+		49. reannualprecip - REAP 
+		50. airtempa - MAAT 
+		51. soiltempa - MAST 
+		52. airtemps - MSAT 
+		53. soiltemps - MSST 
+		54. airtempw - MWAT 
+		55. soiltempw - MWST 
+		56. benchmarksoilflag - Benchmark Soil? 
+		57. flodfreqcl - Flooding Frequency 
+		58. floddurcl - Flooding Duration 
+		59. flodmonthbeg - Flooding Month 
+		60. pondfreqcl - Ponding Frequency 
+		61. ponddurcl - Ponding Duration 
+		62. pondmonthbeg - Ponding Month 
+		63. wtabledur - Wet Soil Moisture Duration 
+		64. latstddecimaldegrees - Std Latitude 
+		65. longstddecimaldegrees - Std Longitude 
+		66. gpspositionalerror - GPS - Positional Error 
+		67. gpspdop - GPS - PDOP 
+		68. elevcorrected - Corrected Elevation 
+		69. sdbiidref - Site NASIS Site 
+		70. siteiid - Rec ID 
