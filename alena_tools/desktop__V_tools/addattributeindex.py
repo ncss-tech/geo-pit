@@ -15,7 +15,7 @@ arcpy.env.workspace = workspace
 arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
 arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUSYM", "MUSYM", "UNIQUE", "ASCENDING")
 arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUKEY", "MUKEY", "UNIQUE", "ASCENDING")
-#arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUNAME", "MUNAME", "UNIQUE", "ASCENDING")
+arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUNAME", "MUNAME", "UNIQUE", "ASCENDING")
 
 arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
 arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "FEATSYM", "FEATSYM", "UNIQUE", "ASCENDING")

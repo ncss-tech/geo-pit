@@ -2,7 +2,7 @@
 #A. Stephens
 #11/18/2014
 #12/11/2014 Updated with Calculate Fields
-#10/12/2016 Updated Workspace
+#10/12/2016 Updated Workspace, added acres field and calculation
 
 import arcpy
 
@@ -29,3 +29,11 @@ arcpy.AddField_management (workspace+'\\'"FEATLINE", "ORIG_FEATSYM", "TEXT", "",
 arcpy.CalculateField_management(workspace+'\\'"MUPOLYGON", "ORIG_MUSYM", '[MUSYM]', "VB" )
 arcpy.CalculateField_management(workspace+'\\'"FEATPOINT", "ORIG_FEATSYM", '[FEATSYM]', "VB" )
 arcpy.CalculateField_management(workspace+'\\'"FEATLINE", "ORIG_FEATSYM", '[FEATSYM]', "VB" )
+
+#Add Field
+
+arcpy.AddField_management(workspace+'\\'"MUPOLYGON", "ACRES", "DOUBLE", )
+
+#Calculate Field
+
+arcpy.CalculateField_management(workspace+'\\'"MUPOLYGON", "ACRES", '!Shape.area@acres!', "PYTHON", )
