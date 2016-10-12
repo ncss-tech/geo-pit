@@ -493,7 +493,7 @@ def createTopology(RTSD_FD):
         arcpy.AddRuleToTopology_management(newTopology, "Must Be Single Part (Line)", "FEATLINE")
         arcpy.AddRuleToTopology_management(newTopology, "Must Be Disjoint (Point)", "FEATPOINT")
         arcpy.AddRuleToTopology_management(newTopology, "Must Be Disjoint (Point)", "MUPOINT")
-        arcpy.AddRuleToTopology_management(newTopology, "Must Be Properly Inside (Point-Area)","FEATPOINT","MUPOLYGON")
+        #arcpy.AddRuleToTopology_management(newTopology, "Must Be Properly Inside (Point-Area)","FEATPOINT","MUPOLYGON")
         arcpy.AddRuleToTopology_management(newTopology, "Must Not Overlap (Line)", "MULINE")
         arcpy.AddRuleToTopology_management(newTopology, "Must Not Intersect (Line)", "MULINE")
         arcpy.AddRuleToTopology_management(newTopology, "Must Not Self-Overlap (Line)", "MULINE")
