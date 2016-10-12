@@ -31,9 +31,13 @@ arcpy.CalculateField_management(workspace+'\\'"FEATPOINT", "ORIG_FEATSYM", '[FEA
 arcpy.CalculateField_management(workspace+'\\'"FEATLINE", "ORIG_FEATSYM", '[FEATSYM]', "VB" )
 
 #Add Field
-
 arcpy.AddField_management(workspace+'\\'"MUPOLYGON", "ACRES", "DOUBLE", )
 
 #Calculate Field
-
 arcpy.CalculateField_management(workspace+'\\'"MUPOLYGON", "ACRES", '!Shape.area@acres!', "PYTHON", )
+
+#Add Field
+arcpy.AddField_management(workspace+'\\'"Project_Record", "ACRES", "DOUBLE", )
+
+#Calculate Field
+arcpy.CalculateField_management(workspace+'\\'"Project_Record", "ACRES", '!Shape.area@acres!', "PYTHON", )
