@@ -3,6 +3,7 @@
 #A. Stephens
 #11/18/2014
 #Works 3/19/2015
+#Updated 10/12/2016 with specific feature classes
 
 import arcpy, os
 
@@ -20,17 +21,23 @@ arcpy.env.workspace = workspace
 
 # Get all the stand alone tables and feature classes
 #dataList = arcpy.ListTables() + arcpy.ListFeatureClasses()
-dataList = arcpy.ListFeatureClasses()
+#dataList = arcpy.ListFeatureClasses()
 
 # For feature datasets get all of the featureclasses
 # from the list and add them to the master list
-for dataset in arcpy.ListDatasets("", "Feature"):
-    arcpy.env.workspace = os.path.join(workspace, dataset)
-    dataList += arcpy.ListFeatureClasses() + arcpy.ListDatasets()
+#for dataset in arcpy.ListDatasets("", "Feature"):
+#    arcpy.env.workspace = os.path.join(workspace, dataset)
+#    dataList += arcpy.ListFeatureClasses() + arcpy.ListDatasets()
 
 
 # Execute enable editor tracking
-for dataset in dataList:
-    print 'Enabling tracking on ' + dataset
-    arcpy.EnableEditorTracking_management(dataset,"Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+#for dataset in dataList:
+#    print 'Enabling tracking on ' + dataset
+#    arcpy.EnableEditorTracking_management(dataset,"Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+
+
+arcpy.EnableEditorTracking_management(workspace+'\\'"MUPOLYGON","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+arcpy.EnableEditorTracking_management(workspace+'\\'"FEATPOINT","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+arcpy.EnableEditorTracking_management(workspace+'\\'"FEATLINE","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+
 print 'Enabling complete'
