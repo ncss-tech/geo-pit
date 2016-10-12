@@ -2,7 +2,7 @@
 #A. Stephens
 #11/18/2014
 #12/11/2014 Updated with Calculate Fields
-#10/12/2016 Updated Workspace, added acres field and calculation
+#10/12/2016 Updated Workspace, added acres field and calculation, add fields for Project_Record
 
 import arcpy
 
@@ -41,3 +41,7 @@ arcpy.AddField_management(workspace+'\\'"Project_Record", "ACRES", "DOUBLE", )
 
 #Calculate Field
 arcpy.CalculateField_management(workspace+'\\'"Project_Record", "ACRES", '!Shape.area@acres!', "PYTHON", )
+
+#Add Field
+arcpy.AddField_management(workspace+'\\'"Project_Record", "MUKEY", "TEXT", "", "", fieldLength)
+arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", "300")
