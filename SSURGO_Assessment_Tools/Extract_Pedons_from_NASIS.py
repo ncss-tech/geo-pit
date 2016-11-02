@@ -293,7 +293,7 @@ def getBoundingCoordinates(feature):
 
     try:
 
-        AddMsgAndPrint("\nCalculating bounding coordinates of features",0)
+        AddMsgAndPrint("\nCalculating bounding coordinates of input features",0)
 
         """ Set Projection and Geographic Transformation environments in order
             to post process everything in WGS84.  This will force all coordinates
@@ -378,7 +378,7 @@ def getWebExportPedon(URL):
         theURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&lat1=43&lat2=45&long1=-90&long2=-88'"""
 
     try:
-        AddMsgAndPrint("\nRequesting a list of pedons from NASIS using bounding coordinates")
+        AddMsgAndPrint("\nRequesting a list of pedons from NASIS using above bounding coordinates")
 
         totalPedonCnt = 0
         labPedonCnt = 0
@@ -436,6 +436,32 @@ def getWebExportPedon(URL):
             AddMsgAndPrint("\t\tLAB Pedons: " + str(labPedonCnt))
             AddMsgAndPrint("\t\tNASIS Pedons: " + str(totalPedonCnt - labPedonCnt))
             return True
+
+    except URLError, e:
+        if hasattr(e, 'reason'):
+            AddMsgAndPrint("\n\t" + URL)
+            AddMsgAndPrint("\tURL Error: " + str(e.reason), 2)
+
+        elif hasattr(e, 'code'):
+            AddMsgAndPrint("\n\t" + URL)
+            AddMsgAndPrint("\t" + e.msg + " (errorcode " + str(e.code) + ")", 2)
+
+        return False
+
+    except socket.timeout, e:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tServer Timeout Error", 2)
+        return False
+
+    except socket.error, e:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
+
+    except httplib.BadStatusLine:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
 
     except:
         errorMsg()
@@ -749,11 +775,10 @@ def getPedonHorizon(URL):
         </html>"""
 
     try:
-
         # Open a network object using the URL with the search string already concatenated
         theReport = urllib.urlopen(URL)
 
-        bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
+        bValidRecord = False # boolean that marks the starting point of the tabular information
         bFirstString = False
         bSecondString = False
         pHorizonList = list()
@@ -813,7 +838,7 @@ def getPedonHorizon(URL):
 
             else:
                 # This is where the real report starts; earlier lines are html fluff
-                if theValue.startswith('<div id="ReportData">@begin phorizon'):
+                if theValue.startswith('<div id="ReportData">@begin site'):
                     bValidRecord = True
 
         if not pHorizonList:
@@ -866,17 +891,19 @@ from arcpy import env
 if __name__ == '__main__':
 
     #inputFeatures = arcpy.GetParameter(0)
-    inputFeatures = r'O:\scratch\scratch.gdb\Pedon_boundary_Test'
-    GDBname = arcpy.GetParameter(1)
-    outputFolder = arcpy.GetParameterAsText(2)
+    inputFeatures = r'O:\scratch\scratch.gdb\Pedon_boundary_Test2'
 
-    """ ------------------------------------- Set Scratch Workspace -------------------------------------------"""
+    GDBname = "Test"
+    #GDBname = arcpy.GetParameter(1)
+    outputFolder = r'O:\scratch'
+    #outputFolder = arcpy.GetParameterAsText(2)
+
+    """ ------------------------------------------------ Set Scratch Workspace ------------------------------------------------"""
     scratchWS = setScratchWorkspace()
     arcpy.env.scratchWorkspace = scratchWS
 
     if not scratchWS:
         raise ExitError, "\n Failed to scratch workspace; Try setting it manually"
-
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
     #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484
@@ -890,67 +917,72 @@ if __name__ == '__main__':
     coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
     getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
 
+    # peiid: siteID,Labnum,X,Y
     #{'122647': ('84IA0130011', '85P0558', '-92.3241653', '42.3116684'), '883407': ('2014IA013003', None, '-92.1096600', '42.5332000'), '60914': ('98IA013011', None, '-92.4715271', '42.5718880')}
     pedonDict = dict()
 
     if not getWebExportPedon(getPedonIDURL):
-        raise ExitError, "\t Failed to get a list of pedonIDs from NASIS"
+        raise ExitError, "\n\t Failed to get a list of pedonIDs from NASIS"
 
+    """ ---------------------------------------------- Create New File Geodatabaes -------------------------------------------- """
+    # Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
+    # and relationships established.  A dictionary of empty lists will be created as a placeholder
+    # for the values from the report.  The name and quantity of lists will be the same as the FGDB
 
-    """ ------------------------------------- Get Pedon information using 2nd report -------------------------------"""
-    i = 1  ## Total Count
-    j = 1  ## Intermediate Count
-    pedonIDstr = ""
-    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
+    pedonFGDB = createPedonFGDB()
 
+    if pedonFGDB == "":
+        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+
+    arcpy.env.work = pedonFGDB
+    tables = arcpy.ListTables()
+    tables.append(arcpy.ListFeatureClasses('site','Point'))  ## site is a feature class and gets excluded by the ListTables function
+
+    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+    pedonGDBtables = dict()
+    for table in tables:
+        pedonGDBtables[str(table)] = []
+
+    """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
     AddMsgAndPrint("\nRequesting pedon horizon information")
 
-##    requestNum = 0
-##    urlLength = 123
-##    i=1
-##    for pedonID in pedonDict:
-##        if urlLength < 1860:
-##            urlLength += len(pedonID) + 1;i+=1
-##        elif i == len(pedonDict) or urlLength > 1860:
-##            requestNum +=1;urlLength = 123
+    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
+
+    i = 1  ## Total Count
+    listOfPedonStrings = list()  ## List containing pedonIDstring lists; individual lists are comprised of about 265 pedons
+    pedonIDstr = ""
 
     # There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
     # available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
     # 6 characters.  This would mean an average max request of 265 pedons at a time.
+
     for pedonID in pedonDict:
 
         ## End of pedon list has been reached
         if i == len(pedonDict):
             pedonIDstr = pedonIDstr + str(pedonID)
+            listOfPedonStrings.append(pedonIDstr)
 
+        ## End of pedon list NOT reached
         else:
             ## Max URL length reached - retrieve pedon data and start over
             if len(pedonIDstr) > 1860:
                 pedonIDstr = pedonIDstr + str(pedonID)
+                listOfPedonStrings.append(pedonIDstr)
 
-                if not getPedonHorizon(getPedonHorizonURL + pedonIDstr):
-				    raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
-
+                ## reset the pedon ID string to empty
                 pedonIDstr = ""
-                i+=1;j=1
+                i+=1
 
             ## concatenate pedonID to string and continue
             else:
-                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1;j+=1
+                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
 
-##    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=" + pedonIDstr
-##    AddMsgAndPrint("\nLength of characters for URL: " + str(len(getPedonHorizonURL)),1)
-##    AddMsgAndPrint("\n\n\n" + getPedonHorizonURL + "\n\n\n")
-##    pedonInfoDict = dict()
-##
-##    if not getPedonHorizon(getPedonHorizonURL):
-##        raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+    if not len(listOfPedonStrings):
+        raise ExitError, "\n\t Something Happened here.....WTF!"
 
-##    """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------
-##        This should only be invoked if there are pedons in the report."""
-##    pedonFGDB = createPedonFGDB()
-##
-##    if pedonFGDB == "":
-##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+    for pedonString in listOfPedonStrings:
 
+        if not getPedonHorizon(getPedonHorizonURL + pedonIDstr):
+            raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
 
