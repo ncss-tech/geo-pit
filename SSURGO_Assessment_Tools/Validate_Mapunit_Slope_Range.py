@@ -728,7 +728,7 @@ from arcpy.sa import *
 
 if __name__ == '__main__':
 
-    muLayer = arcpy.GetParameter(0) # D:\MLRA_Workspace_Stanton\MLRAprojects\layers\MLRA_102C___Moody_silty_clay_loam__0_to_2_percent_slopes.shp
+    muLayer = arcpy.GetParameter(0)
     slopeLayer = arcpy.GetParameter(1)
     lowSlope = arcpy.GetParameter(2)
     highSlope = arcpy.GetParameter(3)
