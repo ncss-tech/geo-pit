@@ -777,6 +777,7 @@ def getPedonHorizon(URL):
     try:
         # Open a network object using the URL with the search string already concatenated
         theReport = urllib.urlopen(URL)
+        print theReport
 
         bValidRecord = False # boolean that marks the starting point of the tabular information
         bFirstString = False
@@ -788,6 +789,8 @@ def getPedonHorizon(URL):
         for theValue in theReport:
 
             theValue = theValue.strip() # remove whitespace characters
+            print theValue
+            continue
 
             # Iterating through the lines in the report
             if bValidRecord:
@@ -929,19 +932,19 @@ if __name__ == '__main__':
     # and relationships established.  A dictionary of empty lists will be created as a placeholder
     # for the values from the report.  The name and quantity of lists will be the same as the FGDB
 
-    pedonFGDB = createPedonFGDB()
-
-    if pedonFGDB == "":
-        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
-
-    arcpy.env.work = pedonFGDB
-    tables = arcpy.ListTables()
-    tables.append(arcpy.ListFeatureClasses('site','Point'))  ## site is a feature class and gets excluded by the ListTables function
-
-    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
-    pedonGDBtables = dict()
-    for table in tables:
-        pedonGDBtables[str(table)] = []
+##    pedonFGDB = createPedonFGDB()
+##
+##    if pedonFGDB == "":
+##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+##
+##    arcpy.env.workspace = pedonFGDB
+##    tables = arcpy.ListTables()
+##    tables.append(arcpy.ListFeatureClasses('site','Point'))  ## site is a feature class and gets excluded by the ListTables function
+##
+##    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+##    pedonGDBtables = dict()
+##    for table in tables:
+##        pedonGDBtables[str(table)] = []
 
     """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
     AddMsgAndPrint("\nRequesting pedon horizon information")
@@ -983,6 +986,8 @@ if __name__ == '__main__':
 
     for pedonString in listOfPedonStrings:
 
-        if not getPedonHorizon(getPedonHorizonURL + pedonIDstr):
+        temp = '858228'
+        if not getPedonHorizon(getPedonHorizonURL + temp):
             raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
+        break
 
