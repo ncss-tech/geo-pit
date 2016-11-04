@@ -266,7 +266,7 @@ def createPedonFGDB():
 
         # set the pedon schema on the newly created temp Pedon FGDB
         AddMsgAndPrint("\tImporting NCSS Pedon Schema 7.1 into " + GDBname + ".gdb")
-        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "SCHEMA_ONLY", "DEFAULTS")
+        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "DATA", "DEFAULTS")
 
         arcpy.RefreshCatalog(outputFolder)
 
@@ -384,7 +384,7 @@ def getWebExportPedon(URL):
         labPedonCnt = 0
 
         # Open a network object using the URL with the search string already concatenated
-        theReport = urllib.urlopen(URL)
+        theReport = urlopen(URL)
 
         bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
 
@@ -791,83 +791,157 @@ def getPedonHorizon(URL):
 
     try:
         # Open a network object using the URL with the search string already concatenated
-        theReport = urllib.urlopen(URL)
+        theReport = urlopen(URL)
 
-        bValidRecord = False # boolean that marks the starting point of the tabular information
-        bFirstString = False
-        bSecondString = False
-        pHorizonList = list()
-        i = 0
+        invalidTable = 0    # represents tables that don't correspond with the GDB
+        invalidRecord = 0  # represents records that were not added
+        validRecord = 0
+
+        bHeader = False
+        currentTable = ""
 
         # iterate through the lines in the report
         for theValue in theReport:
 
             theValue = theValue.strip() # remove whitespace characters
 
-            # Iterating until a valid record is found
-            if bValidRecord:
-                if theValue.startswith('</div>'):  # best indicator for the end of the report
-                    break
+            # represents the start of valid table
+            if theValue.find('@begin') > -1:
+                theTable = theValue[theValue.find('@') + 7:]  ## Isolate the table
 
-                # The line after this is where the first half of data begins
-                elif theValue.startswith("seqnum,obsmethod,hzname"):
-                    bFirstString = True
-                    continue
+                # Check if the table name exists in the list of dictionaries
+                # if so, set the currentTable variable and bHeader
+                if pedonGDBtables.has_key(theTable):
+                    currentTable = theTable
+                    bHeader = True  ## Next line will be the header
+                else:
+                    AddMsgAndPrint("\n" + theTable + " Does not exist in the FGDB schema!  Figure this out Jason Nemecek!",2)
+                    invalidTable += 1
 
-                # benchmark indicators of when to stop appending to pHorizonlist
-                elif theValue.startswith(("@end","stratextsflag,claytotest,claycarbest,silttotest")):
-                    bFirstString = False
-                    bSecondString = False
-                    continue
+            # end of the previous table has been reached; reset currentTable
+            elif theValue.find('@end') > -1:
+                currentTable = ""
+                bHeader = False
 
-                # The line after this is where the second half of data begins
-                elif theValue.startswith("desgnvert,hzdept,hzdepb,hzthk_l"):
-                    bSecondString = True
-                    continue
+            # represents header line; skip this line
+            elif bHeader:
+                bHeader = False
 
-                # Add the first set of pHorizon data to the pHorizonList
-                elif bFirstString:
-                    tempList = list()
+            # this is a valid record that should be collected
+            elif not bHeader and currentTable:
 
-                    for val in theValue.split(","):
-                        if val is None:
-                            tempList.append(None)
-                        else:
-                            tempList.append(val.strip("\""))
-
-                    pHorizonList.append(tempList)
-                    del tempList
-
-                # Add the second set of pHorizon data to the last list in pHorizonList
-                elif bSecondString:
-
-                    for val in theValue.split(","):
-                        if val is None:
-                            pHorizonList[i].append(None)
-                        else:
-                            pHorizonList[i].append(val.strip("\""))
-
-                    i+=1
-                    if i+1 == len(pHorizonList):
-                        break
+                # Add the record to its designated list within the dictionary
+                # Do not remove the double quotes b/c doing so converts the object
+                # to a list which increases its object size.  Remove quotes before
+                # inserting into table
+                pedonGDBtables[currentTable].append(theValue)
+                validRecord += 1
 
             else:
-                # This is where the real report starts; earlier lines are xml fluff
-                if theValue.startswith('<div id="ReportData">@begin'):
-                    bValidRecord = True
+                invalidRecord += 1
 
-        if not pHorizonList:
-            AddMsgAndPrint("\tThere were no Pedon Horizon records returned from the web report",2)
+        if not validRecord:
+            AddMsgAndPrint("\tThere were no valid records captured from NASIS request",2)
             return False
-        else:
-            AddMsgAndPrint("\tThere are " + str(len(pHorizonList)) + " pedon horizon records that will be added",0)
 
-        del theReport,bValidRecord,bFirstString,bSecondString,pHorizonList,i
+        # Report any invalid tables found in report; This should take care of itself as Jason perfects the report.
+        if invalidTable and invalidRecord:
+            AddMsgAndPrint("\tThere were " + str(invalidTable) + " invalid table(s) included in the report with " + str(invalidRecord) + " invalid record(s)",1)
+
+        # Report any invalid records found in report; There are 27 html lines reserved for headers and footers
+        if invalidRecord > 27:
+            AddMsgAndPrint("\tThere were " + str(invalidRecord) + " invalid record(s) not captured",1)
+
         return True
+
+    except URLError, e:
+        if hasattr(e, 'reason'):
+            AddMsgAndPrint("\n\t" + URL)
+            AddMsgAndPrint("\tURL Error: " + str(e.reason), 2)
+
+        elif hasattr(e, 'code'):
+            AddMsgAndPrint("\n\t" + URL)
+            AddMsgAndPrint("\t" + e.msg + " (errorcode " + str(e.code) + ")", 2)
+
+        return False
+
+    except socket.timeout, e:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tServer Timeout Error", 2)
+        return False
+
+    except socket.error, e:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
+
+    except httplib.BadStatusLine:
+        AddMsgAndPrint("\n\t" + URL)
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
 
     except:
         errorMsg()
         return False
+
+## ================================================================================================================
+def importPedonData(pedonGDBtables):
+
+arcpy.env.workspace = pedonFGDB
+
+for table in pedonGDBtables:
+
+    # Skip any Metadata files
+    if table.find('Metadata') > -1: continue
+
+    # check if list contains records to be added
+    if len(pedonGDBtables[table]):
+
+        numOfRowsAdded = 0
+        GDBtable = arcpy.env.workspace + os.sep + table
+
+        # Put all the field names in a list; used to initiate insertCursor object
+        fieldList = arcpy.Describe(GDBtable).fields
+        nameOfFields = []
+        fldLengths = list()
+
+        for field in fieldList:
+
+            if field.type != "OID":
+                nameOfFields.append(field.name)
+
+                if field.type.lower() == "string":
+                    fldLengths.append(field.length)
+                else:
+                    fldLengths.append(0)
+
+        cursor = arcpy.da.InsertCursor(GDBtable,nameOfFields)
+
+        for rec in pedonGDBtables[table]:
+
+            newRow = list()  # list containing the values that make up a specific row
+            fldNo = 0        # list position to reference the field lengths in order to compare
+
+            for value in rec.replace('"','').split(',')
+                fldLen = fldLengths[fldNo]
+
+                if value == '':   ## Empty String
+                    value = None
+
+                elif fldLen > 0:
+                    value = value[0:fldLen]
+
+                newRow.append(value)
+                fldNo += 1
+
+            cursor.insertRow(newRow)
+            numOfRowsAdded += 1
+
+            del newRow
+
+
+
+#for
 
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
@@ -900,8 +974,9 @@ Column order
 
 # =========================================== Main Body ==========================================
 # Import modules
-import sys, string, os, traceback, urllib, re, arcpy
+import sys, string, os, traceback, re, arcpy, socket, httplib
 from arcpy import env
+from urllib2 import urlopen, URLError, HTTPError
 
 if __name__ == '__main__':
 
@@ -944,22 +1019,21 @@ if __name__ == '__main__':
     # and relationships established.  A dictionary of empty lists will be created as a placeholder
     # for the values from the report.  The name and quantity of lists will be the same as the FGDB
 
-##    pedonFGDB = createPedonFGDB()
-##
-##    if pedonFGDB == "":
-##        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
-##
-##    arcpy.env.workspace = pedonFGDB
-##    tables = arcpy.ListTables()
-##    tables.append(arcpy.ListFeatureClasses('site','Point'))  ## site is a feature class and gets excluded by the ListTables function
-##
-##    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
-##    pedonGDBtables = dict()
-##    for table in tables:
-##        pedonGDBtables[str(table)] = []
+    pedonFGDB = createPedonFGDB()
+
+    if pedonFGDB == "":
+        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+
+    arcpy.env.workspace = pedonFGDB
+    tables = arcpy.ListTables()
+    tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
+
+    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+    pedonGDBtables = dict()
+    for table in tables:
+        pedonGDBtables[str(table)] = []
 
     """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
-    AddMsgAndPrint("\nRequesting pedon horizon information")
 
     getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
 
@@ -998,8 +1072,15 @@ if __name__ == '__main__':
 
     for pedonString in listOfPedonStrings:
 
+        AddMsgAndPrint("Requesting NASIS data for " + str(len(pedonString.split(','))) + " pedons
+
         temp = '858228'
         if not getPedonHorizon(getPedonHorizonURL + temp):
             raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
         break
+
+    """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
+    if len(pedonGDBtables['site']):
+
+
 
