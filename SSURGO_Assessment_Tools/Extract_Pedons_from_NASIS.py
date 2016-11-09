@@ -814,8 +814,9 @@ def getPedonHorizon(URL):
                 if pedonGDBtables.has_key(theTable):
                     currentTable = theTable
                     bHeader = True  ## Next line will be the header
+
                 else:
-                    AddMsgAndPrint("\n" + theTable + " Does not exist in the FGDB schema!  Figure this out Jason Nemecek!",2)
+                    AddMsgAndPrint("\t" + theTable + " Does not exist in the FGDB schema!  Figure this out Jason Nemecek!",2)
                     invalidTable += 1
 
             # end of the previous table has been reached; reset currentTable
@@ -846,11 +847,11 @@ def getPedonHorizon(URL):
 
         # Report any invalid tables found in report; This should take care of itself as Jason perfects the report.
         if invalidTable and invalidRecord:
-            AddMsgAndPrint("\tThere were " + str(invalidTable) + " invalid table(s) included in the report with " + str(invalidRecord) + " invalid record(s)",1)
+            AddMsgAndPrint("\t\tThere were " + str(invalidTable) + " invalid table(s) included in the report with " + str(invalidRecord) + " invalid record(s)",1)
 
         # Report any invalid records found in report; There are 27 html lines reserved for headers and footers
         if invalidRecord > 27:
-            AddMsgAndPrint("\tThere were " + str(invalidRecord) + " invalid record(s) not captured",1)
+            AddMsgAndPrint("\t\tThere were " + str(invalidRecord) + " invalid record(s) not captured",1)
 
         return True
 
@@ -885,59 +886,133 @@ def getPedonHorizon(URL):
         return False
 
 ## ================================================================================================================
-def importPedonData(pedonGDBtables):
+def importPedonData():
 
-arcpy.env.workspace = pedonFGDB
+    import csv
 
-for table in pedonGDBtables:
+    AddMsgAndPrint("\nImporting Data into FGDB")
 
-    # Skip any Metadata files
-    if table.find('Metadata') > -1: continue
+    arcpy.env.workspace = pedonFGDB
 
-    # check if list contains records to be added
-    if len(pedonGDBtables[table]):
+    for table in pedonGDBtables:
 
-        numOfRowsAdded = 0
-        GDBtable = arcpy.env.workspace + os.sep + table
+        # Skip any Metadata files
+        if table.find('Metadata') > -1: continue
 
-        # Put all the field names in a list; used to initiate insertCursor object
-        fieldList = arcpy.Describe(GDBtable).fields
-        nameOfFields = []
-        fldLengths = list()
+        # check if list contains records to be added
+        if len(pedonGDBtables[table]):
 
-        for field in fieldList:
+            AddMsgAndPrint("\n--------------------------------------------------------------------------Adding Records for " + table)
 
-            if field.type != "OID":
-                nameOfFields.append(field.name)
+            numOfRowsAdded = 0
+            GDBtable = arcpy.env.workspace + os.sep + table # FGDB Pyhsical table
 
-                if field.type.lower() == "string":
-                    fldLengths.append(field.length)
-                else:
-                    fldLengths.append(0)
+            """ -------------------------------- Collect field information -----------------------"""
+            ''' For the current table, get the field length if the field is a string.  I do this b/c
+            the actual value may exceed the field length and error out as has happened in SSURGO.  If
+            the value does exceed the field length then the value will be truncated to the max length
+            of the field '''
 
-        cursor = arcpy.da.InsertCursor(GDBtable,nameOfFields)
+            # Put all the field names in a list
+            fieldList = arcpy.Describe(GDBtable).fields
+            nameOfFields = []
+            fldLengths = list()
 
-        for rec in pedonGDBtables[table]:
+            for field in fieldList:
 
-            newRow = list()  # list containing the values that make up a specific row
-            fldNo = 0        # list position to reference the field lengths in order to compare
+                # Skip Object ID field Shape field (only for site)
+                if not field.type.lower() in ("oid","geometry"):
+                    nameOfFields.append(field.name)
 
-            for value in rec.replace('"','').split(',')
-                fldLen = fldLengths[fldNo]
+                    if field.type.lower() == "string":
+                        fldLengths.append(field.length)
+                    else:
+                        fldLengths.append(0)
 
-                if value == '':   ## Empty String
-                    value = None
+            print "\nfldLengths: " + str(fldLengths) + "\n"
+            print "\nLen of fldLengths: " + str(len(fldLengths))
+            # Initiate the insert cursor object using all of the fields
+            cursor = arcpy.da.InsertCursor(GDBtable,nameOfFields)
 
-                elif fldLen > 0:
-                    value = value[0:fldLen]
+            """ -------------------------------- Insert Rows -------------------------------------"""
+            # '"S1962WI025001","43","15","9","North","89","7","56","West",,"Dane County, Wisconsin. 100 yards south of road."'
+            """["['S1962WI025001']",
+                "['', '']",
+                "['43']",
+                "['', '']",
+                "['15']",
+                "['', '']",
+                "['9']",
+                "['', '']",
+                "['North']",
+                "['', '']",
+                "['89']",
+                "['', '']",
+                "['7']",
+                "['', '']",
+                "['56']",
+                "['', '']",
+                "['West']",
+                "['', '']",
+                "['', '']",
+                "['Dane County, Wisconsin. 100 yards south of road.']","""
+            for rec in pedonGDBtables[table]:
 
-                newRow.append(value)
-                fldNo += 1
+                try:
+                    newRow = list()  # list containing the values that make up a specific row
+                    fldNo = 0        # list position to reference the field lengths in order to compare
 
-            cursor.insertRow(newRow)
-            numOfRowsAdded += 1
+                    for value in rec.replace('"','').split('|'):
+                        fldLen = fldLengths[fldNo]
 
-            del newRow
+                        if value == '':   ## Empty String
+                            value = None
+
+                        elif fldLen > 0:  ## record is a string, truncate it
+                            value = value[0:fldLen]
+
+                        else:             ## record is a number, keep it
+                            value = value
+
+                        newRow.append(value)
+                        fldNo += 1
+
+##                    reader = csv.reader(rec,delimiter=',')
+##
+##                    for value in reader:
+##                        value = value[0]
+##
+##                        fldLen = fldLengths[fldNo]
+##
+##                        if value == '':   ## Empty String
+##                            value = None
+##
+##                        elif fldLen > 0:  ## record is a string, truncate it
+##                            value = value[0:fldLen]
+##
+##                        else:             ## record is a number, keep it
+##                            value = value
+##
+##                        newRow.append(value)
+##                        fldNo += 1
+##                        del value
+##
+##                    del newRow,fldNo,reader
+
+                    cursor.insertRow(newRow)
+                    numOfRowsAdded += 1
+
+                except:
+                    #print newRow
+                    print "\nRec: " + rec
+                    print "\nValue: " + value
+                    print "\nLen of Value: " + str(len(value))
+                    print "\nfldNo: " + str(fldNo)
+                    errorMsg()
+
+                del newRow
+
+            AddMsgAndPrint("table: " + table + ": " + str(numOfRowsAdded),1)
 
 
 
@@ -1015,11 +1090,12 @@ if __name__ == '__main__':
         raise ExitError, "\n\t Failed to get a list of pedonIDs from NASIS"
 
     """ ---------------------------------------------- Create New File Geodatabaes -------------------------------------------- """
-    # Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
-    # and relationships established.  A dictionary of empty lists will be created as a placeholder
-    # for the values from the report.  The name and quantity of lists will be the same as the FGDB
+    ''' Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
+        and relationships established.  A dictionary of empty lists will be created as a placeholder
+        for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
 
     pedonFGDB = createPedonFGDB()
+    #pedonFGDB = r'O:\scratch\Test.gdb'
 
     if pedonFGDB == "":
         raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
@@ -1072,15 +1148,16 @@ if __name__ == '__main__':
 
     for pedonString in listOfPedonStrings:
 
-        AddMsgAndPrint("Requesting NASIS data for " + str(len(pedonString.split(','))) + " pedons
+        AddMsgAndPrint("\nRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons")
 
-        temp = '858228'
+        temp = '573947'
+        #if not getPedonHorizon(getPedonHorizonURL + pedonString):
         if not getPedonHorizon(getPedonHorizonURL + temp):
             raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
         break
 
     """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
     if len(pedonGDBtables['site']):
-
+        importPedonData()
 
 
