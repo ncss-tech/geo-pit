@@ -93,7 +93,7 @@ if __name__ == '__main__':
             # Iterating through the report
             if bFieldNameRecord:
 
-                nasisDict[tempTableName] = (theValue.split(','))
+                nasisDict[tempTableName] = (theValue.split('|'))
                 tempTableName = ""
                 bFieldNameRecord = False
 
