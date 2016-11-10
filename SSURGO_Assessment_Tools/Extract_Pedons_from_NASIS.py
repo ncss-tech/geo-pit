@@ -276,12 +276,68 @@ def createPedonFGDB():
 
     except arcpy.ExecuteError:
         AddMsgAndPrint(arcpy.GetMessages(2),2)
-        return ""
+        return False
 
     except:
         AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
         errorMsg()
-        return ""
+        return False
+
+## ===============================================================================================================
+def getTableAliases(pedonFGDBloc):
+    # Retrieve physical and alias names from MDSTATTABS table and assigns them to a blank dictionary.
+    # Stores physical names (key) and aliases (value) in a Python dictionary i.e. {chasshto:'Horizon AASHTO,chaashto'}
+    # Fieldnames are Physical Name = AliasName,IEfilename
+
+    try:
+
+        # Open Metadata table containing information for other pedon tables
+        theMDTable = pedonFGDBloc + os.sep + "MetadataTable"
+        arcpy.env.workspace = pedonFGDBloc
+
+        # Establishes a cursor for searching through field rows. A search cursor can be used to retrieve rows.
+        # This method will return an enumeration object that will, in turn, hand out row objects
+        if not arcpy.Exists(theMDTable):
+            return False
+
+        tableList = arcpy.ListTables("*")
+        tableList.append("site")
+
+        nameOfFields = ["TablePhysicalName","TableLabel"]
+
+        for table in tableList:
+
+            # Skip any Metadata files
+            if table.find('Metadata') > -1: continue
+
+            expression = arcpy.AddFieldDelimiters(theMDTable,"TablePhysicalName") + " = '" + table + "'"
+            with arcpy.da.SearchCursor(theMDTable,nameOfFields, where_clause = expression) as cursor:
+
+                for row in cursor:
+                    # read each table record and assign 'TablePhysicalName' and 'TableLabel' to 2 variables
+                    physicalName = row[0]
+                    aliasName = row[1]
+
+                    # i.e. {phtexture:'Pedon Horizon Texture',phtexture}; will create a one-to-many dictionary
+                    # As long as the physical name doesn't exist in dict() add physical name
+                    # as Key and alias as Value.
+                    if not tblAliases.has_key(physicalName):
+                        tblAliases[physicalName] = aliasName
+
+                    del physicalName,aliasName
+
+        del theMDTable,tableList,nameOfFields
+
+        return True
+
+    except arcpy.ExecuteError:
+        AddMsgAndPrint(arcpy.GetMessages(2),2)
+        return False
+
+    except:
+        AddMsgAndPrint("Unhandled exception (GetTableAliases)", 2)
+        errorMsg()
+        return False
 
 ## ================================================================================================================
 def getBoundingCoordinates(feature):
@@ -462,129 +518,6 @@ def getWebExportPedon(URL):
         AddMsgAndPrint("\n\t" + URL)
         AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
         return False
-
-    except:
-        errorMsg()
-        return False
-
-## ================================================================================================================
-def getPedonHorizonOLD(URL):
-    """ Example of phorizon report for 1 pedon:
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-        <html xmlns="http://www.w3.org/1999/xhtml">
-        <head><title>
-        </title><link href="basepage.css" rel="stylesheet" type="text/css" />
-        	<title></title>
-        </head>
-        <body>
-        	<form name="aspnetForm" method="post" action="./limsreport.aspx?report_name=TEST_sub_pedon_pc_6.1_phorizon&amp;pedonid_list=36186" id="aspnetForm">
-        <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKLTM2NDk4NDg3MA9kFgJmD2QWAgIDD2QWAgIBD2QWAgIDDw8WAh4HVmlzaWJsZWdkZGSXwAn7Hr8Ukd9anjbL9XSl6aCmiPociSQIHE2w0AyWNg==" />
-        <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="DCF944DC" />
-        	<div>
-        	<div id="ctl00_ContentPlaceHolder1_pnlReportOutput">
-        	<div id="ReportData">@begin phorizon
-        seqnum,obsmethod,hzname,hzname_s,desgndisc,desgnmaster,desgnmasterprime,
-        1,,"A",,,,,,0,28,,,,"GR-L",1,0,,,,,,,,0,,,,3,,,,,,,,,,,,,,,7.2,14,,,,,,,,,,       ------ START Here
-        2,,"Bw",,,,,,28,36,,,,"GR-L",1,0,,,,,,,,0,,,,3,,,,,,,,,,,,,,,7.8,14,,3,,,,,
-        3,,"C",,,,,,36,152,,,,"GRV-S GRV-LS",1,0,,,,,,,,0,,,,1,,,,,,,,,,,,,,,8.0,14
-        @end                                                                              ------- PAUSE Here
-        desgnvert,hzdept,hzdepb,hzthk_l,hzthk_r,hzthk_h,texture,texture_s,                ------- PAUSE Here
-        ,,,,,,0,2,4,,,,,,,36186,166637
-        ,,,,,,,,,0,1,4,,,,,,,36186,166638
-        ,,3,,,,,,,,,,,,,,0,,,,,,,,,36186,166639
-        stratextsflag,claytotest,claycarbest,silttotest,sandtotest,carbdevstagefe,        ------- STOP Here
-        carbdevstagecf,fragvoltot,horcolorvflag,fiberrubbedpct,fiberunrubbedpct,
-        obssoimoiststat,rupresblkmst,rupresblkdry,rupresblkcem,rupresplate,
-        mannerfailure,stickiness,plasticity,toughclass,penetrres,penetorient,
-        ksatpedon,ksatstddev,ksatrepnum,horzpermclass,obsinfiltrationrate,phfield,
-        phdetermeth,phnaf,effclass,efflocation,effagent,mneffclass,mneffagent,
-        reactadipyridyl,dipyridylpct,dipyridylloc,ecmeasured,ecdeterminemeth,ec15,
-        excavdifcl,soilodor,soilodorintensity,rmonosulfidep,bounddistinct,boundtopo
-        ,horzvoltotpct_l,horzvoltotpct_r,horzvoltotpct_h,horzlatareapct_l,
-        horzlatareapct_r,horzlatareapct_h,peiidref,phiid
-        </div>
-        </div>
-        	</div>
-        	</form>
-        </body>
-        </html>
-        """
-    try:
-
-        # Open a network object using the URL with the search string already concatenated
-        theReport = urllib.urlopen(URL)
-
-        bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
-        bFirstString = False
-        bSecondString = False
-        pHorizonList = list()
-        i = 0
-
-        # iterate through the report until a valid record is found
-        for theValue in theReport:
-
-            theValue = theValue.strip() # remove whitespace characters
-
-            # Iterating through the lines in the report
-            if bValidRecord:
-                if theValue.startswith('</div>'):  # this report doesn't really have a hard stop or stopping indicator.
-                    break
-
-                # The line after this is where the first half of data begins
-                elif theValue.startswith("seqnum,obsmethod,hzname"):
-                    bFirstString = True
-                    continue
-
-                # benchmark indicators of when to stop appending to pHorizonlist
-                elif theValue.startswith(("@end","stratextsflag,claytotest,claycarbest,silttotest")):
-                    bFirstString = False
-                    bSecondString = False
-                    continue
-
-                # The line after this is where the second half of data begins
-                elif theValue.startswith("desgnvert,hzdept,hzdepb,hzthk_l"):
-                    bSecondString = True
-                    continue
-
-                # Add the first set of pHorizon data to the pHorizonList
-                elif bFirstString:
-                    tempList = list()
-
-                    for val in theValue.split(","):
-                        if val is None:
-                            tempList.append(None)
-                        else:
-                            tempList.append(val.strip("\""))
-
-                    pHorizonList.append(tempList)
-                    del tempList
-
-                # Add the second set of pHorizon data to the last list in pHorizonList
-                elif bSecondString:
-
-                    for val in theValue.split(","):
-                        if val is None:
-                            pHorizonList[i].append(None)
-                        else:
-                            pHorizonList[i].append(val.strip("\""))
-
-                    i+=1
-                    if i+1 == len(pHorizonList):
-                        break
-
-            else:
-                # This is where the real report starts; earlier lines are html fluff
-                if theValue.startswith('<div id="ReportData">@begin phorizon'):
-                    bValidRecord = True
-
-        if not pHorizonList:
-            AddMsgAndPrint("\tThere were no Pedon Horizon records returned from the web report",2)
-            return False
-        else:
-            AddMsgAndPrint("\tThere are " + str(len(pHorizonList)) + " pedon horizon records that will be added",0)
-
-        del theReport,bValidRecord,bFirstString,bSecondString,pHorizonList,i
-        return True
 
     except:
         errorMsg()
@@ -838,6 +771,10 @@ def getPedonHorizon(URL):
                 pedonGDBtables[currentTable].append(theValue)
                 validRecord += 1
 
+            elif theValue.find("ERROR") > -1:
+                AddMsgAndPrint("\n\t" + theValue[theValue.find("ERROR"):],2)
+                return False
+
             else:
                 invalidRecord += 1
 
@@ -886,26 +823,35 @@ def getPedonHorizon(URL):
         return False
 
 ## ================================================================================================================
-def importPedonData():
+def importPedonData(tblAliases):
 
-    import csv
 
-    AddMsgAndPrint("\nImporting Data into FGDB")
+    AddMsgAndPrint("\nImporting Pedon Data into FGDB")
 
-    arcpy.env.workspace = pedonFGDB
+    # use the tblAliases so that tables are imported in alphabetical order
+    if bAliasName:
+        tblKeys = tblAliases.keys()
+        maxCharAlias = max([len(value[1]) for value in tblAliases.items()])
+    else:
+        tblKeys = pedonGDBtables.keys()
 
-    for table in pedonGDBtables:
+    tblKeys.sort()
+    maxCharTable = max([len(table) for table in tblKeys])
+
+    for table in tblKeys:
 
         # Skip any Metadata files
         if table.find('Metadata') > -1: continue
 
+        # Capture the alias name of the table
+        if bAliasName:
+            aliasName = tblAliases[table]
+
         # check if list contains records to be added
         if len(pedonGDBtables[table]):
 
-            AddMsgAndPrint("\n--------------------------------------------------------------------------Adding Records for " + table)
-
             numOfRowsAdded = 0
-            GDBtable = arcpy.env.workspace + os.sep + table # FGDB Pyhsical table
+            GDBtable = pedonFGDB + os.sep + table # FGDB Pyhsical table path
 
             """ -------------------------------- Collect field information -----------------------"""
             ''' For the current table, get the field length if the field is a string.  I do this b/c
@@ -929,33 +875,11 @@ def importPedonData():
                     else:
                         fldLengths.append(0)
 
-            print "\nfldLengths: " + str(fldLengths) + "\n"
-            print "\nLen of fldLengths: " + str(len(fldLengths))
             # Initiate the insert cursor object using all of the fields
             cursor = arcpy.da.InsertCursor(GDBtable,nameOfFields)
 
             """ -------------------------------- Insert Rows -------------------------------------"""
             # '"S1962WI025001","43","15","9","North","89","7","56","West",,"Dane County, Wisconsin. 100 yards south of road."'
-            """["['S1962WI025001']",
-                "['', '']",
-                "['43']",
-                "['', '']",
-                "['15']",
-                "['', '']",
-                "['9']",
-                "['', '']",
-                "['North']",
-                "['', '']",
-                "['89']",
-                "['', '']",
-                "['7']",
-                "['', '']",
-                "['56']",
-                "['', '']",
-                "['West']",
-                "['', '']",
-                "['', '']",
-                "['Dane County, Wisconsin. 100 yards south of road.']","""
             for rec in pedonGDBtables[table]:
 
                 try:
@@ -963,6 +887,8 @@ def importPedonData():
                     fldNo = 0        # list position to reference the field lengths in order to compare
 
                     for value in rec.replace('"','').split('|'):
+
+                        value = value.strip()
                         fldLen = fldLengths[fldNo]
 
                         if value == '':   ## Empty String
@@ -977,33 +903,13 @@ def importPedonData():
                         newRow.append(value)
                         fldNo += 1
 
-##                    reader = csv.reader(rec,delimiter=',')
-##
-##                    for value in reader:
-##                        value = value[0]
-##
-##                        fldLen = fldLengths[fldNo]
-##
-##                        if value == '':   ## Empty String
-##                            value = None
-##
-##                        elif fldLen > 0:  ## record is a string, truncate it
-##                            value = value[0:fldLen]
-##
-##                        else:             ## record is a number, keep it
-##                            value = value
-##
-##                        newRow.append(value)
-##                        fldNo += 1
-##                        del value
-##
-##                    del newRow,fldNo,reader
-
                     cursor.insertRow(newRow)
                     numOfRowsAdded += 1
 
                 except:
                     #print newRow
+                    print "\nfldLengths: " + str(fldLengths) + "\n"
+                    print "\nLen of fldLengths: " + str(len(fldLengths))
                     print "\nRec: " + rec
                     print "\nValue: " + value
                     print "\nLen of Value: " + str(len(value))
@@ -1012,11 +918,22 @@ def importPedonData():
 
                 del newRow
 
-            AddMsgAndPrint("table: " + table + ": " + str(numOfRowsAdded),1)
+            # Report the # of records added to the table
+            firstTab = (maxCharTable - len(table)) * " "
+            if bAliasName:
+                secondTab = (maxCharAlias - len(aliasName)) * " "
+                AddMsgAndPrint("\t" + table + ": " + firstTab + aliasName + secondTab + " Records Added: " + str(numOfRowsAdded),1)
+            else:
+                AddMsgAndPrint("\t" + table + ": " + firstTab + " Records Added: " + str(numOfRowsAdded),1)
 
+        # Table had no records; still print it out
+        else:
+            if bAliasName:
+                secondTab = (maxCharAlias - len(aliasName)) * " "
+                AddMsgAndPrint("\t" + table + ": " + firstTab + aliasName + secondTab + " Records Added: 0",1)
+            else:
+                AddMsgAndPrint("\t" + table + ": " + firstTab + " Records Added: 0",1)
 
-
-#for
 
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
@@ -1056,11 +973,11 @@ from urllib2 import urlopen, URLError, HTTPError
 if __name__ == '__main__':
 
     #inputFeatures = arcpy.GetParameter(0)
-    inputFeatures = r'O:\scratch\scratch.gdb\Pedon_boundary_Test2'
+    inputFeatures = r'C:\Temp\scratch.gdb\Pedon_boundary_Test2'
 
     GDBname = "Test"
     #GDBname = arcpy.GetParameter(1)
-    outputFolder = r'O:\scratch'
+    outputFolder = r'C:\Temp'
     #outputFolder = arcpy.GetParameterAsText(2)
 
     """ ------------------------------------------------ Set Scratch Workspace ------------------------------------------------"""
@@ -1086,16 +1003,16 @@ if __name__ == '__main__':
     #{'122647': ('84IA0130011', '85P0558', '-92.3241653', '42.3116684'), '883407': ('2014IA013003', None, '-92.1096600', '42.5332000'), '60914': ('98IA013011', None, '-92.4715271', '42.5718880')}
     pedonDict = dict()
 
-    if not getWebExportPedon(getPedonIDURL):
-        raise ExitError, "\n\t Failed to get a list of pedonIDs from NASIS"
+##    if not getWebExportPedon(getPedonIDURL):
+##        raise ExitError, "\n\t Failed to get a list of pedonIDs from NASIS"
 
     """ ---------------------------------------------- Create New File Geodatabaes -------------------------------------------- """
     ''' Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
         and relationships established.  A dictionary of empty lists will be created as a placeholder
         for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
 
-    pedonFGDB = createPedonFGDB()
-    #pedonFGDB = r'O:\scratch\Test.gdb'
+    #pedonFGDB = createPedonFGDB()
+    pedonFGDB = r'C:\Temp\Test.gdb'
 
     if pedonFGDB == "":
         raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
@@ -1107,7 +1024,22 @@ if __name__ == '__main__':
     ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
     pedonGDBtables = dict()
     for table in tables:
+
+        # Skip any Metadata files
+        if table.find('Metadata') > -1: continue
+
         pedonGDBtables[str(table)] = []
+
+    # Acquire Aliases.  This is only used for printing purposes
+    tblAliases = dict()
+    bAliasName = True
+
+    if not getTableAliases(pedonFGDB):
+        AddMsgAndPrint("\nCould not retrieve alias names from \'MetadataTable\'",1)
+
+    if not len(tblAliases):
+        bAliasName = False
+    sys.exit()
 
     """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
 
@@ -1150,14 +1082,14 @@ if __name__ == '__main__':
 
         AddMsgAndPrint("\nRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons")
 
-        temp = '573947'
-        #if not getPedonHorizon(getPedonHorizonURL + pedonString):
-        if not getPedonHorizon(getPedonHorizonURL + temp):
+        #temp = '573947'
+        if not getPedonHorizon(getPedonHorizonURL + pedonString):
+        #if not getPedonHorizon(getPedonHorizonURL + temp):
             raise ExitError, "\t Failed to receive pedon horizon info from NASIS"
         break
 
     """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
     if len(pedonGDBtables['site']):
-        importPedonData()
+        importPedonData(tblAliases)
 
 
