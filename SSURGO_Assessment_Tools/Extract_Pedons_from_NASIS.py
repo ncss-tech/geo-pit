@@ -723,16 +723,51 @@ def getPedonHorizon(URL):
     </html> """
 
     try:
-        # Open a network object using the URL with the search string already concatenated
+
+        """ ---------------------- Create a dictionary of number of fields per table -----------------"""
+        ''' Create a dictionary that will contain table:number of fields in order
+            to double check that the values from the web report are correct
+            this was added b/c there were text fields that were getting disconnected in the report
+            and being read as 2 lines -- Jason couldn't address this issue in NASIS '''
+        arcpy.env.workspace = pedonFGDB
+
+        tableFldDict = dict()    # petext:11
+        validTables = arcpy.ListTables("*")
+        validTables.append('site')
+
+        for table in validTables:
+
+            # Skip any Metadata files
+            if table.find('Metadata') > -1: continue
+
+            numOfFields = arcpy.Describe(os.path.join(pedonFGDB,table)).fields
+            numOfValidFlds = 0
+
+            for field in numOfFields:
+                if not field.type.lower() in ("oid","geometry"):
+                    numOfValidFlds +=1
+
+            tableFldDict[table] = numOfValidFlds
+            del numOfFields;numOfValidFlds
+
+        """----------------------------------- Open a network object --------------------------------"""
+        ''' Open a network object using the URL with the search string already concatenated.
+            As soon as the url is opened it needs to be read otherwise there will be a socket
+            error raised.  Experienced this when the url was being opened before the above
+            dictionary was created.  Bizarre'''
         theReport = urlopen(URL)
 
         invalidTable = 0    # represents tables that don't correspond with the GDB
         invalidRecord = 0  # represents records that were not added
         validRecord = 0
 
-        bHeader = False
-        currentTable = ""
+        bHeader = False         # flag indicating if value is html junk
+        currentTable = ""       # The table found in the report
+        numOfFields = ""        # The number of fields a specific table should contain
+        partialValue = ""       # variable containing part of a value that is not complete
+        bPartialValue = False   # flag indicating if value is incomplete; append next record
 
+        """ ------------------- Begin Adding data from URL into a dictionary of lists ---------------"""
         # iterate through the lines in the report
         for theValue in theReport:
 
@@ -741,6 +776,7 @@ def getPedonHorizon(URL):
             # represents the start of valid table
             if theValue.find('@begin') > -1:
                 theTable = theValue[theValue.find('@') + 7:]  ## Isolate the table
+                numOfFields = tableFldDict[theTable]
 
                 # Check if the table name exists in the list of dictionaries
                 # if so, set the currentTable variable and bHeader
@@ -768,8 +804,36 @@ def getPedonHorizon(URL):
                 # Do not remove the double quotes b/c doing so converts the object
                 # to a list which increases its object size.  Remove quotes before
                 # inserting into table
-                pedonGDBtables[currentTable].append(theValue)
-                validRecord += 1
+
+                # this probably represents the 2nd half of a valid value
+                if bPartialValue:
+                    partialValue += theValue
+
+                    # This value completed the previous value
+                    if len(partialValue.split('|')) == numOfFields:
+                        pedonGDBtables[currentTable].append(partialValue)
+                        validRecord += 1
+                        bPartialValue = False
+                        partialValue = ""
+
+                    # appending this value exceeded the number of possible fields
+                    elif len(partialValue.split('|')) < numOfFields:
+                        continue
+
+                    else:
+                        AddMsgAndPrint("\t\tIllegal record found found from " + table + " table: ID = " + str(partialValue.split('|')[0]),2)
+                        continue
+
+                elif len(theValue.split('|')) != numOfFields:
+                    partialValue = theValue
+                    bPartialValue = True
+                    continue
+
+                else:
+                    pedonGDBtables[currentTable].append(theValue)
+                    validRecord += 1
+                    bPartialValue = False
+                    partialValue = ""
 
             elif theValue.find("ERROR") > -1:
                 AddMsgAndPrint("\n\t" + theValue[theValue.find("ERROR"):],2)
@@ -787,7 +851,7 @@ def getPedonHorizon(URL):
             AddMsgAndPrint("\t\tThere were " + str(invalidTable) + " invalid table(s) included in the report with " + str(invalidRecord) + " invalid record(s)",1)
 
         # Report any invalid records found in report; There are 27 html lines reserved for headers and footers
-        if invalidRecord > 27:
+        if invalidRecord > 28:
             AddMsgAndPrint("\t\tThere were " + str(invalidRecord) + " invalid record(s) not captured",1)
 
         return True
@@ -852,9 +916,6 @@ def importPedonData(tblAliases):
             # Skip any Metadata files
             if table.find('Metadata') > -1: continue
 
-            # site Data will be added seperately since it contains geometry.
-            #if table == 'site':continue
-
             # Capture the alias name of the table
             if bAliasName:
                 aliasName = tblAliases[table]
@@ -892,6 +953,8 @@ def importPedonData(tblAliases):
 
                 # Site feature class will have X,Y geometry added; Add XY token to list
                 if table == 'site':
+                    #print"\n\tsite table"
+                    #print "\nrec = " + str(rec)
                     nameOfFields.append('SHAPE@XY')
 
                     latField = [f.name for f in arcpy.ListFields(table,'latstddecimaldegrees')][0]
@@ -901,6 +964,7 @@ def importPedonData(tblAliases):
 
                 # Initiate the insert cursor object using all of the fields
                 cursor = arcpy.da.InsertCursor(GDBtable,nameOfFields)
+                recNum = 0
 
                 """ -------------------------------- Insert Rows -------------------------------------"""
                 # '"S1962WI025001","43","15","9","North","89","7","56","West",,"Dane County, Wisconsin. 100 yards south of road."'
@@ -935,16 +999,18 @@ def importPedonData(tblAliases):
 
                     try:
                         cursor.insertRow(newRow)
-                        numOfRowsAdded += 1
+                        numOfRowsAdded += 1;recNum += 1
 
                     except arcpy.ExecuteError:
                         AddMsgAndPrint("\n\tError in :" + table + " table: Field No: " + str(fldNo) + " : " + str(rec),2)
                         AddMsgAndPrint("\n\t" + arcpy.GetMessages(2),2)
                         break
                     except:
-                        AddMsgAndPrint("\n\tError in :" + table + " table: Field No: " + str(fldNo) + " : \n" + str(rec),2)
-                        AddMsgAndPrint("\nNumber of Fields in GDB: " + str(len(nameOfFields)))
-                        AddMsgAndPrint("Number of fields in report: " + str(len([rec.split('|')][0])))
+                        AddMsgAndPrint("\n\tError in :" + table + " table")
+                        print "\n\t" + str(rec)
+                        print "\n\tRecord Number: " + str(recNum)
+                        AddMsgAndPrint("\tNumber of Fields in GDB: " + str(len(nameOfFields)))
+                        AddMsgAndPrint("\tNumber of fields in report: " + str(len([rec.split('|')][0])))
                         errorMsg()
                         break
 
@@ -1055,8 +1121,8 @@ if __name__ == '__main__':
         and relationships established.  A dictionary of empty lists will be created as a placeholder
         for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
 
-    #pedonFGDB = createPedonFGDB()
-    pedonFGDB = r'C:\Temp\Dane.gdb'
+    pedonFGDB = createPedonFGDB()
+    #pedonFGDB = r'C:\Temp\Dane.gdb'
 
     if pedonFGDB == "":
         raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
@@ -1130,11 +1196,11 @@ if __name__ == '__main__':
 
         AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons")
 
-        #temp = '573947'
+        #temp = '794584'
         if not getPedonHorizon(getPedonHorizonURL + pedonString):
         #if not getPedonHorizon(getPedonHorizonURL + temp):
             AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
-            sys.exit()
+            #sys.exit()
 
     """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
     # if the site table has records, proceed to transerring them to the FGDB
