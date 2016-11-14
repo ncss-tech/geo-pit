@@ -816,12 +816,16 @@ def getPedonHorizon(URL):
                         bPartialValue = False
                         partialValue = ""
 
-                    # appending this value exceeded the number of possible fields
+                    # appending this value still falls short of number of possible fields
                     elif len(partialValue.split('|')) < numOfFields:
                         continue
 
+                    # appending this value exceeded the number of possible fields
                     else:
-                        AddMsgAndPrint("\t\tIllegal record found found from " + table + " table: ID = " + str(partialValue.split('|')[0]),2)
+                        AddMsgAndPrint("\n\t\tIllegal record found found from " + currentTable + " table: ID = " + str(partialValue.split('|')[0]),2)
+                        print "\t\t" + theValue
+                        print "\t\tPartial Value len: " + str(len(partialValue.split('|'))) + " numOfFields: " + str(numOfFields)
+                        invalidRecord += 1
                         continue
 
                 elif len(theValue.split('|')) != numOfFields:
@@ -1077,9 +1081,11 @@ Column order
 # Import modules
 import sys, string, os, traceback, re, arcpy, socket, httplib
 from arcpy import env
-from urllib2 import urlopen, URLError, HTTPError
+from urllib2 import urlopen, URLError, HTTPError, time
 
 if __name__ == '__main__':
+
+    print "start time: " + time.asctime() + "\n"
 
     #inputFeatures = arcpy.GetParameter(0)
     inputFeatures = r'C:\Temp\scratch.gdb\Pedon_boundary_Test2'
@@ -1121,8 +1127,8 @@ if __name__ == '__main__':
         and relationships established.  A dictionary of empty lists will be created as a placeholder
         for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
 
-    pedonFGDB = createPedonFGDB()
-    #pedonFGDB = r'C:\Temp\Dane.gdb'
+    #pedonFGDB = createPedonFGDB()
+    pedonFGDB = r'C:\Temp\Dane.gdb'
 
     if pedonFGDB == "":
         raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
@@ -1208,10 +1214,7 @@ if __name__ == '__main__':
         if not importPedonData(tblAliases):
             sys.exit()
 
+    print "End time: " + time.asctime() + "\n"
+
 ##    if not createPedonPoints():
 ##        sys.exit()
-
-
-
-
-
