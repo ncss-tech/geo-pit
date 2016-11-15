@@ -231,6 +231,18 @@ def setScratchWorkspace():
             return False
 
 ## ================================================================================================================
+def splitThousands(someNumber):
+# will determine where to put a thousands seperator if one is needed.
+# Input is an integer.  Integer with or without thousands seperator is returned.
+
+    try:
+        return re.sub(r'(\d{3})(?=\d)', r'\1,', str(someNumber)[::-1])[::-1]
+
+    except:
+        errorMsg()
+        return someNumber
+
+## ================================================================================================================
 def createPedonFGDB():
     """This Function will create a new File Geodatabase using a pre-established XML workspace
        schema.  All Tables will be empty and should correspond to that of the access database.
@@ -259,7 +271,7 @@ def createPedonFGDB():
                 AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Deleting and re-creating FGDB\n",1)
             except:
                 AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Failed to delete\n",2)
-                return False
+                return ""
 
         # Create empty temp File Geodatabae
         arcpy.CreateFileGDB_management(outputFolder,os.path.splitext(os.path.basename(newPedonFGDB))[0])
@@ -276,12 +288,12 @@ def createPedonFGDB():
 
     except arcpy.ExecuteError:
         AddMsgAndPrint(arcpy.GetMessages(2),2)
-        return False
+        return ""
 
     except:
         AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
         errorMsg()
-        return False
+        return ""
 
 ## ===============================================================================================================
 def getTableAliases(pedonFGDBloc):
@@ -425,12 +437,12 @@ def getWebExportPedon(URL):
         and return a list of pedons within the bounding coordinates.  Pedons include regular
         NASIS pedons and LAB pedons.  Each record in the report will contain the following values:
 
-            Row_Number,upedonid,peiid,pedlabsampnum,Longstddecimaldegrees,latstddecimaldegrees
-            24|S1994MN161001|102861|94P0697|-93.5380936|44.0612717
+            Row_Number,upedonid,peiid,pedlabsampnum,Longstddecimaldegrees,latstddecimaldegrees,Undisclosed Pedon
+            24|S1994MN161001|102861|94P0697|-93.5380936|44.0612717|'Y'
 
         A dictionary will be returned containing something similar:
-        {'102857': ('S1954MN161113A', '40A1694', '-93.6499481', '43.8647194'),
-        '102858': ('S1954MN161113B', '40A1695', '-93.6455002', '43.8899956')}
+        {'102857': ('S1954MN161113A', '40A1694', '-93.6499481', '43.8647194',Y'),
+        '102858': ('S1954MN161113B', '40A1695', '-93.6455002', '43.8899956','N')}
         theURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&lat1=43&lat2=45&long1=-90&long2=-88'"""
 
     try:
@@ -458,9 +470,12 @@ def getWebExportPedon(URL):
                 else:
                     theRec = theValue.split("|")
 
-                    if len(theRec) != 6:
+                    if len(theRec) != 7:
                         AddMsgAndPrint("\tNASIS Report: Web Export Pedon Box is not returning the correct amount of values per record",2)
                         return False
+
+                    # Undisclosed Record
+                    if theRec[6] == "Y":continue
 
                     rowNumber = theRec[0]
                     userPedonID = theRec[1]
@@ -488,9 +503,9 @@ def getWebExportPedon(URL):
             return False
 
         else:
-            AddMsgAndPrint("\tThere are a total of " + str(totalPedonCnt) + " pedons found in this area:")
-            AddMsgAndPrint("\t\tLAB Pedons: " + str(labPedonCnt))
-            AddMsgAndPrint("\t\tNASIS Pedons: " + str(totalPedonCnt - labPedonCnt))
+            AddMsgAndPrint("\tThere are a total of " + splitThousands(totalPedonCnt) + " pedons found in this area:")
+            AddMsgAndPrint("\t\tLAB Pedons: " + splitThousands(labPedonCnt))
+            AddMsgAndPrint("\t\tNASIS Pedons: " + splitThousands(totalPedonCnt - labPedonCnt))
             return True
 
     except URLError, e:
@@ -765,6 +780,7 @@ def getPedonHorizon(URL):
         currentTable = ""       # The table found in the report
         numOfFields = ""        # The number of fields a specific table should contain
         partialValue = ""       # variable containing part of a value that is not complete
+        originalValue = ""      # variable containing the original incomplete value
         bPartialValue = False   # flag indicating if value is incomplete; append next record
 
         """ ------------------- Begin Adding data from URL into a dictionary of lists ---------------"""
@@ -799,39 +815,55 @@ def getPedonHorizon(URL):
 
             # this is a valid record that should be collected
             elif not bHeader and currentTable:
+                numOfValues = len(theValue.split('|'))
 
                 # Add the record to its designated list within the dictionary
                 # Do not remove the double quotes b/c doing so converts the object
                 # to a list which increases its object size.  Remove quotes before
                 # inserting into table
 
-                # this probably represents the 2nd half of a valid value
+                # this should represent the 2nd half of a valid value
                 if bPartialValue:
-                    partialValue += theValue
+                    partialValue += theValue  # append this record to the previous record
 
                     # This value completed the previous value
                     if len(partialValue.split('|')) == numOfFields:
                         pedonGDBtables[currentTable].append(partialValue)
                         validRecord += 1
                         bPartialValue = False
-                        partialValue = ""
+                        partialValue,originalValue = "",""
 
                     # appending this value still falls short of number of possible fields
+                    # add another record; this would be the 3rd record appended and may
+                    # exceed number of values.
                     elif len(partialValue.split('|')) < numOfFields:
                         continue
 
                     # appending this value exceeded the number of possible fields
                     else:
-                        AddMsgAndPrint("\n\t\tIllegal record found found from " + currentTable + " table: ID = " + str(partialValue.split('|')[0]),2)
-                        print "\t\t" + theValue
-                        print "\t\tPartial Value len: " + str(len(partialValue.split('|'))) + " numOfFields: " + str(numOfFields)
+                        AddMsgAndPrint("\n\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
+                        AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(len(partialValue.split('|'))),2)
+                        AddMsgAndPrint("\t\t\tOriginal Record: " + originalValue,2)
+                        AddMsgAndPrint("\t\t\tAppended Record: " + partialValue,2)
+                        invalidRecord += 1
+                        bPartialValue = False
+                        partialValue,originalValue = ""
+
+                # number of values do not equal the number of fields in the corresponding tables
+                elif numOfValues != numOfFields:
+
+                    # number of values exceed the number of fields; Big Error
+                    if numOfValues > numOfFields:
+                        AddMsgAndPrint("\n\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
+                        AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(numOfValues),2)
+                        AddMsgAndPrint("\t\t\tRecord: " + theValue,2)
                         invalidRecord += 1
                         continue
 
-                elif len(theValue.split('|')) != numOfFields:
-                    partialValue = theValue
-                    bPartialValue = True
-                    continue
+                    # number of values falls short of the number of correct fields
+                    else:
+                        partialValue,originalValue = theValue,theValue
+                        bPartialValue = True
 
                 else:
                     pedonGDBtables[currentTable].append(theValue)
@@ -840,23 +872,23 @@ def getPedonHorizon(URL):
                     partialValue = ""
 
             elif theValue.find("ERROR") > -1:
-                AddMsgAndPrint("\n\t" + theValue[theValue.find("ERROR"):],2)
+                AddMsgAndPrint("\n\t\t" + theValue[theValue.find("ERROR"):],2)
                 return False
 
             else:
                 invalidRecord += 1
 
         if not validRecord:
-            AddMsgAndPrint("\tThere were no valid records captured from NASIS request",2)
+            AddMsgAndPrint("\t\tThere were no valid records captured from NASIS request",2)
             return False
 
         # Report any invalid tables found in report; This should take care of itself as Jason perfects the report.
         if invalidTable and invalidRecord:
-            AddMsgAndPrint("\t\tThere were " + str(invalidTable) + " invalid table(s) included in the report with " + str(invalidRecord) + " invalid record(s)",1)
+            AddMsgAndPrint("\t\tThere were " + splitThousands(invalidTable) + " invalid table(s) included in the report with " + splitThousands(invalidRecord) + " invalid record(s)",1)
 
         # Report any invalid records found in report; There are 27 html lines reserved for headers and footers
         if invalidRecord > 28:
-            AddMsgAndPrint("\t\tThere were " + str(invalidRecord) + " invalid record(s) not captured",1)
+            AddMsgAndPrint("\t\tThere were " + splitThousands(invalidRecord) + " invalid record(s) not captured",1)
 
         return True
 
@@ -1023,9 +1055,9 @@ def importPedonData(tblAliases):
                 # Report the # of records added to the table
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + str(numOfRowsAdded),1)
+                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
                 else:
-                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + str(numOfRowsAdded),1)
+                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
 
                 del numOfRowsAdded,GDBtable,fieldList,nameOfFields,fldLengths,cursor
 
@@ -1088,10 +1120,10 @@ if __name__ == '__main__':
     print "start time: " + time.asctime() + "\n"
 
     #inputFeatures = arcpy.GetParameter(0)
-    inputFeatures = r'C:\Temp\scratch.gdb\Pedon_boundary_Test2'
-    inputFeatures = r'C:\Temp\scratch.gdb\DaneCounty'
+    inputFeatures = r'C:\Temp\scratch.gdb\US'
+    #inputFeatures = r'C:\Temp\scratch.gdb\DaneCounty'
 
-    GDBname = "Dane"
+    GDBname = "WI"
     #GDBname = arcpy.GetParameter(1)
     outputFolder = r'C:\Temp'
     #outputFolder = arcpy.GetParameterAsText(2)
@@ -1101,14 +1133,16 @@ if __name__ == '__main__':
     arcpy.env.scratchWorkspace = scratchWS
 
     if not scratchWS:
-        raise ExitError, "\n Failed to scratch workspace; Try setting it manually"
+        AddMsgAndPrint("\n Failed to scratch workspace; Try setting it manually",2)
+        sys.exit()
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
-    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484
+    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484;
     Lat1,Lat2,Long1,Long2 = getBoundingCoordinates(inputFeatures)
 
     if not Lat1:
-        raise ExitError, "\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature"
+        AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
+        sys.exit()
 
 
     """ ---------------------------- Get a list of PedonIDs that are within the bounding box from NASIS -----------------------"""
@@ -1120,18 +1154,20 @@ if __name__ == '__main__':
     pedonDict = dict()
 
     if not getWebExportPedon(getPedonIDURL):
-        raise ExitError, "\n\t Failed to get a list of pedonIDs from NASIS"
+        AddMsgAndPrint("\n\t Failed to get a list of pedonIDs from NASIS",2)
+    sys.exit()
 
     """ ---------------------------------------------- Create New File Geodatabaes -------------------------------------------- """
     ''' Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
         and relationships established.  A dictionary of empty lists will be created as a placeholder
         for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
 
-    #pedonFGDB = createPedonFGDB()
-    pedonFGDB = r'C:\Temp\Dane.gdb'
+    pedonFGDB = createPedonFGDB()
+    #pedonFGDB = r'C:\Temp\Dane.gdb'
 
     if pedonFGDB == "":
-        raise ExitError, "\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!"
+        AddMsgAndPrint("\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!",2)
+        sys.exit()
 
     arcpy.env.workspace = pedonFGDB
     tables = arcpy.ListTables()
@@ -1191,22 +1227,24 @@ if __name__ == '__main__':
                 pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
 
     if not len(listOfPedonStrings):
-        raise ExitError, "\n\t Something Happened here.....WTF!"
+        AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
+        sys.exit()
 
     if len(listOfPedonStrings) > 1:
         AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",0)
     else:
         AddMsgAndPrint("\n")
 
+    i = 1
     for pedonString in listOfPedonStrings:
 
-        AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons")
+        AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
 
-        #temp = '794584'
+        #temp = '215823,140717,836581,140711,140710,140713,140712,246369,246368,309023,309021,246363,246362,528520,246360,246367,246366,246365,338798,304162,168910,59177,314159,292746,271905,271907,314150,314151,314152,314153,597650,597651,597652,597653,179137,146675,56386,263287,338942,290579,204309,274267,204306,214231,258681,570978,772323,111457,248359,772322,218474,134152,772321,248807,772320,135903,295782,972372,972373,972370,972371,972374,972375,1049049,1049048,146677,772325,366921,1049041,1049040,1049043,1049042,1049045,1049044,1049047,1049046,356989,366923,212899,250206,366924,184591,366925,250204,1111359,1111358,1111357,1111356,1111355,1111354,135905,295784,350748,197236,290633,254784,346474,669678,337370,295787,669679,241184,254785,1068099,1068098,263286,273779,1068093,1068092,1068091,1068090,1068097,1068096,1068095,1068094,313313,313312,313311,313310,1080169,1080168,313315,313314,1080165,1080164,1080167,1080166,1080161,1080160,1080163,1080162,322534,245694,256199,212895,312683,1067517,1067516,1067515,1068326,1067513,1068320,1067511,1068322,147237,312681,1068329,1068328,1067519,1067518,197530,291535,147682,291532,291533,63816,821710,896205,172119,421942,896204,1121624,1121625,1121626,1121627,1121620,1121621,1121622,1121623,212897,307500,1121628,1121629,1197339,1197338,934257,421943,1197333,1197332,1197331,1197330,1197337,1197336,1197335,1197334,47287,47284,47285,47282,1201526,135943,1068861,47288,47289,290884,421940,406381,248808,406380,318428,318429,318426,318427,318420,318421,318422,60810,493099,493098,612714,375341,378772,378773,378770,378771,493097,1069054,1069055,1069056,1069057,1069050,1069051,1069052,1069053,364863,364862,364861,364860,1069058,1069059,364865,364864,284875,284877,406388,155788,284873,375692,218826,264711,290638,421947,1018274,1018275,1018276,1018277,1018270,1018271,1018272,1018273,329344,276376,925958,925959,1018278,1018279'
         if not getPedonHorizon(getPedonHorizonURL + pedonString):
         #if not getPedonHorizon(getPedonHorizonURL + temp):
             AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
-            #sys.exit()
+        i+=1
 
     """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
     # if the site table has records, proceed to transerring them to the FGDB
@@ -1215,6 +1253,3 @@ if __name__ == '__main__':
             sys.exit()
 
     print "End time: " + time.asctime() + "\n"
-
-##    if not createPedonPoints():
-##        sys.exit()
