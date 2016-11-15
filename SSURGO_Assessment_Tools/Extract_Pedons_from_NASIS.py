@@ -231,9 +231,35 @@ def setScratchWorkspace():
             return False
 
 ## ================================================================================================================
+def tic():
+    """ Returns the current time """
+
+    return time.time()
+
+## ================================================================================================================
+def toc(_start_time):
+    """ Returns the total time by subtracting the start time - finish time"""
+
+    try:
+
+        t_sec = round(time.time() - _start_time)
+        (t_min, t_sec) = divmod(t_sec,60)
+        (t_hour,t_min) = divmod(t_min,60)
+
+        if t_hour:
+            return ('{} hour(s): {} minute(s): {} second(s)'.format(int(t_hour),int(t_min),int(t_sec)))
+        elif t_min:
+            return ('{} minute(s): {} second(s)'.format(int(t_min),int(t_sec)))
+        else:
+            return ('{} second(s)'.format(int(t_sec)))
+
+    except:
+        errorMsg()
+
+## ================================================================================================================
 def splitThousands(someNumber):
-# will determine where to put a thousands seperator if one is needed.
-# Input is an integer.  Integer with or without thousands seperator is returned.
+    """ will determine where to put a thousands seperator if one is needed.
+        Input is an integer.  Integer with or without thousands seperator is returned."""
 
     try:
         return re.sub(r'(\d{3})(?=\d)', r'\1,', str(someNumber)[::-1])[::-1]
@@ -351,6 +377,55 @@ def getTableAliases(pedonFGDBloc):
         errorMsg()
         return False
 
+## ===============================================================================================================
+def parsePedonsIntoLists():
+    """ This function will parse pedons into manageable chunks that will be sent to the 2nd URL report.
+        There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
+        available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
+        6 characters.  This would mean an average max request of 265 pedons at a time."""
+
+    try:
+
+        # Total Count
+        i = 1
+        listOfPedonStrings = list()  # List containing pedonIDstring lists; individual lists are comprised of about 265 pedons
+        pedonIDstr = ""
+
+        for pedonID in pedonDict:
+
+            # End of pedon list has been reached
+            if i == len(pedonDict):
+                pedonIDstr = pedonIDstr + str(pedonID)
+                listOfPedonStrings.append(pedonIDstr)
+
+            # End of pedon list NOT reached
+            else:
+                # Max URL length reached - retrieve pedon data and start over
+                if len(pedonIDstr) > 1860:
+                    pedonIDstr = pedonIDstr + str(pedonID)
+                    listOfPedonStrings.append(pedonIDstr)
+
+                    ## reset the pedon ID string to empty
+                    pedonIDstr = ""
+                    i+=1
+
+                # concatenate pedonID to string and continue
+                else:
+                    pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
+
+        numOfPedonStrings = len(listOfPedonStrings)
+        if not numOfPedonStrings:
+            AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
+            sys.exit()
+
+        else:
+            return listOfPedonStrings
+
+    except:
+        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
+        errorMsg()
+        sys.exit()
+
 ## ================================================================================================================
 def getBoundingCoordinates(feature):
     """ This function will return WGS coordinates in Lat-Long format that will be passed over to
@@ -430,6 +505,66 @@ def getBoundingCoordinates(feature):
     except:
         errorMsg()
         return False
+
+## ================================================================================================================
+def getWebPedonNumberSum(coordinates):
+    """ This function will send the bounding coordinates to the 'Web Export Pedon Box' NASIS report
+        and return a list of pedons within the bounding coordinates.  Pedons include regular
+        NASIS pedons and LAB pedons.  Each record in the report will contain the following values:"""
+
+    try:
+
+        # Open a network object using the URL with the search string already concatenated
+        URL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_ANALYSIS_PC_PEDON_NUMBER_SUM' + coordinates
+        theReport = urlopen(URL)
+
+        bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
+
+        # iterate through the report until a valid record is found
+        for theValue in theReport:
+
+            theValue = theValue.strip() # removes whitespace characters
+
+            # Iterating through the lines in the report
+            if bValidRecord:
+                if theValue == "STOP":  # written as part of the report; end of lines
+                    break
+
+                else:
+                    try:
+                        return int(theValue)
+                    except:
+                        continue
+
+            else:
+                if theValue.startswith('<div id="ReportData">START'):
+                    bValidRecord = True
+
+    except URLError, e:
+        if hasattr(e, 'reason'):
+            AddMsgAndPrint("\tURL Error: " + str(e.reason), 2)
+
+        elif hasattr(e, 'code'):
+            AddMsgAndPrint("\t" + e.msg + " (errorcode " + str(e.code) + ")", 2)
+
+        return False
+
+    except socket.timeout, e:
+        AddMsgAndPrint("\tServer Timeout Error", 2)
+        return False
+
+    except socket.error, e:
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
+
+    except httplib.BadStatusLine:
+        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        return False
+
+    except:
+        errorMsg()
+        return False
+
 
 ## ================================================================================================================
 def getWebExportPedon(URL):
@@ -539,7 +674,7 @@ def getWebExportPedon(URL):
         return False
 
 ## ================================================================================================================
-def getPedonHorizon(URL):
+def getPedonHorizon(pedonList):
 
     # Here is an example of the output report
 
@@ -744,6 +879,12 @@ def getPedonHorizon(URL):
             to double check that the values from the web report are correct
             this was added b/c there were text fields that were getting disconnected in the report
             and being read as 2 lines -- Jason couldn't address this issue in NASIS '''
+
+        if numOfPedonStrings > 1:
+            tab = "\t\t"
+        else:
+            tab = "\t"
+
         arcpy.env.workspace = pedonFGDB
 
         tableFldDict = dict()    # petext:11
@@ -770,7 +911,26 @@ def getPedonHorizon(URL):
             As soon as the url is opened it needs to be read otherwise there will be a socket
             error raised.  Experienced this when the url was being opened before the above
             dictionary was created.  Bizarre'''
-        theReport = urlopen(URL)
+
+        URL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list=' + pedonList
+
+        requestStartTime = tic()
+
+        try:
+            theReport = urlopen(URL)
+        except:
+            try:
+                AddMsgAndPrint(tab + "2nd attempt at requesting data")
+                theReport = urlopen(URL)
+            except:
+                try:
+                    AddMsgAndPrint(tab + "3rd attempt at requesting data")
+                    theReport = urlopen(URL)
+                except:
+                    errorMsg()
+                    return False
+
+        AddMsgAndPrint(tab + "Network Request Time: " + toc(requestStartTime))
 
         invalidTable = 0    # represents tables that don't correspond with the GDB
         invalidRecord = 0  # represents records that were not added
@@ -785,6 +945,7 @@ def getPedonHorizon(URL):
 
         """ ------------------- Begin Adding data from URL into a dictionary of lists ---------------"""
         # iterate through the lines in the report
+        memoryStartTime = tic()
         for theValue in theReport:
 
             theValue = theValue.strip() # remove whitespace characters
@@ -878,6 +1039,8 @@ def getPedonHorizon(URL):
             else:
                 invalidRecord += 1
 
+        AddMsgAndPrint(tab + "Storing Data into Memory: " + toc(memoryStartTime))
+
         if not validRecord:
             AddMsgAndPrint("\t\tThere were no valid records captured from NASIS request",2)
             return False
@@ -894,28 +1057,23 @@ def getPedonHorizon(URL):
 
     except URLError, e:
         if hasattr(e, 'reason'):
-            AddMsgAndPrint("\n\t" + URL)
-            AddMsgAndPrint("\tURL Error: " + str(e.reason), 2)
+            AddMsgAndPrint(tab + "URL Error: " + str(e.reason), 2)
 
         elif hasattr(e, 'code'):
-            AddMsgAndPrint("\n\t" + URL)
-            AddMsgAndPrint("\t" + e.msg + " (errorcode " + str(e.code) + ")", 2)
+            AddMsgAndPrint(tab + e.msg + " (errorcode " + str(e.code) + ")", 2)
 
         return False
 
     except socket.timeout, e:
-        AddMsgAndPrint("\n\t" + URL)
-        AddMsgAndPrint("\tServer Timeout Error", 2)
+        AddMsgAndPrint(tab + "Server Timeout Error", 2)
         return False
 
     except socket.error, e:
-        AddMsgAndPrint("\n\t" + URL)
-        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        AddMsgAndPrint(tab + "NASIS Reports Website connection failure", 2)
         return False
 
     except httplib.BadStatusLine:
-        AddMsgAndPrint("\n\t" + URL)
-        AddMsgAndPrint("\tNASIS Reports Website connection failure", 2)
+        AddMsgAndPrint(tab + "NASIS Reports Website connection failure", 2)
         return False
 
     except:
@@ -1094,10 +1252,14 @@ Column order
                     ----------------------"""
 
 """ 1st Report """
+# Used to get a number of pedons that are within a bounding box
+# https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_ANALYSIS_PC_PEDON_NUMBER_SUM&lat1=43&lat2=45&long1=-90&long2=-88
+
+""" 2nd Report """
 # Used to get a list of peiid which will be passed over to the 2nd report0
 # https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&lat1=43&lat2=45&long1=-90&long2=-88
 
-""" 2nd Report """
+""" 3rd Report """
 # This report will contain pedon information to be parsed into a FGDB.
 
 # Raw URL
@@ -1111,22 +1273,19 @@ Column order
 
 # =========================================== Main Body ==========================================
 # Import modules
-import sys, string, os, traceback, re, arcpy, socket, httplib
+import sys, string, os, traceback, re, arcpy, socket, httplib, time
 from arcpy import env
-from urllib2 import urlopen, URLError, HTTPError, time
+from urllib2 import urlopen, URLError, HTTPError
 
 if __name__ == '__main__':
 
-    print "start time: " + time.asctime() + "\n"
-
-    #inputFeatures = arcpy.GetParameter(0)
-    inputFeatures = r'C:\Temp\scratch.gdb\US'
+    inputFeatures = arcpy.GetParameter(0)
+    #inputFeatures = r'C:\Temp\scratch.gdb\US'
     #inputFeatures = r'C:\Temp\scratch.gdb\DaneCounty'
 
-    GDBname = "WI"
-    #GDBname = arcpy.GetParameter(1)
-    outputFolder = r'C:\Temp'
-    #outputFolder = arcpy.GetParameterAsText(2)
+    GDBname = arcpy.GetParameter(1)
+
+    outputFolder = arcpy.GetParameterAsText(2)
 
     """ ------------------------------------------------ Set Scratch Workspace ------------------------------------------------"""
     scratchWS = setScratchWorkspace()
@@ -1144,9 +1303,21 @@ if __name__ == '__main__':
         AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
         sys.exit()
 
+    """ ---------------------------- Get a number of PedonIDs that are within the bounding box from NASIS -----------------------"""
+    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
+
+    areaPedonCount = getWebPedonNumberSum(coordStr)
+
+    if areaPedonCount > 100000:
+        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest \n100,000 pedons is the max",2)
+        sys.exit()
+
+    if not areaPedonCount:
+        AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
+        sys.exit()
 
     """ ---------------------------- Get a list of PedonIDs that are within the bounding box from NASIS -----------------------"""
-    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
+
     getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
 
     # peiid: siteID,Labnum,X,Y
@@ -1155,25 +1326,23 @@ if __name__ == '__main__':
 
     if not getWebExportPedon(getPedonIDURL):
         AddMsgAndPrint("\n\t Failed to get a list of pedonIDs from NASIS",2)
-    sys.exit()
 
-    """ ---------------------------------------------- Create New File Geodatabaes -------------------------------------------- """
-    ''' Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
+    """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------
+        Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
         and relationships established.  A dictionary of empty lists will be created as a placeholder
-        for the values from the XML report.  The name and quantity of lists will be the same as the FGDB'''
+        for the values from the XML report.  The name and quantity of lists will be the same as the FGDB"""
 
     pedonFGDB = createPedonFGDB()
-    #pedonFGDB = r'C:\Temp\Dane.gdb'
 
     if pedonFGDB == "":
-        AddMsgAndPrint("\n Failed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!",2)
+        AddMsgAndPrint("\nFailed to Initiate Empty Pedon File Geodatabase.  Error in createPedonFGDB() function. Exiting!",2)
         sys.exit()
 
     arcpy.env.workspace = pedonFGDB
     tables = arcpy.ListTables()
     tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
 
-    ## {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+    # {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
     pedonGDBtables = dict()
     for table in tables:
 
@@ -1188,62 +1357,37 @@ if __name__ == '__main__':
 
     if not getTableAliases(pedonFGDB):
         AddMsgAndPrint("\nCould not retrieve alias names from \'MetadataTable\'",1)
-
-    if not len(tblAliases):
         bAliasName = False
 
     """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
+    listOfPedonStrings = parsePedonsIntoLists()
+    numOfPedonStrings = len(listOfPedonStrings)
 
-    getPedonHorizonURL = "https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_AnalysisPC_MAIN_URL_EXPORT&pedonid_list="
-
-    i = 1  ## Total Count
-    listOfPedonStrings = list()  ## List containing pedonIDstring lists; individual lists are comprised of about 265 pedons
-    pedonIDstr = ""
-
-    # There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
-    # available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
-    # 6 characters.  This would mean an average max request of 265 pedons at a time.
-
-    for pedonID in pedonDict:
-
-        ## End of pedon list has been reached
-        if i == len(pedonDict):
-            pedonIDstr = pedonIDstr + str(pedonID)
-            listOfPedonStrings.append(pedonIDstr)
-
-        ## End of pedon list NOT reached
-        else:
-            ## Max URL length reached - retrieve pedon data and start over
-            if len(pedonIDstr) > 1860:
-                pedonIDstr = pedonIDstr + str(pedonID)
-                listOfPedonStrings.append(pedonIDstr)
-
-                ## reset the pedon ID string to empty
-                pedonIDstr = ""
-                i+=1
-
-            ## concatenate pedonID to string and continue
-            else:
-                pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
-
-    if not len(listOfPedonStrings):
-        AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
-        sys.exit()
-
-    if len(listOfPedonStrings) > 1:
+    if numOfPedonStrings > 1:
         AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",0)
     else:
         AddMsgAndPrint("\n")
 
     i = 1
+    badStrings = list()
     for pedonString in listOfPedonStrings:
 
-        AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
+        if len(badStrings) > 1:
+            AddMsgAndPrint("\n\nMultiple failed attempts with the following pedon IDs:",2)
+            for string in badStrings:
+                AddMsgAndPrint("\n" + str(string),2)
+            AddMsgAndPrint("\nExiting the tool without completely finishing.",2)
+            sys.exit()
 
-        #temp = '215823,140717,836581,140711,140710,140713,140712,246369,246368,309023,309021,246363,246362,528520,246360,246367,246366,246365,338798,304162,168910,59177,314159,292746,271905,271907,314150,314151,314152,314153,597650,597651,597652,597653,179137,146675,56386,263287,338942,290579,204309,274267,204306,214231,258681,570978,772323,111457,248359,772322,218474,134152,772321,248807,772320,135903,295782,972372,972373,972370,972371,972374,972375,1049049,1049048,146677,772325,366921,1049041,1049040,1049043,1049042,1049045,1049044,1049047,1049046,356989,366923,212899,250206,366924,184591,366925,250204,1111359,1111358,1111357,1111356,1111355,1111354,135905,295784,350748,197236,290633,254784,346474,669678,337370,295787,669679,241184,254785,1068099,1068098,263286,273779,1068093,1068092,1068091,1068090,1068097,1068096,1068095,1068094,313313,313312,313311,313310,1080169,1080168,313315,313314,1080165,1080164,1080167,1080166,1080161,1080160,1080163,1080162,322534,245694,256199,212895,312683,1067517,1067516,1067515,1068326,1067513,1068320,1067511,1068322,147237,312681,1068329,1068328,1067519,1067518,197530,291535,147682,291532,291533,63816,821710,896205,172119,421942,896204,1121624,1121625,1121626,1121627,1121620,1121621,1121622,1121623,212897,307500,1121628,1121629,1197339,1197338,934257,421943,1197333,1197332,1197331,1197330,1197337,1197336,1197335,1197334,47287,47284,47285,47282,1201526,135943,1068861,47288,47289,290884,421940,406381,248808,406380,318428,318429,318426,318427,318420,318421,318422,60810,493099,493098,612714,375341,378772,378773,378770,378771,493097,1069054,1069055,1069056,1069057,1069050,1069051,1069052,1069053,364863,364862,364861,364860,1069058,1069059,364865,364864,284875,284877,406388,155788,284873,375692,218826,264711,290638,421947,1018274,1018275,1018276,1018277,1018270,1018271,1018272,1018273,329344,276376,925958,925959,1018278,1018279'
-        if not getPedonHorizon(getPedonHorizonURL + pedonString):
-        #if not getPedonHorizon(getPedonHorizonURL + temp):
+        # Strictly formatting
+        if numOfPedonStrings > 1:
+            AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
+        else:
+            AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
+
+        if not getPedonHorizon(pedonString):
             AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
+            badStrings += pedonString
         i+=1
 
     """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
