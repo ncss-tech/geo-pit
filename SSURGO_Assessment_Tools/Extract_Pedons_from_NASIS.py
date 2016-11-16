@@ -283,10 +283,16 @@ def createPedonFGDB():
         # pedon xml template that contains empty pedon Tables and relationships
         # schema and will be copied over to the output location
         pedonXML = os.path.dirname(sys.argv[0]) + os.sep + "Extract_Pedons_from_NASIS_XMLWorkspace.xml"
+        localPedonGDB = os.path.dirname(sys.argv[0]) + os.sep + "NasisPedonsTemplate.gdb"
 
-        # Return false if xml file is not found and delete targetGDB
+        # Return false if xml file is not found
         if not arcpy.Exists(pedonXML):
-            AddMsgAndPrint("\t" + os.path.basename(pedonXML) + "Workspace document was not found!",2)
+            AddMsgAndPrint("\t" + os.path.basename(pedonXML) + " Workspace document was not found!",2)
+            return ""
+
+        # Return false if pedon fGDB template is not found
+        if not arcpy.Exists(localPedonGDB):
+            AddMsgAndPrint("\t" + os.path.basename(localPedonGDB) + " FGDB template was not found!",2)
             return ""
 
         newPedonFGDB = os.path.join(outputFolder,GDBname + ".gdb")
@@ -299,12 +305,18 @@ def createPedonFGDB():
                 AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Failed to delete\n",2)
                 return ""
 
-        # Create empty temp File Geodatabae
-        arcpy.CreateFileGDB_management(outputFolder,os.path.splitext(os.path.basename(newPedonFGDB))[0])
+        # copy template over to new location
+        AddMsgAndPrint("\tCreating " + GDBname + ".gbd with NCSS Pedon Schema 7.3")
+        arcpy.Copy_management(localPedonGDB,newPedonFGDB)
 
-        # set the pedon schema on the newly created temp Pedon FGDB
-        AddMsgAndPrint("\tImporting NCSS Pedon Schema 7.3 into " + GDBname + ".gdb")
-        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "DATA", "DEFAULTS")
+##        # Create empty temp File Geodatabae
+##        arcpy.CreateFileGDB_management(outputFolder,os.path.splitext(os.path.basename(newPedonFGDB))[0])
+##
+##        # set the pedon schema on the newly created temp Pedon FGDB
+##        AddMsgAndPrint("\tImporting NCSS Pedon Schema 7.3 into " + GDBname + ".gdb")
+##        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "DATA", "DEFAULTS")
+
+        arcpy.UncompressFileGeodatabaseData_management(newPedonFGDB)
 
         arcpy.RefreshCatalog(outputFolder)
 
@@ -383,6 +395,7 @@ def parsePedonsIntoLists():
         There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
         available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
         6 characters.  This would mean an average max request of 265 pedons at a time."""
+        #1860 = 265
 
     try:
 
@@ -587,7 +600,9 @@ def getWebExportPedon(URL):
         labPedonCnt = 0
 
         # Open a network object using the URL with the search string already concatenated
+        startTime = tic()
         theReport = urlopen(URL)
+        AddMsgAndPrint("\tNetwork Request Time: " + toc(startTime))
 
         bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
 
@@ -1364,7 +1379,7 @@ if __name__ == '__main__':
     numOfPedonStrings = len(listOfPedonStrings)
 
     if numOfPedonStrings > 1:
-        AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",0)
+        AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",1)
     else:
         AddMsgAndPrint("\n")
 
@@ -1381,9 +1396,9 @@ if __name__ == '__main__':
 
         # Strictly formatting
         if numOfPedonStrings > 1:
-            AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
+            AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
         else:
-            AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",1)
+            AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
 
         if not getPedonHorizon(pedonString):
             AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
