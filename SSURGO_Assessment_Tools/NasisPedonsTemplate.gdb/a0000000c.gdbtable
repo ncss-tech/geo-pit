@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<db_schemas>
+  <db_schema>
+    <table name="MetadataRelationshipDetail">
+      <indices>
+        <index name="FDO_OBJECTID">
+          <field name="OBJECTID"/>
+        </index>
+        <index name="G6RelationshipID">
+          <field name="RelationshipID"/>
+        </index>
+        <index name="G6LeftTableID">
+          <field name="LeftTableID"/>
+        </index>
+      </indices>
+      <tolerance_xy>0x72D9830072D9FFFF</tolerance_xy>
+      <domain_minx>0x72D994F872D994DC</domain_minx>
+      <domain_maxx>0x72D9952C72D99514</domain_maxx>
+      <domain_miny>0x72D995AC72D99564</domain_miny>
+      <domain_maxy>0x72D9962072D995F4</domain_maxy>
+      <sp_ind_grid_count>0</sp_ind_grid_count>
+    </table>
+  </db_schema>
+</db_schemas>
