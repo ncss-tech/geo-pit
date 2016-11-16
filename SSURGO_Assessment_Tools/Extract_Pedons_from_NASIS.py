@@ -1327,7 +1327,7 @@ if __name__ == '__main__':
         AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest \n100,000 pedons is the max",2)
         sys.exit()
 
-    if not areaPedonCount:
+    if areaPedonCount == 0:
         AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
         sys.exit()
 
@@ -1410,5 +1410,15 @@ if __name__ == '__main__':
     if len(pedonGDBtables['site']):
         if not importPedonData(tblAliases):
             sys.exit()
+    try:
+        mxd = arcpy.mapping.MapDocument("CURRENT")
+        df = arcpy.mapping.ListDataFrames(mxd)[0]
+        lyr = os.path.join(pedonFGDB,'site')
+        newLayer = arcpy.mapping.Layer(lyr)
+        arcpy.mapping.AddLayer(df, newLayer, "TOP")
+        AddMsgAndPrint("\nSuccessfully added the site Table to your ArcMap Session",0)
+    except:
+        pass
+        #AddMsgAndPrint("\n\t" + project + ".shp file was created for future reference in the output folder",0)
 
-    print "End time: " + time.asctime() + "\n"
+    AddMsgAndPrint("\n\n")
