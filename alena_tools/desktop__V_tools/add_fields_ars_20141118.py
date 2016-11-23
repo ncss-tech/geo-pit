@@ -44,4 +44,5 @@ arcpy.CalculateField_management(workspace+'\\'"Project_Record", "ACRES", '!Shape
 
 #Add Field
 arcpy.AddField_management(workspace+'\\'"Project_Record", "MUKEY", "TEXT", "", "", fieldLength)
-arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", "300")
+arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", "200")
+arcpy.AddField_management(workspace+'\\'"Project_Record", "ORIG_MUSYM", "TEXT", "", "", fieldLength)

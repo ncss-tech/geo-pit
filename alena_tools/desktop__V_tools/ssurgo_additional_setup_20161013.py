@@ -4,6 +4,7 @@
 #12/11/2014 Updated with Calculate Fields
 #10/12/2016 Updated Workspace, added acres field and calculation, add fields for Project_Record
 
+
 import arcpy
 
 arcpy.env.overwriteOutput = True
@@ -44,7 +45,7 @@ arcpy.CalculateField_management(workspace+'\\'"Project_Record", "ACRES", '!Shape
 
 #Add Field
 arcpy.AddField_management(workspace+'\\'"Project_Record", "MUKEY", "TEXT", "", "", fieldLength)
-arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", "300")
+arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", "200")
 arcpy.AddField_management(workspace+'\\'"Project_Record", "ORIG_MUSYM", "TEXT", "", "", fieldLength)
 
 #Add Attribute Index

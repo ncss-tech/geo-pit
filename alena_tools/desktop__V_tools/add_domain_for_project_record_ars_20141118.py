@@ -2,6 +2,7 @@
 #A. Stephens
 #11/18/2014
 #Updated 10/12/2016
+#Updated 11/23/2016 Add MUNAME Field Name
 
 
 import arcpy
@@ -34,5 +35,10 @@ arcpy.AddCodedValueToDomain_management (workspace, doname, "No", "No")
 
 #arcpy.AssignDomainToField_management (inFC, "RECERT_NEEDED", doname)
 arcpy.AssignDomainToField_management (workspace+'\\'"Project_Record", "RECERT_NEEDED", doname)
+
+#fieldLength = 175
+
+#Add Field
+#arcpy.AddField_management(workspace+'\\'"Project_Record", "MUNAME", "TEXT", "", "", fieldLength)
 
 

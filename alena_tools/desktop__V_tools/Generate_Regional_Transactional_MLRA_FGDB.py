@@ -894,7 +894,7 @@ try:
 
     try:
         for field in soilsFM.fields:
-            if field.name not in ["AREASYMBOL","MUSYM","MUKEY"]:
+            if field.name not in ["AREASYMBOL","MUSYM","MUKEY", "MUNAME"]:
                 soilsFM.removeFieldMap(soilsFM.findFieldMapIndex(field.name))
 
         arcpy.Merge_management(soilShpList, os.path.join(FDpath, soilFC), soilsFM)

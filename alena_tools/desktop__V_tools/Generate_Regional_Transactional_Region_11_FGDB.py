@@ -986,7 +986,7 @@ try:
 
         # Transactional FGDB; remove any field other than AREASYMBOL and FEATSYM
         for field in featLineFM.fields:
-            if field.name not in ["AREASYMBOL", "FEATSYM". "FEATKEY"]:
+            if field.name not in ["AREASYMBOL", "FEATSYM", "FEATKEY"]:
                 featLineFM.removeFieldMap(featLineFM.findFieldMapIndex(field.name))
 
         arcpy.Merge_management(featLineShpList, os.path.join(FDpath, featLineFC), featLineFM)
