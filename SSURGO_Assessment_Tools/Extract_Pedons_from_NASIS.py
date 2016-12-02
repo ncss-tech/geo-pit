@@ -449,7 +449,26 @@ def getBoundingCoordinates(feature):
 
     try:
 
-        AddMsgAndPrint("\nCalculating bounding coordinates of input features",0)
+        """ Determine if features are a subset of selected polygons OR the entire dataset
+            is being used.  This was necessary b/c the output Coordinate System
+            environmental variable was not being honored if a selected set is being used.
+            Export selected set to a temporary feature class otherwise continue"""
+
+        featurePath = arcpy.Describe(feature).catalogPath
+
+        totalPolys = int(arcpy.GetCount_management(featurePath).getOutput(0))
+        selectedPolys = int(arcpy.GetCount_management(feature).getOutput(0))
+        bExport = False
+
+        if selectedPolys < totalPolys:
+            envelopeFeature = arcpy.CreateScratchName("envelopeFeature",data_type="FeatureClass", workspace=scratchWS)
+            arcpy.CopyFeatures_management(feature,envelopeFeature)
+            AddMsgAndPrint("\nCalculating bounding coordinates for " + splitThousands(selectedPolys) + " features",0)
+            bExport = True
+
+        else:
+            envelopeFeature = feature
+            AddMsgAndPrint("\nCalculating bounding coordinates of input features",0)
 
         """ Set Projection and Geographic Transformation environments in order
             to post process everything in WGS84.  This will force all coordinates
@@ -459,7 +478,7 @@ def getBoundingCoordinates(feature):
         inputDatum = inputSR.GCS.datumName                                # Get Datum name of input features
 
         if inputSR == "Unkown":
-            AddMsgAndPrint("\tInput layer needs a spatial reference defined to determine bounding envelope",2)
+            AddMsgAndPrint("\n\tInput layer needs a spatial reference defined to determine bounding envelope",2)
             return False
 
         if inputDatum == "D_North_American_1983":
@@ -469,7 +488,7 @@ def getBoundingCoordinates(feature):
         elif inputDatum == "D_WGS_1984":
             arcpy.env.geographicTransformations = ""
         else:
-            AddMsgAndPrint("\tGeo Transformation of Datum could not be set",2)
+            AddMsgAndPrint("\n\tGeo Transformation of Datum could not be set",2)
             return False
 
         # Factory code for WGS84 Coordinate System
@@ -480,10 +499,10 @@ def getBoundingCoordinates(feature):
         envelopePts = arcpy.CreateScratchName("envelopePts",data_type="FeatureClass",workspace=scratchWS)
 
         # create minimum bounding geometry enclosing all features
-        arcpy.MinimumBoundingGeometry_management(feature,envelope,"ENVELOPE","ALL","#","MBG_FIELDS")
+        arcpy.MinimumBoundingGeometry_management(envelopeFeature,envelope,"ENVELOPE","ALL","#","MBG_FIELDS")
 
         if int(arcpy.GetCount_management(envelope).getOutput(0)) < 1:
-            AddMsgAndPrint("\tFailed to create minimum bounding area. \n\tArea of interest is potentially too small",2)
+            AddMsgAndPrint("\n\tFailed to create minimum bounding area. \n\tArea of interest is potentially too small",2)
             return False
 
         arcpy.FeatureVerticesToPoints_management(envelope, envelopePts, "ALL")
@@ -503,8 +522,11 @@ def getBoundingCoordinates(feature):
             if arcpy.Exists(tempFile):
                 arcpy.Delete_management(tempFile)
 
+        if bExport:
+            arcpy.Delete_management(envelopeFeature)
+
         if len(coordList) == 4:
-            AddMsgAndPrint("\tBounding Box Coordinates:")
+            AddMsgAndPrint("\n\tBounding Box Coordinates:")
             AddMsgAndPrint("\t\tSouth Latitude: " + str(coordList[0][1]))
             AddMsgAndPrint("\t\tNorth Latitude: " + str(coordList[2][1]))
             AddMsgAndPrint("\t\tEast Longitude: " + str(coordList[0][0]))
@@ -516,6 +538,11 @@ def getBoundingCoordinates(feature):
             return False
 
     except:
+
+        for tempFile in [envelope,envelopePts]:
+            if arcpy.Exists(tempFile):
+                arcpy.Delete_management(tempFile)
+
         errorMsg()
         return False
 
@@ -1299,7 +1326,6 @@ if __name__ == '__main__':
     #inputFeatures = r'C:\Temp\scratch.gdb\DaneCounty'
 
     GDBname = arcpy.GetParameter(1)
-
     outputFolder = arcpy.GetParameterAsText(2)
 
     """ ------------------------------------------------ Set Scratch Workspace ------------------------------------------------"""
