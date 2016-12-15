@@ -11,7 +11,7 @@
 #              adolfo.diaz@wi.usda.gov
 #
 # Created:     8.28.2014
-# Last Modified 9.15.2014
+# Last Modified 12.15.2016
 # Copyright:   (c) Adolfo.Diaz 2014
 #
 #
@@ -1373,7 +1373,7 @@ def processComponentComposition():
         arcpy.CopyRows_management(compView, outCompView_joined)
         arcpy.RemoveJoin_management(compView)
 
-        # find the "SUM_compacres" field
+        # find fields; field names might have been altered due to a join
         compNameFld = [f.name for f in arcpy.ListFields(outCompView_joined,"*compname")][0]
         compAcresFld = [f.name for f in arcpy.ListFields(outCompView_joined,"*_compacres")][0]
         compPercentFld = [f.name for f in arcpy.ListFields(outCompView_joined,"*comppct_r")][0]
@@ -1406,9 +1406,15 @@ def processComponentComposition():
             for row in cursor:
 
                 firstSpace = " " * (maxCompNameLength - len(row[0]))
-                #AddMsgAndPrint("\nError: " + str(row[1]))
-                acres = splitThousands(float("%.1f" %(row[1])))
-                compPercent = str(float("%.1f" %((row[1]/totalAcres) * 100))) + " %"
+
+                # Some components may not have comp% RV populated so can't calculate weighted acres
+                try:
+                    acres = splitThousands(float("%.1f" %(row[1])))
+                    compPercent = str(float("%.1f" %((row[1]/totalAcres) * 100))) + " %"
+                except:
+                    AddMsgAndPrint("\t" + row[0] + firstSpace + " -- " + "Comp % RV NOT Populated",1)
+                    continue
+
                 secondSpace = " " * (7 - len(str(compPercent))) # 100.0 %
                 AddMsgAndPrint("\t" + row[0] + firstSpace + " -- " + compPercent + secondSpace + " -- " + str(acres) + " ac.",1)
                 del firstSpace, acres, compPercent, secondSpace
@@ -3627,7 +3633,7 @@ def processPedons():
             arcpy.env.workspace = pedonFolder
 
         # List all file geodatabases in the current workspace
-        workspaces = arcpy.ListWorkspaces("NCSS_Soil_Characterization_Database*", "FileGDB")
+        workspaces = arcpy.ListWorkspaces("NCSS_Soil_Characterizaton_Database*", "FileGDB")
 
         if len(workspaces) == 0:
             AddMsgAndPrint("\t\"NCSS_Soil_Characterizaton_Database\" FGDB was not found in the pedons folder",2)
@@ -3837,6 +3843,7 @@ if __name__ == '__main__':
         # record basic user inputs and settings to log file for future purposes
         logBasicSettings()
 
+        # define and set the scratch workspace
         scratchWS = setScratchWorkspace()
         arcpy.env.scratchWorkspace = scratchWS
 
@@ -3865,8 +3872,8 @@ if __name__ == '__main__':
             else:
                 AddMsgAndPrint("\n" + str(splitThousands(totalPolys)) + " polygons will be assessed",0)
 
-            """ if muLayer input is a feature layer then copy the features into a feature class in the scratch.gdb.
-                if muLayer input is a feature class create a feature layer from it.  These will be used in case
+            """ if muLayer input is a feature layer (ArcMap) then copy the features into a feature class in the scratch.gdb.
+                if muLayer input is a feature class (ArcCatalog) create a feature layer from it.  These will be used in case
                 Tabulate Areas fails to execute.  I was continously having grid reading errors with Tabulate area
                 and could not figure out why.  This is a workaround"""
 
@@ -4095,12 +4102,18 @@ if __name__ == '__main__':
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
 
-            if zoneField == "MLRA_Temp" and arcpy.ListFields(muLayerPath, "MLRA_Temp") > 0:
-                arcpy.DeleteField_management(muLayerPath, "MLRA_Temp")
+            # Delete the MLRA_temp field from the feature classes if they exist
+            if zoneField == "MLRA_Temp":
+                if arcpy.ListFields(muLayerPath, "MLRA_Temp") > 0:
+                    arcpy.DeleteField_management(muLayerPath, "MLRA_Temp")
+                if arcpy.ListFields(muLayer, "MLRA_Temp") > 0:
+                    arcpy.DeleteField_management(muLayer, "MLRA_Temp")
 
+            # Delete the muLayer copy from the scratch workspace
             if bFeatureLyr and arcpy.Exists(muLayerExtent):
                 arcpy.Delete_management(muLayerExtent)
 
+            # Delete the feature layer created in memory
             if not bFeatureLyr and arcpy.Exists(tempMuLayer):
                 arcpy.Delete_management(tempMuLayer)
 
