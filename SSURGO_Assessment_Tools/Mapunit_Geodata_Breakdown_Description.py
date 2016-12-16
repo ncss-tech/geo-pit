@@ -11,7 +11,7 @@
 #              adolfo.diaz@wi.usda.gov
 #
 # Created:     8.28.2014
-# Last Modified 12.15.2016
+# Last Modified 12.16.2016
 # Copyright:   (c) Adolfo.Diaz 2014
 #
 #
@@ -3633,7 +3633,7 @@ def processPedons():
             arcpy.env.workspace = pedonFolder
 
         # List all file geodatabases in the current workspace
-        workspaces = arcpy.ListWorkspaces("NCSS_Soil_Characterizaton_Database*", "FileGDB")
+        workspaces = arcpy.ListWorkspaces("NCSS*", "FileGDB")
 
         if len(workspaces) == 0:
             AddMsgAndPrint("\t\"NCSS_Soil_Characterizaton_Database\" FGDB was not found in the pedons folder",2)
