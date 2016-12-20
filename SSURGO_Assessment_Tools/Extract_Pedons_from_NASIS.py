@@ -517,13 +517,16 @@ def getBoundingCoordinates(feature):
                     if not row[0] in coordList:
                         coordList.append(row[0])
 
+        # Reset output Coord Sys Environment
+        arcpy.env.outputCoordinateSystem = ""
+
         # Delete temp spatial files
         for tempFile in [envelope,envelopePts]:
             if arcpy.Exists(tempFile):
                 arcpy.Delete_management(tempFile)
 
-        if bExport:
-            arcpy.Delete_management(envelopeFeature)
+##        if bExport:
+##            arcpy.Delete_management(envelopeFeature)
 
         if len(coordList) == 4:
             AddMsgAndPrint("\n\tBounding Box Coordinates:")
@@ -651,7 +654,7 @@ def getWebExportPedon(URL):
                         AddMsgAndPrint("\tNASIS Report: Web Export Pedon Box is not returning the correct amount of values per record",2)
                         return False
 
-                    # Undisclosed Record
+                    # Undisclosed Record; Reject this record
                     if theRec[6] == "Y":continue
 
                     rowNumber = theRec[0]
@@ -714,6 +717,72 @@ def getWebExportPedon(URL):
     except:
         errorMsg()
         return False
+
+## ================================================================================================================
+def filterPedonsByFeature(feature):
+
+    try:
+        AddMsgAndPrint("\nSelecting pedons that intersect with " + arcpy.Describe(feature).Name + " Layer",0)
+
+        # Make a copy of the user-input features - this is just in case there is a selected set
+        aoiFeature = arcpy.CreateScratchName("aoiFeature",data_type="FeatureClass", workspace=scratchWS)
+        arcpy.CopyFeatures_management(feature,aoiFeature)
+
+        # Create a temp point feature class to digitize ALL of the pedons within the bounding box first
+        tempPoints = arcpy.CreateScratchName("tempPoints",data_type="FeatureClass", workspace=scratchWS)
+
+        # Factory code for WGS84 Coordinate System
+        spatial_reference = arcpy.SpatialReference(4326)
+        #spatial_reference = arcpy.Describe(feature).spatialReference
+        arcpy.CreateFeatureclass_management(scratchWS, os.path.basename(tempPoints), "POINT", "#", "DISABLED", "DISABLED", spatial_reference)
+
+        peiidFld = "peiid"
+        arcpy.AddField_management(tempPoints,peiidFld,"LONG")
+
+        # Initiate the insert cursor object using the peiid and XY values
+        cursor = arcpy.da.InsertCursor(tempPoints,[peiidFld,'SHAPE@XY'])
+
+        for pedon in pedonDict:
+            xValue = float(pedonDict[pedon][2])
+            yValue = float(pedonDict[pedon][3])
+            newRow = [pedon,(xValue,yValue)]
+            cursor.insertRow(newRow)
+
+        # Select all of the pedons within the user's AOI
+        arcpy.MakeFeatureLayer_management(tempPoints,"tempPoints_LYR")
+        arcpy.SelectLayerByLocation_management("tempPoints_LYR","INTERSECT",aoiFeature, "","NEW_SELECTION")
+
+        pedonsWithinAOI = int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))
+
+        # There are pedons within the user's AOI
+        if pedonsWithinAOI > 0:
+            AddMsgAndPrint("\tThere are " + str(pedonsWithinAOI),0)
+
+            # Make a copy of the user-input features - this is just in case there is a selected set
+            newPedons = arcpy.CreateScratchName("newPedons",data_type="FeatureClass", workspace=scratchWS)
+            arcpy.CopyFeatures_management("tempPoints_LYR",newPedons)
+
+            # Create a new list of pedonIDs from the selected set
+            newPedonList = [row[0] for row in arcpy.da.SearchCursor(newPedons, (peiidFld))]
+
+            # delete any pedon from the original pedonDict that is not in the selected set.
+            for pedon in pedonDict:
+                if pedon not in newPedonList:
+                    del pedonDict[pedon]
+
+        else:
+            AddMsgAndPrint("\tThere are NO pedons that are completely within your AOI.",2)
+            return False
+
+    except arcpy.ExecuteError:
+        AddMsgAndPrint(arcpy.GetMessages(2),2)
+        return False
+
+    except:
+        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
+        errorMsg()
+        return False
+
 
 ## ================================================================================================================
 def getPedonHorizon(pedonList):
@@ -1189,8 +1258,6 @@ def importPedonData(tblAliases):
 
                 # Site feature class will have X,Y geometry added; Add XY token to list
                 if table == 'site':
-                    #print"\n\tsite table"
-                    #print "\nrec = " + str(rec)
                     nameOfFields.append('SHAPE@XY')
 
                     latField = [f.name for f in arcpy.ListFields(table,'latstddecimaldegrees')][0]
@@ -1350,8 +1417,8 @@ if __name__ == '__main__':
     areaPedonCount = getWebPedonNumberSum(coordStr)
 
     if areaPedonCount > 100000:
-        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest \n100,000 pedons is the max",2)
-        sys.exit()
+        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",1)
+        #sys.exit()
 
     if areaPedonCount == 0:
         AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
@@ -1367,6 +1434,13 @@ if __name__ == '__main__':
 
     if not getWebExportPedon(getPedonIDURL):
         AddMsgAndPrint("\n\t Failed to get a list of pedonIDs from NASIS",2)
+        sys.exit()
+
+    """ ---------------------------- Filter pedons by those that fall completely within the user-input feature ----------------"""
+
+    if not filterPedonsByFeature(inputFeatures):
+        AddMsgAndPrint("\n\t Failed to filter list of Pedons by ",2)
+    sys.exit()
 
     """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------
         Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
