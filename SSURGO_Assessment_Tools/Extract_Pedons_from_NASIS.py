@@ -5,8 +5,12 @@
 # e-mail: adolfo.diaz@wi.usda.gov
 # phone: 608.662.4422 ext. 216
 #
+# Author: Jason.Nemecek
+# e-mail: jason.nemecek@wi.usda.gov
+# phone: 608.662.4422 ext. 190
+#
 # Created:     7/04/2016
-# Last Modified: 9/27/2016
+# Last Modified: 1/09/2017
 # Copyright:   (c) Adolfo.Diaz 2016
 #-------------------------------------------------------------------------------
 
@@ -724,6 +728,8 @@ def filterPedonsByFeature(feature):
     try:
         AddMsgAndPrint("\nSelecting pedons that intersect with " + arcpy.Describe(feature).Name + " Layer",0)
 
+        #arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(4326)
+
         # Make a copy of the user-input features - this is just in case there is a selected set
         aoiFeature = arcpy.CreateScratchName("aoiFeature",data_type="FeatureClass", workspace=scratchWS)
         arcpy.CopyFeatures_management(feature,aoiFeature)
@@ -748,8 +754,15 @@ def filterPedonsByFeature(feature):
             newRow = [pedon,(xValue,yValue)]
             cursor.insertRow(newRow)
 
+        del cursor
+
+        tempPointsPRJ = arcpy.CreateScratchName("tempPointsPRJ",data_type="FeatureClass", workspace=scratchWS)
+        arcpy.Project_management(tempPoints,tempPointsPRJ,arcpy.Describe(feature).spatialReference)
+
         # Select all of the pedons within the user's AOI
-        arcpy.MakeFeatureLayer_management(tempPoints,"tempPoints_LYR")
+        arcpy.MakeFeatureLayer_management(tempPointsPRJ,"tempPoints_LYR")
+
+        AddMsgAndPrint("\tThere are " + str(int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))) + " pedons in the layer",2)
         arcpy.SelectLayerByLocation_management("tempPoints_LYR","INTERSECT",aoiFeature, "","NEW_SELECTION")
 
         pedonsWithinAOI = int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))
@@ -759,20 +772,27 @@ def filterPedonsByFeature(feature):
             AddMsgAndPrint("\tThere are " + str(pedonsWithinAOI),0)
 
             # Make a copy of the user-input features - this is just in case there is a selected set
-            newPedons = arcpy.CreateScratchName("newPedons",data_type="FeatureClass", workspace=scratchWS)
-            arcpy.CopyFeatures_management("tempPoints_LYR",newPedons)
+            selectedPedons = arcpy.CreateScratchName("newPedons",data_type="FeatureClass", workspace=scratchWS)
+            arcpy.CopyFeatures_management("tempPoints_LYR",selectedPedons)
 
             # Create a new list of pedonIDs from the selected set
-            newPedonList = [row[0] for row in arcpy.da.SearchCursor(newPedons, (peiidFld))]
+            selectedPedonsList = [row[0] for row in arcpy.da.SearchCursor(selectedPedons, (peiidFld))]
+
+            # Make a copy of pedonDict b/c it cannot change during iteration
+            pedonDictCopy = pedonDict.copy()
 
             # delete any pedon from the original pedonDict that is not in the selected set.
-            for pedon in pedonDict:
-                if pedon not in newPedonList:
+            for pedon in pedonDictCopy:
+                if pedon not in selectedPedonsList:
                     del pedonDict[pedon]
+
+            del pedonDictCopy
 
         else:
             AddMsgAndPrint("\tThere are NO pedons that are completely within your AOI.",2)
-            return False
+            #return False
+
+        sys.exit()
 
     except arcpy.ExecuteError:
         AddMsgAndPrint(arcpy.GetMessages(2),2)
@@ -1318,6 +1338,7 @@ def importPedonData(tblAliases):
                         break
 
                     del newRow,fldNo
+                del cursor
 
                 # Report the # of records added to the table
                 if bAliasName:
@@ -1388,9 +1409,9 @@ from urllib2 import urlopen, URLError, HTTPError
 
 if __name__ == '__main__':
 
-    inputFeatures = arcpy.GetParameter(0)
+    #inputFeatures = arcpy.GetParameter(0)
     #inputFeatures = r'C:\Temp\scratch.gdb\US'
-    #inputFeatures = r'C:\Temp\scratch.gdb\DaneCounty'
+    inputFeatures = r'O:\scratch\scratch.gdb\AOI'
 
     GDBname = arcpy.GetParameter(1)
     outputFolder = arcpy.GetParameterAsText(2)
@@ -1404,29 +1425,29 @@ if __name__ == '__main__':
         sys.exit()
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
-    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484;
-    Lat1,Lat2,Long1,Long2 = getBoundingCoordinates(inputFeatures)
-
-    if not Lat1:
-        AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
-        sys.exit()
+##    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484;
+##    Lat1,Lat2,Long1,Long2 = getBoundingCoordinates(inputFeatures)
+##
+##    if not Lat1:
+##        AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
+##        sys.exit()
 
     """ ---------------------------- Get a number of PedonIDs that are within the bounding box from NASIS -----------------------"""
-    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
-
-    areaPedonCount = getWebPedonNumberSum(coordStr)
-
-    if areaPedonCount > 100000:
-        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",1)
-        #sys.exit()
-
-    if areaPedonCount == 0:
-        AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
-        sys.exit()
+##    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
+##
+##    areaPedonCount = getWebPedonNumberSum(coordStr)
+##
+##    if areaPedonCount > 100000:
+##        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",1)
+##        #sys.exit()
+##
+##    if areaPedonCount == 0:
+##        AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
+##        sys.exit()
 
     """ ---------------------------- Get a list of PedonIDs that are within the bounding box from NASIS -----------------------"""
-
-    getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
+    #getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
+    getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&Lat1=44.0708202382&Lat2=44.5969509809&Long1=-91.1662744523&Long2=-90.3119117083'
 
     # peiid: siteID,Labnum,X,Y
     #{'122647': ('84IA0130011', '85P0558', '-92.3241653', '42.3116684'), '883407': ('2014IA013003', None, '-92.1096600', '42.5332000'), '60914': ('98IA013011', None, '-92.4715271', '42.5718880')}
