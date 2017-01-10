@@ -631,6 +631,7 @@ def getWebExportPedon(URL):
 
     try:
         AddMsgAndPrint("\nRequesting a list of pedonIDs from NASIS using the above bounding coordinates")
+        arcpy.SetProgressorLabel("Requesting a list of pedons from NASIS")
 
         totalPedonCnt = 0
         labPedonCnt = 0
@@ -642,8 +643,13 @@ def getWebExportPedon(URL):
 
         bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
 
+        i=0
+        for theValue in theReport:i+=1
+
+        arcpy.SetProgressor("step", "Requesting a list of pedons from NASIS", 0, i, 1)
+
         # iterate through the report until a valid record is found
-        for theValue in theReport:
+        for theValue in urlopen(URL):
 
             theValue = theValue.strip() # removes whitespace characters
 
@@ -683,6 +689,8 @@ def getWebExportPedon(URL):
             else:
                 if theValue.startswith('<div id="ReportData">START'):
                     bValidRecord = True
+
+            arcpy.SetProgressorPosition()
 
         if len(pedonDict) == 0:
             AddMsgAndPrint("\tThere were no pedons found in this area; Try using a larger extent",1)
@@ -1424,7 +1432,6 @@ if __name__ == '__main__':
 
     inputFeatures = arcpy.GetParameter(0)
     #inputFeatures = r'C:\Temp\scratch.gdb\US'
-    #inputFeatures = r'C:\flex\bdry_bwcapy3_a_mn.shp'
 
     #GDBname = 'test'
     GDBname = arcpy.GetParameter(1)
