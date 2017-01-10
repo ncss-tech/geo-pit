@@ -10,7 +10,7 @@
 # phone: 608.662.4422 ext. 190
 #
 # Created:     7/04/2016
-# Last Modified: 1/09/2017
+# Last Modified: 1/10/2017
 # Copyright:   (c) Adolfo.Diaz 2016
 #-------------------------------------------------------------------------------
 
@@ -1165,7 +1165,7 @@ def getPedonHorizon(pedonList):
 
                     # appending this value exceeded the number of possible fields
                     else:
-                        AddMsgAndPrint("\n\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
+                        AddMsgAndPrint("\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
                         AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(len(partialValue.split('|'))),2)
                         AddMsgAndPrint("\t\t\tOriginal Record: " + originalValue,2)
                         AddMsgAndPrint("\t\t\tAppended Record: " + partialValue,2)
