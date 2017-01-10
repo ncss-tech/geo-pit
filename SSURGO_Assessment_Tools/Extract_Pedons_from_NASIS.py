@@ -273,177 +273,6 @@ def splitThousands(someNumber):
         return someNumber
 
 ## ================================================================================================================
-def createPedonFGDB():
-    """This Function will create a new File Geodatabase using a pre-established XML workspace
-       schema.  All Tables will be empty and should correspond to that of the access database.
-       Relationships will also be pre-established.
-       Return false if XML workspace document is missing OR an existing FGDB with the user-defined
-       name already exists and cannot be deleted OR an unhandled error is encountered.
-       Return the path to the new Pedon File Geodatabase if everything executes correctly."""
-
-    try:
-        AddMsgAndPrint("\nCreating New Pedon File Geodatabase",0)
-
-        # pedon xml template that contains empty pedon Tables and relationships
-        # schema and will be copied over to the output location
-        pedonXML = os.path.dirname(sys.argv[0]) + os.sep + "Extract_Pedons_from_NASIS_XMLWorkspace.xml"
-        localPedonGDB = os.path.dirname(sys.argv[0]) + os.sep + "NasisPedonsTemplate.gdb"
-
-        # Return false if xml file is not found
-        if not arcpy.Exists(pedonXML):
-            AddMsgAndPrint("\t" + os.path.basename(pedonXML) + " Workspace document was not found!",2)
-            return ""
-
-        # Return false if pedon fGDB template is not found
-        if not arcpy.Exists(localPedonGDB):
-            AddMsgAndPrint("\t" + os.path.basename(localPedonGDB) + " FGDB template was not found!",2)
-            return ""
-
-        newPedonFGDB = os.path.join(outputFolder,GDBname + ".gdb")
-
-        if arcpy.Exists(newPedonFGDB):
-            try:
-                arcpy.Delete_management(newPedonFGDB)
-                AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Deleting and re-creating FGDB\n",1)
-            except:
-                AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Failed to delete\n",2)
-                return ""
-
-        # copy template over to new location
-        AddMsgAndPrint("\tCreating " + GDBname + ".gbd with NCSS Pedon Schema 7.3")
-        arcpy.Copy_management(localPedonGDB,newPedonFGDB)
-
-##        # Create empty temp File Geodatabae
-##        arcpy.CreateFileGDB_management(outputFolder,os.path.splitext(os.path.basename(newPedonFGDB))[0])
-##
-##        # set the pedon schema on the newly created temp Pedon FGDB
-##        AddMsgAndPrint("\tImporting NCSS Pedon Schema 7.3 into " + GDBname + ".gdb")
-##        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "DATA", "DEFAULTS")
-
-        arcpy.UncompressFileGeodatabaseData_management(newPedonFGDB)
-
-        arcpy.RefreshCatalog(outputFolder)
-
-        AddMsgAndPrint("\tSuccessfully created: " + GDBname + ".gdb")
-
-        return newPedonFGDB
-
-    except arcpy.ExecuteError:
-        AddMsgAndPrint(arcpy.GetMessages(2),2)
-        return ""
-
-    except:
-        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
-        errorMsg()
-        return ""
-
-## ===============================================================================================================
-def getTableAliases(pedonFGDBloc):
-    # Retrieve physical and alias names from MDSTATTABS table and assigns them to a blank dictionary.
-    # Stores physical names (key) and aliases (value) in a Python dictionary i.e. {chasshto:'Horizon AASHTO,chaashto'}
-    # Fieldnames are Physical Name = AliasName,IEfilename
-
-    try:
-
-        # Open Metadata table containing information for other pedon tables
-        theMDTable = pedonFGDBloc + os.sep + "MetadataTable"
-        arcpy.env.workspace = pedonFGDBloc
-
-        # Establishes a cursor for searching through field rows. A search cursor can be used to retrieve rows.
-        # This method will return an enumeration object that will, in turn, hand out row objects
-        if not arcpy.Exists(theMDTable):
-            return False
-
-        tableList = arcpy.ListTables("*")
-        tableList.append("site")
-
-        nameOfFields = ["TablePhysicalName","TableLabel"]
-
-        for table in tableList:
-
-            # Skip any Metadata files
-            if table.find('Metadata') > -1: continue
-
-            expression = arcpy.AddFieldDelimiters(theMDTable,"TablePhysicalName") + " = '" + table + "'"
-            with arcpy.da.SearchCursor(theMDTable,nameOfFields, where_clause = expression) as cursor:
-
-                for row in cursor:
-                    # read each table record and assign 'TablePhysicalName' and 'TableLabel' to 2 variables
-                    physicalName = row[0]
-                    aliasName = row[1]
-
-                    # i.e. {phtexture:'Pedon Horizon Texture',phtexture}; will create a one-to-many dictionary
-                    # As long as the physical name doesn't exist in dict() add physical name
-                    # as Key and alias as Value.
-                    if not tblAliases.has_key(physicalName):
-                        tblAliases[physicalName] = aliasName
-
-                    del physicalName,aliasName
-
-        del theMDTable,tableList,nameOfFields
-
-        return True
-
-    except arcpy.ExecuteError:
-        AddMsgAndPrint(arcpy.GetMessages(2),2)
-        return False
-
-    except:
-        AddMsgAndPrint("Unhandled exception (GetTableAliases)", 2)
-        errorMsg()
-        return False
-
-## ===============================================================================================================
-def parsePedonsIntoLists():
-    """ This function will parse pedons into manageable chunks that will be sent to the 2nd URL report.
-        There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
-        available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
-        6 characters.  This would mean an average max request of 265 pedons at a time."""
-        #1860 = 265
-
-    try:
-
-        # Total Count
-        i = 1
-        listOfPedonStrings = list()  # List containing pedonIDstring lists; individual lists are comprised of about 265 pedons
-        pedonIDstr = ""
-
-        for pedonID in pedonDict:
-
-            # End of pedon list has been reached
-            if i == len(pedonDict):
-                pedonIDstr = pedonIDstr + str(pedonID)
-                listOfPedonStrings.append(pedonIDstr)
-
-            # End of pedon list NOT reached
-            else:
-                # Max URL length reached - retrieve pedon data and start over
-                if len(pedonIDstr) > 1860:
-                    pedonIDstr = pedonIDstr + str(pedonID)
-                    listOfPedonStrings.append(pedonIDstr)
-
-                    ## reset the pedon ID string to empty
-                    pedonIDstr = ""
-                    i+=1
-
-                # concatenate pedonID to string and continue
-                else:
-                    pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
-
-        numOfPedonStrings = len(listOfPedonStrings)
-        if not numOfPedonStrings:
-            AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
-            sys.exit()
-
-        else:
-            return listOfPedonStrings
-
-    except:
-        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
-        errorMsg()
-        sys.exit()
-
-## ================================================================================================================
 def getBoundingCoordinates(feature):
     """ This function will return WGS coordinates in Lat-Long format that will be passed over to
         the 'WEB_EXPORT_PEDON_BOX_COUNT' report.  The coordinates are generated by creating
@@ -638,15 +467,12 @@ def getWebExportPedon(URL):
 
         # Open a network object using the URL with the search string already concatenated
         startTime = tic()
-        theReport = urlopen(URL)
+        theReport = urlopen(URL).readlines()
         #AddMsgAndPrint("\tNetwork Request Time: " + toc(startTime))
 
         bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
 
-        i=0
-        for theValue in theReport:i+=1
-
-        arcpy.SetProgressor("step", "Requesting a list of pedons from NASIS", 0, i, 1)
+        arcpy.SetProgressor("step", "Reading NASIS Report: 'WEB_EXPORT_PEDON_BOX_COUNT'", 0, len(theReport), 1)
 
         # iterate through the report until a valid record is found
         for theValue in urlopen(URL):
@@ -691,6 +517,9 @@ def getWebExportPedon(URL):
                     bValidRecord = True
 
             arcpy.SetProgressorPosition()
+
+        #Resets the progressor back to its initial state
+        arcpy.ResetProgressor()
 
         if len(pedonDict) == 0:
             AddMsgAndPrint("\tThere were no pedons found in this area; Try using a larger extent",1)
@@ -737,6 +566,7 @@ def filterPedonsByFeature(feature):
 
     try:
         AddMsgAndPrint("\nSelecting pedons that intersect with " + arcpy.Describe(feature).Name + " Layer",0)
+        arcpy.SetProgressorLabel("Selecting pedons that intersect with " + arcpy.Describe(feature).Name + " Layer")
 
         #arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(4326)
 
@@ -768,6 +598,7 @@ def filterPedonsByFeature(feature):
 
         tempPointsPRJ = arcpy.CreateScratchName("tempPointsPRJ",data_type="FeatureClass", workspace=scratchWS)
         arcpy.Project_management(tempPoints,tempPointsPRJ,arcpy.Describe(feature).spatialReference)
+        arcpy.SetProgressorLabel("Selecting pedons that intersect with " + arcpy.Describe(feature).Name + " Layer")  # Some odd reason 'tempPointsPRJ' stays frozen in the progress bar.
 
         # Select all of the pedons within the user's AOI
         arcpy.MakeFeatureLayer_management(tempPointsPRJ,"tempPoints_LYR")
@@ -825,6 +656,182 @@ def filterPedonsByFeature(feature):
         errorMsg()
         return False
 
+## ================================================================================================================
+def createPedonFGDB():
+    """This Function will create a new File Geodatabase using a pre-established XML workspace
+       schema.  All Tables will be empty and should correspond to that of the access database.
+       Relationships will also be pre-established.
+       Return false if XML workspace document is missing OR an existing FGDB with the user-defined
+       name already exists and cannot be deleted OR an unhandled error is encountered.
+       Return the path to the new Pedon File Geodatabase if everything executes correctly."""
+
+    try:
+        AddMsgAndPrint("\nCreating New Pedon File Geodatabase",0)
+        arcpy.SetProgressorLabel("Creating New Pedon File Geodatabase")
+
+        # pedon xml template that contains empty pedon Tables and relationships
+        # schema and will be copied over to the output location
+        pedonXML = os.path.dirname(sys.argv[0]) + os.sep + "Extract_Pedons_from_NASIS_XMLWorkspace.xml"
+        localPedonGDB = os.path.dirname(sys.argv[0]) + os.sep + "NasisPedonsTemplate.gdb"
+
+        # Return false if xml file is not found
+        if not arcpy.Exists(pedonXML):
+            AddMsgAndPrint("\t" + os.path.basename(pedonXML) + " Workspace document was not found!",2)
+            return ""
+
+        # Return false if pedon fGDB template is not found
+        if not arcpy.Exists(localPedonGDB):
+            AddMsgAndPrint("\t" + os.path.basename(localPedonGDB) + " FGDB template was not found!",2)
+            return ""
+
+        newPedonFGDB = os.path.join(outputFolder,GDBname + ".gdb")
+
+        if arcpy.Exists(newPedonFGDB):
+            try:
+                arcpy.Delete_management(newPedonFGDB)
+                AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Deleting and re-creating FGDB\n",1)
+            except:
+                AddMsgAndPrint("\t" + GDBname + ".gdb already exists. Failed to delete\n",2)
+                return ""
+
+        # copy template over to new location
+        AddMsgAndPrint("\tCreating " + GDBname + ".gbd with NCSS Pedon Schema 7.3")
+        arcpy.Copy_management(localPedonGDB,newPedonFGDB)
+
+##        # Create empty temp File Geodatabae
+##        arcpy.CreateFileGDB_management(outputFolder,os.path.splitext(os.path.basename(newPedonFGDB))[0])
+##
+##        # set the pedon schema on the newly created temp Pedon FGDB
+##        AddMsgAndPrint("\tImporting NCSS Pedon Schema 7.3 into " + GDBname + ".gdb")
+##        arcpy.ImportXMLWorkspaceDocument_management(newPedonFGDB, pedonXML, "DATA", "DEFAULTS")
+
+        arcpy.UncompressFileGeodatabaseData_management(newPedonFGDB)
+
+        arcpy.RefreshCatalog(outputFolder)
+
+        AddMsgAndPrint("\tSuccessfully created: " + GDBname + ".gdb")
+
+        return newPedonFGDB
+
+    except arcpy.ExecuteError:
+        AddMsgAndPrint(arcpy.GetMessages(2),2)
+        return ""
+
+    except:
+        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
+        errorMsg()
+        return ""
+
+## ===============================================================================================================
+def getTableAliases(pedonFGDBloc):
+    # Retrieve physical and alias names from MDSTATTABS table and assigns them to a blank dictionary.
+    # Stores physical names (key) and aliases (value) in a Python dictionary i.e. {chasshto:'Horizon AASHTO,chaashto'}
+    # Fieldnames are Physical Name = AliasName,IEfilename
+
+    try:
+
+        arcpy.SetProgressorLabel("Gathering Table and Field aliases")
+
+        # Open Metadata table containing information for other pedon tables
+        theMDTable = pedonFGDBloc + os.sep + "MetadataTable"
+        arcpy.env.workspace = pedonFGDBloc
+
+        # Establishes a cursor for searching through field rows. A search cursor can be used to retrieve rows.
+        # This method will return an enumeration object that will, in turn, hand out row objects
+        if not arcpy.Exists(theMDTable):
+            return False
+
+        tableList = arcpy.ListTables("*")
+        tableList.append("site")
+
+        nameOfFields = ["TablePhysicalName","TableLabel"]
+
+        for table in tableList:
+
+            # Skip any Metadata files
+            if table.find('Metadata') > -1: continue
+
+            expression = arcpy.AddFieldDelimiters(theMDTable,"TablePhysicalName") + " = '" + table + "'"
+            with arcpy.da.SearchCursor(theMDTable,nameOfFields, where_clause = expression) as cursor:
+
+                for row in cursor:
+                    # read each table record and assign 'TablePhysicalName' and 'TableLabel' to 2 variables
+                    physicalName = row[0]
+                    aliasName = row[1]
+
+                    # i.e. {phtexture:'Pedon Horizon Texture',phtexture}; will create a one-to-many dictionary
+                    # As long as the physical name doesn't exist in dict() add physical name
+                    # as Key and alias as Value.
+                    if not tblAliases.has_key(physicalName):
+                        tblAliases[physicalName] = aliasName
+
+                    del physicalName,aliasName
+
+        del theMDTable,tableList,nameOfFields
+
+        return True
+
+    except arcpy.ExecuteError:
+        AddMsgAndPrint(arcpy.GetMessages(2),2)
+        return False
+
+    except:
+        AddMsgAndPrint("Unhandled exception (GetTableAliases)", 2)
+        errorMsg()
+        return False
+
+## ===============================================================================================================
+def parsePedonsIntoLists():
+    """ This function will parse pedons into manageable chunks that will be sent to the 2nd URL report.
+        There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
+        available. I arbitrarily chose to have a max URL of 1,860 characters long to avoid problems.  Most pedonIDs are about
+        6 characters.  This would mean an average max request of 265 pedons at a time.
+
+        This function returns a list of pedon lists"""
+        #1860 = 265
+
+    try:
+        arcpy.SetProgressorLabel("Determining the number of requests to send the server")
+
+        # Total Count
+        i = 1
+        listOfPedonStrings = list()  # List containing pedonIDstring lists; individual lists are comprised of about 265 pedons
+        pedonIDstr = ""
+
+        for pedonID in pedonDict:
+
+            # End of pedon list has been reached
+            if i == len(pedonDict):
+                pedonIDstr = pedonIDstr + str(pedonID)
+                listOfPedonStrings.append(pedonIDstr)
+
+            # End of pedon list NOT reached
+            else:
+                # Max URL length reached - retrieve pedon data and start over
+                if len(pedonIDstr) > 1860:
+                    pedonIDstr = pedonIDstr + str(pedonID)
+                    listOfPedonStrings.append(pedonIDstr)
+
+                    ## reset the pedon ID string to empty
+                    pedonIDstr = ""
+                    i+=1
+
+                # concatenate pedonID to string and continue
+                else:
+                    pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
+
+        numOfPedonStrings = len(listOfPedonStrings)  # Number of unique requests that will be sent
+        if not numOfPedonStrings:
+            AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
+            sys.exit()
+
+        else:
+            return listOfPedonStrings,numOfPedonStrings
+
+    except:
+        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
+        errorMsg()
+        sys.exit()
 
 ## ================================================================================================================
 def getPedonHorizon(pedonList):
@@ -1040,7 +1047,7 @@ def getPedonHorizon(pedonList):
 
         arcpy.env.workspace = pedonFGDB
 
-        tableFldDict = dict()    # petext:11
+        tableFldDict = dict()    # contains all valid tables and the number of fields that it contains i.e. petext:11
         validTables = arcpy.ListTables("*")
         validTables.append('site')
 
@@ -1070,15 +1077,15 @@ def getPedonHorizon(pedonList):
         requestStartTime = tic()
 
         try:
-            theReport = urlopen(URL)
+            theReport = urlopen(URL).readlines()
         except:
             try:
                 AddMsgAndPrint(tab + "2nd attempt at requesting data")
-                theReport = urlopen(URL)
+                theReport = urlopen(URL).readlines()
             except:
                 try:
                     AddMsgAndPrint(tab + "3rd attempt at requesting data")
-                    theReport = urlopen(URL)
+                    theReport = urlopen(URL).readlines()
                 except:
                     errorMsg()
                     return False
@@ -1098,6 +1105,8 @@ def getPedonHorizon(pedonList):
 
         """ ------------------- Begin Adding data from URL into a dictionary of lists ---------------"""
         # iterate through the lines in the report
+        arcpy.SetProgressor("step", "Reading NASIS Report: 'WEB_AnalysisPC_MAIN_URL_EXPORT'", 0, len(theReport),1)
+
         memoryStartTime = tic()
         for theValue in theReport:
 
@@ -1151,6 +1160,7 @@ def getPedonHorizon(pedonList):
                     # add another record; this would be the 3rd record appended and may
                     # exceed number of values.
                     elif len(partialValue.split('|')) < numOfFields:
+                        arcpy.SetProgressorPosition()
                         continue
 
                     # appending this value exceeded the number of possible fields
@@ -1172,7 +1182,6 @@ def getPedonHorizon(pedonList):
                         AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(numOfValues),2)
                         AddMsgAndPrint("\t\t\tRecord: " + theValue,2)
                         invalidRecord += 1
-                        continue
 
                     # number of values falls short of the number of correct fields
                     else:
@@ -1191,6 +1200,11 @@ def getPedonHorizon(pedonList):
 
             else:
                 invalidRecord += 1
+
+            arcpy.SetProgressorPosition()
+
+        #Resets the progressor back to its initial state
+        arcpy.ResetProgressor()
 
         #AddMsgAndPrint(tab + "Storing Data into Memory: " + toc(memoryStartTime))
 
@@ -1239,6 +1253,7 @@ def importPedonData(tblAliases):
 
     try:
         AddMsgAndPrint("\nImporting Pedon Data into FGDB")
+        arcpy.SetProgressorLabel("Importing Pedon Data into FGDB")
 
         # use the tblAliases so that tables are imported in alphabetical order
         if bAliasName:
@@ -1258,7 +1273,11 @@ def importPedonData(tblAliases):
         tblKeys.sort()
 
         """ ---------------------------------------------------"""
+        arcpy.SetProgressor("step","Importing Pedon Data into FGDB",0,len(tblKeys),1)
         for table in tblKeys:
+
+            arcpy.SetProgressorLabel("Importing Pedon Data into FGDB: " + table)
+            arcpy.SetProgressorPosition()
 
             # Skip any Metadata files
             if table.find('Metadata') > -1: continue
@@ -1377,6 +1396,9 @@ def importPedonData(tblAliases):
                     AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: 0",1)
                 else:
                     AddMsgAndPrint("\t" + table + firstTab + " Records Added: 0",1)
+
+        #Resets the progressor back to its initial state
+        arcpy.ResetProgressor()
 
         return True
 
@@ -1517,8 +1539,8 @@ if __name__ == '__main__':
         bAliasName = False
 
     """ ------------------------------------------ Get Pedon information using 2nd report -------------------------------------"""
-    listOfPedonStrings = parsePedonsIntoLists()
-    numOfPedonStrings = len(listOfPedonStrings)
+    listOfPedonStrings,numOfPedonStrings = parsePedonsIntoLists()
+    #numOfPedonStrings = len(listOfPedonStrings)
 
     if numOfPedonStrings > 1:
         AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",1)
@@ -1539,8 +1561,10 @@ if __name__ == '__main__':
         # Strictly formatting
         if numOfPedonStrings > 1:
             AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
+            arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")")
         else:
-            AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
+            AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.",0)
+            arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.")
 
         if not getPedonHorizon(pedonString):
             AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
@@ -1561,6 +1585,5 @@ if __name__ == '__main__':
         AddMsgAndPrint("\nSuccessfully added the site Table to your ArcMap Session",0)
     except:
         pass
-        #AddMsgAndPrint("\n\t" + project + ".shp file was created for future reference in the output folder",0)
 
-    AddMsgAndPrint("\n\n")
+    AddMsgAndPrint("\n")
