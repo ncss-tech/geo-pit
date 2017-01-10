@@ -458,6 +458,8 @@ def getBoundingCoordinates(feature):
             environmental variable was not being honored if a selected set is being used.
             Export selected set to a temporary feature class otherwise continue"""
 
+        arcpy.SetProgressorLabel("Calculating bounding coordinates of input features")
+
         featurePath = arcpy.Describe(feature).catalogPath
 
         totalPolys = int(arcpy.GetCount_management(featurePath).getOutput(0))
@@ -533,7 +535,7 @@ def getBoundingCoordinates(feature):
 ##            arcpy.Delete_management(envelopeFeature)
 
         if len(coordList) == 4:
-            AddMsgAndPrint("\n\tBounding Box Coordinates:")
+            AddMsgAndPrint("\tBounding Box Coordinates:")
             AddMsgAndPrint("\t\tSouth Latitude: " + str(coordList[0][1]))
             AddMsgAndPrint("\t\tNorth Latitude: " + str(coordList[2][1]))
             AddMsgAndPrint("\t\tEast Longitude: " + str(coordList[0][0]))
@@ -636,7 +638,7 @@ def getWebExportPedon(URL):
         # Open a network object using the URL with the search string already concatenated
         startTime = tic()
         theReport = urlopen(URL)
-        AddMsgAndPrint("\tNetwork Request Time: " + toc(startTime))
+        #AddMsgAndPrint("\tNetwork Request Time: " + toc(startTime))
 
         bValidRecord = False # boolean that marks the starting point of the mapunits listed in the project
 
@@ -762,44 +764,56 @@ def filterPedonsByFeature(feature):
         # Select all of the pedons within the user's AOI
         arcpy.MakeFeatureLayer_management(tempPointsPRJ,"tempPoints_LYR")
 
-        AddMsgAndPrint("\tThere are " + str(int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))) + " pedons in the layer",2)
+        #AddMsgAndPrint("\tThere are " + str(int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))) + " pedons in the layer",2)
         arcpy.SelectLayerByLocation_management("tempPoints_LYR","INTERSECT",aoiFeature, "","NEW_SELECTION")
 
         pedonsWithinAOI = int(arcpy.GetCount_management("tempPoints_LYR").getOutput(0))
 
         # There are pedons within the user's AOI
         if pedonsWithinAOI > 0:
-            AddMsgAndPrint("\tThere are " + str(pedonsWithinAOI),0)
+            AddMsgAndPrint("\tThere are " + splitThousands(pedonsWithinAOI) + " pedons within this layer",0)
 
             # Make a copy of the user-input features - this is just in case there is a selected set
             selectedPedons = arcpy.CreateScratchName("newPedons",data_type="FeatureClass", workspace=scratchWS)
             arcpy.CopyFeatures_management("tempPoints_LYR",selectedPedons)
 
-            # Create a new list of pedonIDs from the selected set
-            selectedPedonsList = [row[0] for row in arcpy.da.SearchCursor(selectedPedons, (peiidFld))]
+            # Create a new list of pedonIDs from the selected set; pedonIDs are converted to strings in order
+            # to compare against the pedonDict()
+            selectedPedonsList = [str(row[0]) for row in arcpy.da.SearchCursor(selectedPedons, (peiidFld))]
 
             # Make a copy of pedonDict b/c it cannot change during iteration
             pedonDictCopy = pedonDict.copy()
 
             # delete any pedon from the original pedonDict that is not in the selected set.
+            labPedonCnt = 0
             for pedon in pedonDictCopy:
                 if pedon not in selectedPedonsList:
                     del pedonDict[pedon]
+                else:
+                    if not pedonDict[pedon][1] is None:
+                        labPedonCnt+=1
 
-            del pedonDictCopy
+            AddMsgAndPrint("\t\tLAB Pedons: " + splitThousands(labPedonCnt))
+            AddMsgAndPrint("\t\tNASIS Pedons: " + splitThousands(pedonsWithinAOI - labPedonCnt))
+
+            for layer in (aoiFeature,tempPoints,tempPointsPRJ,selectedPedons):
+                if arcpy.Exists(layer):
+                    arcpy.Delete_management(layer)
+
+            del pedonDictCopy,selectedPedons,selectedPedonsList
+
+            return True
 
         else:
-            AddMsgAndPrint("\tThere are NO pedons that are completely within your AOI.",2)
-            #return False
-
-        sys.exit()
+            AddMsgAndPrint("\tThere are NO pedons that are completely within your AOI. EXITING! \n",2)
+            sys.exit()
 
     except arcpy.ExecuteError:
         AddMsgAndPrint(arcpy.GetMessages(2),2)
         return False
 
     except:
-        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
+        AddMsgAndPrint("Unhandled exception (createFGDB). EXITING!", 2)
         errorMsg()
         return False
 
@@ -1061,7 +1075,7 @@ def getPedonHorizon(pedonList):
                     errorMsg()
                     return False
 
-        AddMsgAndPrint(tab + "Network Request Time: " + toc(requestStartTime))
+        #AddMsgAndPrint(tab + "Network Request Time: " + toc(requestStartTime))
 
         invalidTable = 0    # represents tables that don't correspond with the GDB
         invalidRecord = 0  # represents records that were not added
@@ -1170,7 +1184,7 @@ def getPedonHorizon(pedonList):
             else:
                 invalidRecord += 1
 
-        AddMsgAndPrint(tab + "Storing Data into Memory: " + toc(memoryStartTime))
+        #AddMsgAndPrint(tab + "Storing Data into Memory: " + toc(memoryStartTime))
 
         if not validRecord:
             AddMsgAndPrint("\t\tThere were no valid records captured from NASIS request",2)
@@ -1338,7 +1352,6 @@ def importPedonData(tblAliases):
                         break
 
                     del newRow,fldNo
-                del cursor
 
                 # Report the # of records added to the table
                 if bAliasName:
@@ -1409,12 +1422,14 @@ from urllib2 import urlopen, URLError, HTTPError
 
 if __name__ == '__main__':
 
-    #inputFeatures = arcpy.GetParameter(0)
+    inputFeatures = arcpy.GetParameter(0)
     #inputFeatures = r'C:\Temp\scratch.gdb\US'
-    inputFeatures = r'O:\scratch\scratch.gdb\AOI'
+    #inputFeatures = r'C:\flex\bdry_bwcapy3_a_mn.shp'
 
+    #GDBname = 'test'
     GDBname = arcpy.GetParameter(1)
     outputFolder = arcpy.GetParameterAsText(2)
+    #outputFolder = r'C:\flex'
 
     """ ------------------------------------------------ Set Scratch Workspace ------------------------------------------------"""
     scratchWS = setScratchWorkspace()
@@ -1425,43 +1440,42 @@ if __name__ == '__main__':
         sys.exit()
 
     """ ---------------------------------------------- Get Bounding box coordinates -------------------------------------------"""
-##    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484;
-##    Lat1,Lat2,Long1,Long2 = getBoundingCoordinates(inputFeatures)
-##
-##    if not Lat1:
-##        AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
-##        sys.exit()
+    #Lat1 = 43.8480050291613;Lat2 = 44.196269661256736;Long1 = -93.76788085724957;Long2 = -93.40649833646484;
+    Lat1,Lat2,Long1,Long2 = getBoundingCoordinates(inputFeatures)
+
+    if not Lat1:
+        AddMsgAndPrint("\nFailed to acquire Lat/Long coordinates to pass over; Try a new input feature",2)
+        sys.exit()
 
     """ ---------------------------- Get a number of PedonIDs that are within the bounding box from NASIS -----------------------"""
-##    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
-##
-##    areaPedonCount = getWebPedonNumberSum(coordStr)
-##
-##    if areaPedonCount > 100000:
-##        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",1)
-##        #sys.exit()
-##
-##    if areaPedonCount == 0:
-##        AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
-##        sys.exit()
+    coordStr = "&Lat1=" + str(Lat1) + "&Lat2=" + str(Lat2) + "&Long1=" + str(Long1) + "&Long2=" + str(Long2)
+
+    areaPedonCount = getWebPedonNumberSum(coordStr)
+
+    if areaPedonCount > 100000:
+        AddMsgAndPrint("\nThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",1)
+        #sys.exit()
+
+    if areaPedonCount == 0:
+        AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
+        sys.exit()
 
     """ ---------------------------- Get a list of PedonIDs that are within the bounding box from NASIS -----------------------"""
-    #getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
-    getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&Lat1=44.0708202382&Lat2=44.5969509809&Long1=-91.1662744523&Long2=-90.3119117083'
+    getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT' + coordStr
+    #getPedonIDURL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_EXPORT_PEDON_BOX_COUNT&Lat1=44.0708202382&Lat2=44.5969509809&Long1=-91.1662744523&Long2=-90.3119117083'
 
     # peiid: siteID,Labnum,X,Y
     #{'122647': ('84IA0130011', '85P0558', '-92.3241653', '42.3116684'), '883407': ('2014IA013003', None, '-92.1096600', '42.5332000'), '60914': ('98IA013011', None, '-92.4715271', '42.5718880')}
     pedonDict = dict()
 
     if not getWebExportPedon(getPedonIDURL):
-        AddMsgAndPrint("\n\t Failed to get a list of pedonIDs from NASIS",2)
+        AddMsgAndPrint("\n\tFailed to get a list of pedonIDs from NASIS \n",2)
         sys.exit()
 
     """ ---------------------------- Filter pedons by those that fall completely within the user-input feature ----------------"""
-
     if not filterPedonsByFeature(inputFeatures):
-        AddMsgAndPrint("\n\t Failed to filter list of Pedons by ",2)
-    sys.exit()
+        AddMsgAndPrint("\n\tFailed to filter list of Pedons by Area of Interest. EXITING! \n",2)
+        sys.exit()
 
     """ ---------------------------------------------- Create New File Geodatabaes --------------------------------------------
         Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
