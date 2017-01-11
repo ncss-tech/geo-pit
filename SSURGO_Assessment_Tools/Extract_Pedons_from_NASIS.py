@@ -10,7 +10,7 @@
 # phone: 608.662.4422 ext. 190
 #
 # Created:     7/04/2016
-# Last Modified: 1/10/2017
+# Last Modified: 1/11/2017
 # Copyright:   (c) Adolfo.Diaz 2016
 #-------------------------------------------------------------------------------
 
@@ -298,7 +298,7 @@ def getBoundingCoordinates(feature):
         if selectedPolys < totalPolys:
             envelopeFeature = arcpy.CreateScratchName("envelopeFeature",data_type="FeatureClass", workspace=scratchWS)
             arcpy.CopyFeatures_management(feature,envelopeFeature)
-            AddMsgAndPrint("\nCalculating bounding coordinates for " + splitThousands(selectedPolys) + " features",0)
+            AddMsgAndPrint("\nCalculating bounding coordinates for " + splitThousands(selectedPolys) + " feature(s)",0)
             bExport = True
 
         else:
@@ -391,8 +391,8 @@ def getWebPedonNumberSum(coordinates):
         NASIS pedons and LAB pedons.  Each record in the report will contain the following values:"""
 
     try:
-        AddMsgAndPrint("\nDetermining if there are any pedons in this area")
-        arcpy.SetProgressorLabel("Determining if there are any pedons in this area")
+        AddMsgAndPrint("\nDetermining if there are any pedons within the bounding coordinates")
+        arcpy.SetProgressorLabel("Determining if there are any pedons within the bounding coordinates")
 
         # Open a network object using the URL with the search string already concatenated
         URL = r'https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB_ANALYSIS_PC_PEDON_NUMBER_SUM' + coordinates
@@ -592,7 +592,8 @@ def getWebExportPedon(coordinates):
             return False
 
         else:
-            AddMsgAndPrint("\tThere are a total of " + splitThousands(totalPedonCnt) + " pedons found in this area:")
+            #AddMsgAndPrint("\tThere are a total of " + splitThousands(totalPedonCnt) + " pedons found in this area:")
+            AddMsgAndPrint("\tHere is a breakdown of the " + splitThousands(totalPedonCnt) + " pedons found in this area:")
             AddMsgAndPrint("\t\tLAB Pedons: " + splitThousands(labPedonCnt))
             AddMsgAndPrint("\t\tUndisclosed: " + splitThousands(undisclosed))
             AddMsgAndPrint("\t\tNASIS Pedons: " + splitThousands((totalPedonCnt - labPedonCnt) - undisclosed))
@@ -1526,11 +1527,9 @@ if __name__ == '__main__':
             ---------------------------------------------------- Uses the 'WEB_ANALYSIS_PC_PEDON_NUMBER_SUM' NASIS report --------------------------------------------------------------------------"""
         areaPedonCount = getWebPedonNumberSum(coordStr)
 
-        if areaPedonCount > 100000:
-            AddMsgAndPrint("\tThere are " + splitThousands(areaPedonCount) + " pedons in the area of interest",0)
-            #sys.exit()
-
-        if areaPedonCount == 0:
+        if areaPedonCount:
+            AddMsgAndPrint("\tThere are " + splitThousands(areaPedonCount) + " pedons within the bounding coordinates",0)
+        else:
             AddMsgAndPrint("\nThere are no records found within the area of interest.  Try using a larger area",2)
             sys.exit()
 
@@ -1550,7 +1549,7 @@ if __name__ == '__main__':
             AddMsgAndPrint("\n\tFailed to filter list of Pedons by Area of Interest. EXITING! \n",2)
             sys.exit()
 
-        sys.exit()
+        #sys.exit()
 
         """ ------------------------------------------------------Create New File Geodatabaes and get Table Aliases for printing -------------------------------------------------------------------
             Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
