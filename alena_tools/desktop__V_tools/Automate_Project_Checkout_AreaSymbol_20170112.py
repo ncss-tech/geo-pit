@@ -28,6 +28,10 @@ inprname =inprname.replace (' ','_')
  
 #Input Project Name
 prjname = inprname+'_'
+a = MUPOLYGON
+p = FEATPOINT
+l = FEATLINE
+b = SAPOLYGON
 
 #Input File Geodatabase Name
 fdname = out_folder+'\\'+inprname+'.gdb'+'\\'+ prjname+'FD'
@@ -65,58 +69,58 @@ arcpy.SelectLayerByAttribute_management (inbndy, "NEW_SELECTION", " AREASYMBOL =
 
 #Feature Class to Feature Class ~ Soils
 #arcpy.FeatureClassToFeatureClass_conversion(inFC, fdname, prjname+'a')
-arcpy.FeatureClassToFeatureClass_conversion(inFC, fdname, MUPOLYGON)
+arcpy.FeatureClassToFeatureClass_conversion(inFC, fdname, a)
 #Feature Class to Feature Class ~ SF Points
 #arcpy.FeatureClassToFeatureClass_conversion(insfpt, fdname, prjname+'p')
-arcpy.FeatureClassToFeatureClass_conversion(insfpt, fdname, FEATPOINT)
+arcpy.FeatureClassToFeatureClass_conversion(insfpt, fdname, p)
 #Feature Class to Feature Class ~ SF Lines
 #arcpy.FeatureClassToFeatureClass_conversion(insfln, fdname, prjname+"l")
-arcpy.FeatureClassToFeatureClass_conversion(insfln, fdname, FEATLINE)
+arcpy.FeatureClassToFeatureClass_conversion(insfln, fdname, l)
 #Feature Class to Feature Class ~ Boundary Line
 #arcpy.FeatureClassToFeatureClass_conversion(inbndy, fdname, prjname+'b')
-arcpy.FeatureClassToFeatureClass_conversion(inbndy, fdname, SAPOLYGON)
+arcpy.FeatureClassToFeatureClass_conversion(inbndy, fdname, b)
 
 #Create Topology
 arcpy.CreateTopology_management(fdname,  prjname+'topology',".1")
 
 #Add Feature Class To Topology ~ Soils
 #arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+prjname+'a')
-arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+MUPOLYGON)
+arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+a)
 #Add Topology Rule ~ Must Not Have Gaps (Poly)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Gaps (Area)", fdname+'\\'+prjname+'a')
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Gaps (Area)", fdname+'\\'+MUPOLYGON)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Gaps (Area)", fdname+'\\'+a)
 #Add Topology Rule ~ Must Not Overlap (Poly)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Area)", fdname+'\\'+prjname+'a')
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Area)", fdname+'\\'+MUPOLYGON)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Area)", fdname+'\\'+a)
 #Add Feature Class To Topology ~ SF Points
 #arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+prjname+'p')
-arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+FEATPOINT)
+arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+p)
 #Add Feature Class To Topology ~ SF Lines
 #arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+prjname+"l")
-arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+FEATLINE)
+arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+p)
 
 #Add Topology Rule ~ Must Not Overlap (Line)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Line)", fdname+'\\'+prjname+"l")
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Line)", fdname+'\\'+FEATLINE)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Overlap (Line)", fdname+'\\'+l)
 #Add Topology Rule ~ Must Be Single Part (Line)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Single Part (Line)", fdname+'\\'+prjname+"l")
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Single Part (Line)", fdname+'\\'+FEATLINE)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Single Part (Line)", fdname+'\\'+l)
 #Add Topology Rule ~ Must Not Self-Overlap (Line)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Self-Overlap (Line)", fdname+'\\'+prjname+"l")
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Self-Overlap (Line)", fdname+'\\'+FEATLINE)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Self-Overlap (Line)", fdname+'\\'+l)
 #Add Topology Rule ~ Must Not Intersect (Line)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Intersect (Line)", fdname+'\\'+prjname+"l")
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Intersect (Line)", fdname+'\\'+FEATLINE)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Intersect (Line)", fdname+'\\'+l)
 #Add Topology Rule ~ Must Not Have Pseudo Nodes (Line)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Pseudo-Nodes (Line)", fdname+'\\'+prjname+"l")
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Pseudo-Nodes (Line)", fdname+'\\'+FEATLINE)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Not Have Pseudo-Nodes (Line)", fdname+'\\'+l)
 #Add Topology Rule ~ Must Be Disjoint (Point)
 #arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Disjoint (Point)", fdname+'\\'+prjname+'p')
-arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Disjoint (Point)", fdname+'\\'+FEATPOINT)
+arcpy.AddRuleToTopology_management (inprname_topology, "Must Be Disjoint (Point)", fdname+'\\'+l)
 
 #Add Feature Class to Topology ~ Boundary
 #arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+prjname+'b')
-arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+SAPOLYGON)
+arcpy.AddFeatureClassToTopology_management(inprname_topology, fdname+'\\'+b)
 
 #Validate Topology
 arcpy.ValidateTopology_management(inprname_topology, "FULL_EXTENT")
@@ -124,36 +128,36 @@ arcpy.ValidateTopology_management(inprname_topology, "FULL_EXTENT")
 #Need to add if/else statements
 #Add Field ~ Soil Polygons ~ ORIG_MUSYM, TEXT, (Alias) Original Musym, Check Field is Nullable
 #arcpy.AddField_management(fdname+'\\'+prjname+'a', "ORIG_MUSYM", "TEXT", "10", "", "", "ORIG_MUSYM", "NULLABLE")
-arcpy.AddField_management(fdname+'\\'+MUPOLYGON, "ORIG_MUSYM", "TEXT", "10", "", "", "ORIG_MUSYM", "NULLABLE")
+arcpy.AddField_management(fdname+'\\'+a, "ORIG_MUSYM", "TEXT", "10", "", "", "ORIG_MUSYM", "NULLABLE")
 
 #Calculate Field ~ Soil Polygons ~ _a, ORIG_MUSYM, [MUSYM], VB
 #arcpy.CalculateField_management(fdname+'\\'+prjname+'a', "ORIG_MUSYM", '[MUSYM]', "VB")
-arcpy.CalculateField_management(fdname+'\\'+MUPOLYGON, "ORIG_MUSYM", '[MUSYM]', "VB")
+arcpy.CalculateField_management(fdname+'\\'+a, "ORIG_MUSYM", '[MUSYM]', "VB")
 
 #Add Field ~ SF Points ~  _p, ORIG_FEATSYM, TEXT, (Alias) Original FEATSYM, Check Field is Nullable
 #arcpy.AddField_management(fdname+'\\'+prjname+'p', "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE")
-arcpy.AddField_management(fdname+'\\'+FEATPOINT, "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE")
+arcpy.AddField_management(fdname+'\\'+p, "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE")
 
 #Calculate Field ~ SF Points ~ _p, ORIG_FEATSYM, [FEATSYM], VB
 #arcpy.CalculateField_management(fdname+'\\'+prjname+'p', "ORIG_FEATSYM", '[FEATSYM]', "VB")
-arcpy.CalculateField_management(fdname+'\\'+FEATPOINT, "ORIG_FEATSYM", '[FEATSYM]', "VB")
+arcpy.CalculateField_management(fdname+'\\'+p, "ORIG_FEATSYM", '[FEATSYM]', "VB")
 
 #Add Field ~ SF Lines ~  _l, ORIG_FEATSYM, TEXT, (Alias) Original FEATSYM, Check Field is Nullable
 #arcpy.AddField_management(fdname+'\\'+prjname+"l", "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE" )
-arcpy.AddField_management(fdname+'\\'+FEATLINE, "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE" )
+arcpy.AddField_management(fdname+'\\'+l, "ORIG_FEATSYM", "TEXT", "10","", "", "ORIG_FEATSYM", "NULLABLE" )
 
 #Calculate Field ~ SF Lines ~ _l, ORIG_FEATSYM, [FEATSYM], VB
 #arcpy.CalculateField_management(fdname+'\\'+prjname+"l", "ORIG_FEATSYM", '[FEATSYM]', "VB")
-arcpy.CalculateField_management(fdname+'\\'+FEATLINE, "ORIG_FEATSYM", '[FEATSYM]', "VB")
+arcpy.CalculateField_management(fdname+'\\'+l, "ORIG_FEATSYM", '[FEATSYM]', "VB")
 
 
 #Add Field and Calculate Acres
 #Add Field
 #arcpy.AddField_management(fdname+'\\'+prjname+'a', "ACRES", "DOUBLE",)
-arcpy.AddField_management(fdname+'\\'+MUPOLYGON, "ACRES", "DOUBLE",)
+arcpy.AddField_management(fdname+'\\'+a, "ACRES", "DOUBLE",)
 #Calculate Field
 #arcpy.CalculateField_management(fdname+'\\'+prjname+'a', "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3")
-arcpy.CalculateField_management(fdname+'\\'+MUPOLYGON, "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3")
+arcpy.CalculateField_management(fdname+'\\'+a, "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3")
 
 #Clear Selected Features
 arcpy.SelectLayerByAttribute_management (inFC, "CLEAR_SELECTION")
