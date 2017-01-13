@@ -397,6 +397,36 @@ def getTableAliases(pedonFGDBloc):
         return False
 
 ## ===============================================================================================================
+def createEmptyDictOfTables():
+    # Create a new dictionary called pedonGDBtables that will contain every table in the newly created
+    # pedonFGDB above as a key.  Individual records of tables will be added as values to the table keys.
+    # These values will be in the form of lists.  This dictionary will be populated using the results of
+    # the WEB_AnalysisPC_MAIN_URL_EXPORT NASIS report.  Much faster than opening and closing cursors.
+
+    try:
+
+        arcpy.env.workspace = pedonFGDB
+        tables = arcpy.ListTables()
+        tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
+
+        # Create
+        # {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+        pedonGDBtablesDict = dict()
+        for table in tables:
+
+            # Skip any Metadata files
+            if table.find('Metadata') > -1: continue
+            pedonGDBtablesDict[str(table)] = []
+
+        del tables
+        return pedonGDBtablesDict
+
+    except:
+        AddMsgAndPrint("Unhandled exception (GetTableAliases)", 2)
+        errorMsg()
+        sys.exit()
+
+## ===============================================================================================================
 def parsePedonsIntoLists():
     """ This function will parse pedons into manageable chunks that will be sent to the 2nd URL report.
         There is an inherent URL character limit of 2,083.  The report URL is 123 characters long which leaves 1,960 characters
@@ -840,6 +870,10 @@ def getPedonHorizon(pedonList):
 
         return True
 
+    except MemoryError:
+        AddMsgAndPrint("\n\nOut of Memory Genius! --- " + str(sys.getsizeof(pedonGDBtables)),2)
+        sys.exit()
+
     except URLError, e:
         if hasattr(e, 'reason'):
             AddMsgAndPrint(tab + "URL Error: " + str(e.reason), 2)
@@ -1080,9 +1114,9 @@ if __name__ == '__main__':
 ##        GDBname = arcpy.GetParameter(1)
 ##        outputFolder = arcpy.GetParameterAsText(2)
 
-        inputTextFile = r'C:\python_scripts\LiDAR\PEDON_PEIID_LIST.txt'
+        inputTextFile = r'P:\SSR10_Geodata\MLRAGeodata\pedons\PEDON_PEIID_LIST.txt'
         GDBname = 'Dylan'
-        outputFolder = r'C:\Temp'
+        outputFolder = r'P:\SSR10_Geodata\MLRAGeodata\pedons'
 
         """ ------------------------------------------------------------------------ Set Scratch Workspace -------------------------------------------------------------------------------------"""
         scratchWS = setScratchWorkspace()
@@ -1096,7 +1130,8 @@ if __name__ == '__main__':
             ---------------------------------------------------- Uses the 'WEB_EXPORT_PEDON_BOX_COUNT' NASIS report --------------------------------------------------------------------------"""
         # ['10851, 10852, 10853, 10854']
         pedonList = [(line.rstrip('\n')).split(',') for line in open(inputTextFile)].pop()
-        AddMsgAndPrint("\nThere are " + splitThousands(len(pedonList)) + " pedon IDs in your text file")
+        totalPedons = len(pedonList)
+        AddMsgAndPrint("\nThere are " + splitThousands(totalPedons) + " pedon IDs in your text file")
 
 
         """ ------------------------------------------------------Create New File Geodatabaes and get Table Aliases for printing -------------------------------------------------------------------
@@ -1124,18 +1159,7 @@ if __name__ == '__main__':
             These values will be in the form of lists.  This dictionary will be populated using the results of
             the WEB_AnalysisPC_MAIN_URL_EXPORT NASIS report.  Much faster than opening and closing cursors."""
 
-        arcpy.env.workspace = pedonFGDB
-        tables = arcpy.ListTables()
-        tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
-
-        # Create
-        # {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
-        pedonGDBtables = dict()
-        for table in tables:
-
-            # Skip any Metadata files
-            if table.find('Metadata') > -1: continue
-            pedonGDBtables[str(table)] = []
+        pedonGDBtables = createEmptyDictOfTables()
 
         """ ------------------------------------------ Get Site, Pedon, and Pedon Horizon information from NASIS -------------------------------------------------------------------------
         ----------------------------------------------- Uses the 'WEB_AnalysisPC_MAIN_URL_EXPORT' NASIS report ---------------------------------------------------------------------------
@@ -1152,8 +1176,12 @@ if __name__ == '__main__':
             AddMsgAndPrint("\n")
 
         i = 1                                # represents the request number
+        j = 0                                # number of Pedons that are in memory
         badStrings = list()                  # lists containing lists of pedons that failed
         for pedonString in listOfPedonStrings:
+
+            numOfPedonsInPedonString = len(pedonString.split(','))
+            j+=numOfPedonsInPedonString
 
             if len(badStrings) > 1:
                 AddMsgAndPrint("\n\tMultiple failed attempts with the following pedon IDs:",2)
@@ -1178,6 +1206,20 @@ if __name__ == '__main__':
             if not getPedonHorizon(pedonString):
                 AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
                 badStrings += pedonString
+
+            # Time to purge the pedonGDBtables dictionary to avoid Memory Errors.
+            if j > 100000:
+
+                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(sys.getsizeof(pedonGDBtables)),1)
+
+                if len(pedonGDBtables['site']):
+                    if not importPedonData(tblAliases):
+                        sys.exit()
+
+                    del pedonGDBtables
+                    pedonGDBtables = createEmptyDictOfTables()
+                    j=0
+
             i+=1
 
         """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
@@ -1196,6 +1238,10 @@ if __name__ == '__main__':
             pass
 
         AddMsgAndPrint("\n")
+
+    except MemoryError:
+        AddMsgAndPrint("\n\nOut of Memory Genius! --- " + str(sys.getsizeof(pedonGDBtables)),2)
+        sys.exit()
 
     except:
         errorMsg()
