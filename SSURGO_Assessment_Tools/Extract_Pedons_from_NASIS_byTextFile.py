@@ -1147,7 +1147,7 @@ if __name__ == '__main__':
         listOfPedonStrings,numOfPedonStrings = parsePedonsIntoLists()
 
         if numOfPedonStrings > 1:
-            AddMsgAndPrint("\nDue to URL limitations there will be " + str(len(listOfPedonStrings))+ " seperate requests to NASIS:",1)
+            AddMsgAndPrint("\nDue to URL limitations there will be " + splitThousands(len(listOfPedonStrings))+ " seperate requests to NASIS:",1)
         else:
             AddMsgAndPrint("\n")
 
@@ -1168,8 +1168,8 @@ if __name__ == '__main__':
 
             # Strictly for formatting
             if numOfPedonStrings > 1:
-                AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
-                arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")")
+                AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + splitThousands(i) + " of " + splitThousands(len(listOfPedonStrings)) + ")",0)
+                arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + splitThousands(i) + " of " + splitThousands(len(listOfPedonStrings)) + ")")
             else:
                 AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.",0)
                 arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.")
