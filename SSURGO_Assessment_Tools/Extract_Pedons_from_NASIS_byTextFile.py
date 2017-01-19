@@ -10,8 +10,8 @@
 # phone: 608.662.4422 ext. 190
 #
 # Created:     7/04/2016
-# Last Modified: 1/11/2017
-# Copyright:   (c) Adolfo.Diaz 2016
+# Last Modified: 1/19/2017
+
 #-------------------------------------------------------------------------------
 
 ## ===================================================================================
@@ -25,7 +25,7 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-        print msg
+        #print msg
 
         #for string in msg.split('\n'):
             #Add a geoprocessing message (in case this is run as a tool)
@@ -900,10 +900,11 @@ def getPedonHorizon(pedonList):
         return False
 
 ## ================================================================================================================
-def importPedonData(tblAliases):
+def importPedonData(tblAliases,verbose=False):
 
     try:
-        AddMsgAndPrint("\nImporting Pedon Data into FGDB")
+
+        if verbose: AddMsgAndPrint("\nImporting Pedon Data into FGDB")
         arcpy.SetProgressorLabel("Importing Pedon Data into FGDB")
 
         # use the tblAliases so that tables are imported in alphabetical order
@@ -1039,9 +1040,9 @@ def importPedonData(tblAliases):
                 # Report the # of records added to the table
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
                 else:
-                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
 
                 del numOfRowsAdded,GDBtable,fieldList,nameOfFields,fldLengths,cursor
 
@@ -1049,9 +1050,9 @@ def importPedonData(tblAliases):
             else:
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: 0",1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: 0",1)
                 else:
-                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: 0",1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: 0",1)
 
         #Resets the progressor back to its initial state
         arcpy.ResetProgressor()
@@ -1066,6 +1067,76 @@ def importPedonData(tblAliases):
 ##        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
         errorMsg()
         return False
+
+## ================================================================================================================
+def getObjectSize(obj, handlers={}, verbose=False):
+    """ Returns the approximate memory footprint an object and all of its contents.
+
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    To search other containers, add handlers to iterate over their contents:
+
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+    """
+
+    try:
+        # lamda function to iterate through a dictionary
+        dict_handler = lambda d: chain.from_iterable(d.items())
+
+    #     Use the following lines if you want to determine the size for ANY object
+    ##    all_handlers = {tuple: iter,
+    ##                    list: iter,
+    ##                    deque: iter,
+    ##                    dict: dict_handler,
+    ##                    set: iter,
+    ##                    frozenset: iter,
+    ##                   }
+
+        # Limit the focus to just dictionaries since that is the only thing I will pass
+        all_handlers = {dict: dict_handler}
+
+        all_handlers.update(handlers)     # user handlers take precedence
+        seen = set()                      # unique list of Object's memory ID
+        default_size = getsizeof(0)       # estimate sizeof object without __sizeof__; a dict will always be 140 bytes
+
+        def sizeof(obj):
+
+            if id(obj) in seen:       # do not double count the same object's memory ID
+                return 0
+
+            seen.add(id(obj))
+            s = getsizeof(obj, default_size)
+
+            if verbose:
+                print(s, type(obj), repr(obj))
+
+            # iterate through all itemized objects (tuple,list) 'all_handlers' including their content
+            for typ, handler in all_handlers.items():
+
+                # check if the object is associated with the type at hand.  i.e. if the current
+                # type is dict then check if the object 'o' is a dict. ({'a': 1, 'c': 3, 'b': 2, 'e': 'a string of chars', 'd': [4, 5, 6, 7]})
+                # if True, go thru and add the bytes for each eleement
+                if isinstance(obj, typ):
+                    s += sum(map(sizeof, handler(obj)))   # Iterates through this function
+                    break
+
+            return s
+
+        byteSize = sizeof(obj)
+
+        if byteSize < 1024:
+            return splitThousands(byteSize) + " bytes"
+        elif byteSize > 1023 and byteSize < 1048576:
+            return splitThousands(round((byteSize / 1024.0),1)) + " KB"
+        elif byteSize > 1048575 and byteSize < 1073741824:
+            return splitThousands(round((byteSize / (1024*1024.0)),1)) + " MB"
+        elif byteSize > 1073741823:
+            return splitThousands(round(byteSize / (1024*1024*1024.0),1)) + " GB"
+
+    except:
+        errorMsg()
+        pass
 
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
@@ -1105,6 +1176,9 @@ Column order
 import sys, string, os, traceback, re, arcpy, socket, httplib, time
 from arcpy import env
 from urllib2 import urlopen, URLError, HTTPError
+from sys import getsizeof, stderr
+from itertools import chain
+from collections import deque
 
 if __name__ == '__main__':
 
@@ -1175,9 +1249,12 @@ if __name__ == '__main__':
         else:
             AddMsgAndPrint("\n")
 
-        i = 1                                # represents the request number
-        j = 0                                # number of Pedons that are in memory
-        badStrings = list()                  # lists containing lists of pedons that failed
+        i = 1                                         # represents the request number
+        j = 0                                         # number of Pedons that are in memory;gets reset once dumped into FGDB
+
+        badStrings = list()                           # lists containing lists of pedons that failed
+
+        """ --------- iterate through groups of pedonIDs to retrieve their data"""
         for pedonString in listOfPedonStrings:
 
             numOfPedonsInPedonString = len(pedonString.split(','))
@@ -1188,7 +1265,6 @@ if __name__ == '__main__':
 
                 j = 1
                 for string in badStrings:
-                    #AddMsgAndPrint("\n" + str(string),2)
                     AddMsgAndPrint("\t\tFailed attempt #" + str(j) + ":" + str(len(string.split(','))) + " pedons Failed",2)
                     j+=1
                 AddMsgAndPrint("\nExiting the tool without completely finishing.",2)
@@ -1196,8 +1272,8 @@ if __name__ == '__main__':
 
             # Strictly for formatting
             if numOfPedonStrings > 1:
-                AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + splitThousands(i) + " of " + splitThousands(len(listOfPedonStrings)) + ")",0)
-                arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + splitThousands(i) + " of " + splitThousands(len(listOfPedonStrings)) + ")")
+                AddMsgAndPrint("\tRequest " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons",0)
+                arcpy.SetProgressorLabel("Request " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons")
             else:
                 AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.",0)
                 arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.")
@@ -1207,17 +1283,20 @@ if __name__ == '__main__':
                 AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
                 badStrings += pedonString
 
-            # Time to purge the pedonGDBtables dictionary to avoid Memory Errors.
-            if j > 100000:
+            #AddMsgAndPrint("\t\tCurrent Size of pedonGDBtables dictionary: " + getObjectSize(pedonGDBtables, verbose=False),0)
 
-                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(sys.getsizeof(pedonGDBtables)),1)
+            # transfer pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors.
+            if j > 40000  or i == numOfPedonStrings:
+
+                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)),1)
 
                 if len(pedonGDBtables['site']):
-                    if not importPedonData(tblAliases):
+                    if not importPedonData(tblAliases,verbose=(True if i==numOfPedonStrings else False)):
                         sys.exit()
 
                     del pedonGDBtables
                     pedonGDBtables = createEmptyDictOfTables()
+                    #AddMsgAndPrint("\t\tNew Size of pedonGDBtables dictionary: " + getObjectSize(pedonGDBtables, verbose=False),0)
                     j=0
 
             i+=1
