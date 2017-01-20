@@ -10,7 +10,7 @@
 # phone: 608.662.4422 ext. 190
 #
 # Created:     7/04/2016
-# Last Modified: 1/11/2017
+# Last Modified: 1/19/2017
 # Copyright:   (c) Adolfo.Diaz 2016
 #-------------------------------------------------------------------------------
 
@@ -738,7 +738,7 @@ def createPedonFGDB():
                 return ""
 
         # copy template over to new location
-        AddMsgAndPrint("\tCreating " + GDBname + ".gbd with NCSS Pedon Schema 7.3")
+        AddMsgAndPrint("\tCreating " + GDBname + ".gdb with NCSS Pedon Schema 7.3")
         arcpy.Copy_management(localPedonGDB,newPedonFGDB)
 
 ##        # Create empty temp File Geodatabae

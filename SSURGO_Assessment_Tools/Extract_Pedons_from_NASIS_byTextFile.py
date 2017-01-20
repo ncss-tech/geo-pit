@@ -311,7 +311,7 @@ def createPedonFGDB():
                 return ""
 
         # copy template over to new location
-        AddMsgAndPrint("\tCreating " + GDBname + ".gbd with NCSS Pedon Schema 7.3")
+        AddMsgAndPrint("\tCreating " + GDBname + ".gdb with NCSS Pedon Schema 7.3")
         arcpy.Copy_management(localPedonGDB,newPedonFGDB)
 
 ##        # Create empty temp File Geodatabae
@@ -915,8 +915,8 @@ def importPedonData(tblAliases,verbose=False):
 
             firstTab = (maxCharTable - len("Table Physical Name")) * " "
             headerName = "\n\tTable Physical Name" + firstTab + "Table Alias Name"
-            AddMsgAndPrint(headerName,0)
-            AddMsgAndPrint("\t" + len(headerName) * "=",0)
+            if verbose: AddMsgAndPrint(headerName,0)
+            if verbose: AddMsgAndPrint("\t" + len(headerName) * "=",0)
 
         else:
             maxCharTable = max([len(table) for table in tblKeys]) + 1
@@ -1288,7 +1288,7 @@ if __name__ == '__main__':
             # transfer pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors.
             if j > 40000  or i == numOfPedonStrings:
 
-                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)),1)
+                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)) + " -- Number of Pedons: " + splitThousands(j) ,1)
 
                 if len(pedonGDBtables['site']):
                     if not importPedonData(tblAliases,verbose=(True if i==numOfPedonStrings else False)):
