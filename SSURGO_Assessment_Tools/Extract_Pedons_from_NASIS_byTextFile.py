@@ -1028,8 +1028,8 @@ def importPedonData(tblAliases,verbose=False):
                         break
                     except:
                         AddMsgAndPrint("\n\tError in :" + table + " table")
-                        print "\n\t" + str(rec)
-                        print "\n\tRecord Number: " + str(recNum)
+                         "\n\t" + str(rec)
+                        #print "\n\tRecord Number: " + str(recNum)
                         AddMsgAndPrint("\tNumber of Fields in GDB: " + str(len(nameOfFields)))
                         AddMsgAndPrint("\tNumber of fields in report: " + str(len([rec.split('|')][0])))
                         errorMsg()
@@ -1038,13 +1038,16 @@ def importPedonData(tblAliases,verbose=False):
                     del newRow,fldNo
 
                 # Report the # of records added to the table
+                tableRecords = int(arcpy.GetCount_management(GDBtable).getOutput(0))
+
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(tableRecords),1)
+                    #if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
                 else:
-                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(tableRecords),1)
 
-                del numOfRowsAdded,GDBtable,fieldList,nameOfFields,fldLengths,cursor
+                del numOfRowsAdded,GDBtable,fieldList,nameOfFields,fldLengths,cursor,tableRecords
 
             # Table had no records; still print it out
             else:
@@ -1251,6 +1254,7 @@ if __name__ == '__main__':
 
         i = 1                                         # represents the request number
         j = 0                                         # number of Pedons that are in memory;gets reset once dumped into FGDB
+        k = 0                                         # number of total pedons that have been requested thus far
 
         badStrings = list()                           # lists containing lists of pedons that failed
 
@@ -1288,7 +1292,9 @@ if __name__ == '__main__':
             # transfer pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors.
             if j > 40000  or i == numOfPedonStrings:
 
-                AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)) + " -- Number of Pedons: " + splitThousands(j) ,1)
+                # Only print if
+                if not i == numOfPedonStrings:
+                    AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)) + " -- Number of Pedons: " + splitThousands(j) ,1)
 
                 if len(pedonGDBtables['site']):
                     if not importPedonData(tblAliases,verbose=(True if i==numOfPedonStrings else False)):
