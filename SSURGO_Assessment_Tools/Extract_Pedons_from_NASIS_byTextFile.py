@@ -814,7 +814,8 @@ def getPedonHorizon(pedonList):
                     # appending this value exceeded the number of possible fields
                     else:
                         AddMsgAndPrint("\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
-                        AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(len(partialValue.split('|'))),2)
+                        AddMsgAndPrint("\t\t\tNumber of fields in table: " + str(numOfFields),2)
+                        AddMsgAndPrint("\t\t\tNumber of fields from report: " + str(len(partialValue.split('|'))),2)
                         AddMsgAndPrint("\t\t\tOriginal Record: " + originalValue,2)
                         AddMsgAndPrint("\t\t\tAppended Record: " + partialValue,2)
                         invalidRecord += 1
@@ -827,8 +828,9 @@ def getPedonHorizon(pedonList):
                     # number of values exceed the number of fields; Big Error
                     if numOfValues > numOfFields:
                         AddMsgAndPrint("\n\t\tIncorrectly formatted Record Found in " + currentTable + " table:",2)
-                        AddMsgAndPrint("\t\t\tRecord should have " + str(numOfFields) + " values but has " + str(numOfValues),2)
-                        AddMsgAndPrint("\t\t\tRecord: " + theValue,2)
+                        AddMsgAndPrint("\t\t\tNumber of fields in table: " + str(numOfFields),2)
+                        AddMsgAndPrint("\t\t\tNumber of fields in report: " + str(numOfValues),2)
+                        AddMsgAndPrint("\t\t\tRecord Values: " + str(theValue),2)
                         invalidRecord += 1
 
                     # number of values falls short of the number of correct fields
@@ -1022,16 +1024,15 @@ def importPedonData(tblAliases,verbose=False):
                         cursor.insertRow(newRow)
                         numOfRowsAdded += 1;recNum += 1
 
-                    except arcpy.ExecuteError:
-                        AddMsgAndPrint("\n\tError in :" + table + " table: Field No: " + str(fldNo) + " : " + str(rec),2)
-                        AddMsgAndPrint("\n\t" + arcpy.GetMessages(2),2)
-                        break
                     except:
-                        AddMsgAndPrint("\n\tError in :" + table + " table")
-                         "\n\t" + str(rec)
-                        #print "\n\tRecord Number: " + str(recNum)
-                        AddMsgAndPrint("\tNumber of Fields in GDB: " + str(len(nameOfFields)))
-                        AddMsgAndPrint("\tNumber of fields in report: " + str(len([rec.split('|')][0])))
+                        AddMsgAndPrint("\n\tError in: " + table + " table",2)
+
+                        if not len(nameOfFields) == len([rec.split('|')][0]):
+                            AddMsgAndPrint("\tNumber of fields in table: " + str(len(nameOfFields)),2)
+                            AddMsgAndPrint("\tNumber of fields in report: " + str(len([rec.split('|')][0])),2)
+
+                        AddMsgAndPrint("\tRecord Values: " + str(newRow),2)
+
                         errorMsg()
                         break
 

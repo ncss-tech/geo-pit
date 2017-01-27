@@ -1413,7 +1413,7 @@ def importPedonData(tblAliases):
                         AddMsgAndPrint("\n\t" + arcpy.GetMessages(2),2)
                         break
                     except:
-                        AddMsgAndPrint("\n\tError in :" + table + " table")
+                        AddMsgAndPrint("\n\tError in: " + table + " table")
                         print "\n\t" + str(rec)
                         print "\n\tRecord Number: " + str(recNum)
                         AddMsgAndPrint("\tNumber of Fields in GDB: " + str(len(nameOfFields)))
