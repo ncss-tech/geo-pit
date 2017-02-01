@@ -307,7 +307,7 @@ def determineOverlap(muLayer):
 
     try:
         # -------------- Get the SAPOLYGON ----------- Layer
-        AddMsgAndPrint("\nDeterming overlap between input polygon and your Geodata extent",0)
+        AddMsgAndPrint("\nDetermining overlap between input polygon and your Geodata extent",0)
         soilsFolder = geoFolder + os.sep + "soils"
 
         if not os.path.exists(soilsFolder):

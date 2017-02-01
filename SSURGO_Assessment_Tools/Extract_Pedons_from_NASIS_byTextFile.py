@@ -1243,7 +1243,7 @@ if __name__ == '__main__':
         ----------------------------------------------- Uses the 'WEB_AnalysisPC_MAIN_URL_EXPORT' NASIS report ---------------------------------------------------------------------------
         In order to request pedon information, the pedonIDs need to be split up into manageable
         lists of about 265 pedons due to URL limitations.  Submit these individual lists of pedon
-        to the server """
+        to the server --------------------------------------------------------------------------------------------------------------------------------------------------------------------"""
 
         # Parse pedonIDs into lists containing about 265 pedons
         listOfPedonStrings,numOfPedonStrings = parsePedonsIntoLists()
@@ -1264,18 +1264,21 @@ if __name__ == '__main__':
 
             numOfPedonsInPedonString = len(pedonString.split(','))
             j+=numOfPedonsInPedonString
+            k+=numOfPedonsInPedonString
 
+            """ Exit if There have been multiple failed attempts at requesting pedon data"""
             if len(badStrings) > 1:
                 AddMsgAndPrint("\n\tMultiple failed attempts with the following pedon IDs:",2)
 
-                j = 1
+                n = 1
                 for string in badStrings:
-                    AddMsgAndPrint("\t\tFailed attempt #" + str(j) + ":" + str(len(string.split(','))) + " pedons Failed",2)
-                    j+=1
+                    AddMsgAndPrint("\t\tFailed attempt #" + str(n) + ":" + str(len(string.split(','))) + " pedons Failed",2)
+                    n+=1
+
                 AddMsgAndPrint("\nExiting the tool without completely finishing.",2)
                 sys.exit()
 
-            # Strictly for formatting
+            """ Strictly for formatting print message"""
             if numOfPedonStrings > 1:
                 AddMsgAndPrint("\tRequest " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons",0)
                 arcpy.SetProgressorLabel("Request " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons")
@@ -1287,39 +1290,46 @@ if __name__ == '__main__':
             if not getPedonHorizon(pedonString):
                 AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
                 badStrings += pedonString
+                k-=numOfPedonsInPedonString
 
             #AddMsgAndPrint("\t\tCurrent Size of pedonGDBtables dictionary: " + getObjectSize(pedonGDBtables, verbose=False),0)
 
-            # transfer pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors.
+            """ Import pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors"""
             if j > 40000  or i == numOfPedonStrings:
 
-                # Only print if
+                # Only print if number of pedons exceed 40,000
                 if not i == numOfPedonStrings:
                     AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)) + " -- Number of Pedons: " + splitThousands(j) ,1)
 
+                # Import Pedon Information into Pedon FGDB
                 if len(pedonGDBtables['site']):
                     if not importPedonData(tblAliases,verbose=(True if i==numOfPedonStrings else False)):
                         sys.exit()
 
                     del pedonGDBtables
-                    pedonGDBtables = createEmptyDictOfTables()
-                    #AddMsgAndPrint("\t\tNew Size of pedonGDBtables dictionary: " + getObjectSize(pedonGDBtables, verbose=False),0)
-                    j=0
 
+                    # recreate pedonGDBtables dictionary only if the requests are not done
+                    if not i == numOfPedonStrings:
+                        pedonGDBtables = createEmptyDictOfTables()
+                        j=0
             i+=1
 
-        """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
-        # if the site table has records, proceed to transerring them to the FGDB
-        if len(pedonGDBtables['site']):
-            if not importPedonData(tblAliases):
-                sys.exit()
+        """ ------------------------------------ Report Summary of results -----------------------------------"""
+        sitePedonCount = int(arcpy.GetCount_management(pedonFGDB + os.sep + 'site').getOutput(0))
+        if totalPedons == sitePedonCount:
+            AddMsgAndPrint("\n\nSuccessfully downloaded " + splitThousands(totalPedons) + " pedons from NASIS",0)
+        else:
+            AddMsgAndPrint("\n\nDownloaded " + splitThousands(sitePedonCount) + " from NASIS",2)
+            AddMsgAndPrint("\tFailed to download " + splitThousands(totalPedons - sitePedonCount) + " pedons from NASIS",2)
+
+        """ ---------------------------Add Site Feature Class to ArcMap Session if available ------------------"""
         try:
             mxd = arcpy.mapping.MapDocument("CURRENT")
             df = arcpy.mapping.ListDataFrames(mxd)[0]
             lyr = os.path.join(pedonFGDB,'site')
             newLayer = arcpy.mapping.Layer(lyr)
             arcpy.mapping.AddLayer(df, newLayer, "TOP")
-            AddMsgAndPrint("\nSuccessfully added the site Table to your ArcMap Session",0)
+            AddMsgAndPrint("\nAdded the site feature class to your ArcMap Session",0)
         except:
             pass
 

@@ -593,7 +593,7 @@ def getWebExportPedon(coordinates):
 
         else:
             #AddMsgAndPrint("\tThere are a total of " + splitThousands(totalPedonCnt) + " pedons found in this area:")
-            AddMsgAndPrint("\tHere is a breakdown of the " + splitThousands(totalPedonCnt) + " pedons found in this area:")
+            AddMsgAndPrint("\tThere are " + splitThousands(totalPedonCnt) + " within this layer:")
             AddMsgAndPrint("\t\tLAB Pedons: " + splitThousands(labPedonCnt))
             AddMsgAndPrint("\t\tUndisclosed: " + splitThousands(undisclosed))
             AddMsgAndPrint("\t\tNASIS Pedons: " + splitThousands((totalPedonCnt - labPedonCnt) - undisclosed))
@@ -684,7 +684,7 @@ def filterPedonsByFeature(feature):
 
             del pedonDictCopy,selectedPedons,selectedPedonsList
 
-            return True
+            return pedonsWithinAOI
 
         else:
             AddMsgAndPrint("\tThere are NO pedons that are completely within your AOI. EXITING! \n",2)
@@ -764,6 +764,36 @@ def createPedonFGDB():
         AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
         errorMsg()
         return ""
+
+## ===============================================================================================================
+def createEmptyDictOfTables():
+    # Create a new dictionary called pedonGDBtables that will contain every table in the newly created
+    # pedonFGDB above as a key.  Individual records of tables will be added as values to the table keys.
+    # These values will be in the form of lists.  This dictionary will be populated using the results of
+    # the WEB_AnalysisPC_MAIN_URL_EXPORT NASIS report.  Much faster than opening and closing cursors.
+
+    try:
+
+        arcpy.env.workspace = pedonFGDB
+        tables = arcpy.ListTables()
+        tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
+
+        # Create
+        # {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
+        pedonGDBtablesDict = dict()
+        for table in tables:
+
+            # Skip any Metadata files
+            if table.find('Metadata') > -1: continue
+            pedonGDBtablesDict[str(table)] = []
+
+        del tables
+        return pedonGDBtablesDict
+
+    except:
+        AddMsgAndPrint("Unhandled exception (GetTableAliases)", 2)
+        errorMsg()
+        sys.exit()
 
 ## ===============================================================================================================
 def getTableAliases(pedonFGDBloc):
@@ -1291,11 +1321,10 @@ def getPedonHorizon(pedonList):
         return False
 
 ## ================================================================================================================
-def importPedonData(tblAliases):
-
+def importPedonData(tblAliases,verbose=False):
 
     try:
-        AddMsgAndPrint("\nImporting Pedon Data into FGDB")
+        if verbose: AddMsgAndPrint("\nImporting Pedon Data into FGDB")
         arcpy.SetProgressorLabel("Importing Pedon Data into FGDB")
 
         # use the tblAliases so that tables are imported in alphabetical order
@@ -1306,8 +1335,8 @@ def importPedonData(tblAliases):
 
             firstTab = (maxCharTable - len("Table Physical Name")) * " "
             headerName = "\n\tTable Physical Name" + firstTab + "Table Alias Name"
-            AddMsgAndPrint(headerName,0)
-            AddMsgAndPrint("\t" + len(headerName) * "=",0)
+            if verbose: AddMsgAndPrint(headerName,0)
+            if verbose: AddMsgAndPrint("\t" + len(headerName) * "=",0)
 
         else:
             maxCharTable = max([len(table) for table in tblKeys]) + 1
@@ -1426,9 +1455,9 @@ def importPedonData(tblAliases):
                 # Report the # of records added to the table
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
                 else:
-                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: " + splitThousands(numOfRowsAdded),1)
 
                 del numOfRowsAdded,GDBtable,fieldList,nameOfFields,fldLengths,cursor
 
@@ -1436,9 +1465,9 @@ def importPedonData(tblAliases):
             else:
                 if bAliasName:
                     secondTab = (maxCharAlias - len(aliasName)) * " "
-                    AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: 0",1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + aliasName + secondTab + " Records Added: 0",1)
                 else:
-                    AddMsgAndPrint("\t" + table + firstTab + " Records Added: 0",1)
+                    if verbose: AddMsgAndPrint("\t" + table + firstTab + " Records Added: 0",1)
 
         #Resets the progressor back to its initial state
         arcpy.ResetProgressor()
@@ -1450,9 +1479,78 @@ def importPedonData(tblAliases):
         return False
 
     except:
-##        AddMsgAndPrint("Unhandled exception (createFGDB)", 2)
         errorMsg()
         return False
+
+## ================================================================================================================
+def getObjectSize(obj, handlers={}, verbose=False):
+    """ Returns the approximate memory footprint an object and all of its contents.
+
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    To search other containers, add handlers to iterate over their contents:
+
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+    """
+
+    try:
+        # lamda function to iterate through a dictionary
+        dict_handler = lambda d: chain.from_iterable(d.items())
+
+    #     Use the following lines if you want to determine the size for ANY object
+    ##    all_handlers = {tuple: iter,
+    ##                    list: iter,
+    ##                    deque: iter,
+    ##                    dict: dict_handler,
+    ##                    set: iter,
+    ##                    frozenset: iter,
+    ##                   }
+
+        # Limit the focus to just dictionaries since that is the only thing I will pass
+        all_handlers = {dict: dict_handler}
+
+        all_handlers.update(handlers)     # user handlers take precedence
+        seen = set()                      # unique list of Object's memory ID
+        default_size = getsizeof(0)       # estimate sizeof object without __sizeof__; a dict will always be 140 bytes
+
+        def sizeof(obj):
+
+            if id(obj) in seen:       # do not double count the same object's memory ID
+                return 0
+
+            seen.add(id(obj))
+            s = getsizeof(obj, default_size)
+
+            if verbose:
+                print(s, type(obj), repr(obj))
+
+            # iterate through all itemized objects (tuple,list) 'all_handlers' including their content
+            for typ, handler in all_handlers.items():
+
+                # check if the object is associated with the type at hand.  i.e. if the current
+                # type is dict then check if the object 'o' is a dict. ({'a': 1, 'c': 3, 'b': 2, 'e': 'a string of chars', 'd': [4, 5, 6, 7]})
+                # if True, go thru and add the bytes for each eleement
+                if isinstance(obj, typ):
+                    s += sum(map(sizeof, handler(obj)))   # Iterates through this function
+                    break
+
+            return s
+
+        byteSize = sizeof(obj)
+
+        if byteSize < 1024:
+            return splitThousands(byteSize) + " bytes"
+        elif byteSize > 1023 and byteSize < 1048576:
+            return splitThousands(round((byteSize / 1024.0),1)) + " KB"
+        elif byteSize > 1048575 and byteSize < 1073741824:
+            return splitThousands(round((byteSize / (1024*1024.0)),1)) + " MB"
+        elif byteSize > 1073741823:
+            return splitThousands(round(byteSize / (1024*1024*1024.0),1)) + " GB"
+
+    except:
+        errorMsg()
+        pass
 
 #===================================================================================================================================
 """ ----------------------------------------My Notes -------------------------------------------------"""
@@ -1492,6 +1590,9 @@ Column order
 import sys, string, os, traceback, re, arcpy, socket, httplib, time
 from arcpy import env
 from urllib2 import urlopen, URLError, HTTPError
+from sys import getsizeof, stderr
+from itertools import chain
+from collections import deque
 
 if __name__ == '__main__':
 
@@ -1545,11 +1646,11 @@ if __name__ == '__main__':
             sys.exit()
 
         """ -------------------------------------------------- Filter pedons by those that fall completely within the user-input feature ---------------------------------------------------------"""
-        if not filterPedonsByFeature(inputFeatures):
+        totalPedons = filterPedonsByFeature(inputFeatures)
+
+        if not totalPedons:
             AddMsgAndPrint("\n\tFailed to filter list of Pedons by Area of Interest. EXITING! \n",2)
             sys.exit()
-
-        #sys.exit()
 
         """ ------------------------------------------------------Create New File Geodatabaes and get Table Aliases for printing -------------------------------------------------------------------
             Create a new FGDB using a pre-established XML workspace schema.  All tables will be empty
@@ -1576,18 +1677,7 @@ if __name__ == '__main__':
             These values will be in the form of lists.  This dictionary will be populated using the results of
             the WEB_AnalysisPC_MAIN_URL_EXPORT NASIS report.  Much faster than opening and closing cursors."""
 
-        arcpy.env.workspace = pedonFGDB
-        tables = arcpy.ListTables()
-        tables.append(arcpy.ListFeatureClasses('site','Point')[0])  ## site is a feature class and gets excluded by the ListTables function
-
-        # Create
-        # {'area': [],'areatype': [],'basalareatreescounted': [],'beltdata': [],'belttransectsummary': []........}
-        pedonGDBtables = dict()
-        for table in tables:
-
-            # Skip any Metadata files
-            if table.find('Metadata') > -1: continue
-            pedonGDBtables[str(table)] = []
+        pedonGDBtables = createEmptyDictOfTables()
 
         """ ------------------------------------------ Get Site, Pedon, and Pedon Horizon information from NASIS -------------------------------------------------------------------------
         ----------------------------------------------- Uses the 'WEB_AnalysisPC_MAIN_URL_EXPORT' NASIS report ---------------------------------------------------------------------------
@@ -1603,25 +1693,35 @@ if __name__ == '__main__':
         else:
             AddMsgAndPrint("\n")
 
-        i = 1                                # represents the request number
-        badStrings = list()                  # lists containing lists of pedons that failed
+        i = 1                                         # represents the request number
+        j = 0                                         # number of Pedons that are in memory;gets reset once dumped into FGDB
+        k = 0                                         # number of total pedons that have been requested thus far
+
+        badStrings = list()                           # lists containing lists of pedons that failed
+
+        """ --------- iterate through groups of pedonIDs to retrieve their data"""
         for pedonString in listOfPedonStrings:
 
+            numOfPedonsInPedonString = len(pedonString.split(','))
+            j+=numOfPedonsInPedonString
+            k+=numOfPedonsInPedonString
+
+            """ Exit if There have been multiple failed attempts at requesting pedon data"""
             if len(badStrings) > 1:
                 AddMsgAndPrint("\n\tMultiple failed attempts with the following pedon IDs:",2)
 
-                j = 1
+                n = 1
                 for string in badStrings:
-                    #AddMsgAndPrint("\n" + str(string),2)
-                    AddMsgAndPrint("\t\tFailed attempt #" + str(j) + ":" + str(len(string.split(','))) + " pedons Failed",2)
-                    j+=1
+                    AddMsgAndPrint("\t\tFailed attempt #" + str(n) + ":" + str(len(string.split(','))) + " pedons Failed",2)
+                    n+=1
+
                 AddMsgAndPrint("\nExiting the tool without completely finishing.",2)
                 sys.exit()
 
-            # Strictly for formatting
+            """ Strictly for formatting print message"""
             if numOfPedonStrings > 1:
-                AddMsgAndPrint("\tRetrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")",0)
-                arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons. (Request " + str(i) + " of " + str(len(listOfPedonStrings)) + ")")
+                AddMsgAndPrint("\tRequest " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons",0)
+                arcpy.SetProgressorLabel("Request " + splitThousands(i) + " of " + splitThousands(numOfPedonStrings) + " for " + str(len(pedonString.split(','))) + " pedons")
             else:
                 AddMsgAndPrint("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.",0)
                 arcpy.SetProgressorLabel("Retrieving pedon data from NASIS for " + str(len(pedonString.split(','))) + " pedons.")
@@ -1630,20 +1730,47 @@ if __name__ == '__main__':
             if not getPedonHorizon(pedonString):
                 AddMsgAndPrint("\n\tFailed to receive pedon horizon info from NASIS",2)
                 badStrings += pedonString
+                k-=numOfPedonsInPedonString
+
+            #AddMsgAndPrint("\t\tCurrent Size of pedonGDBtables dictionary: " + getObjectSize(pedonGDBtables, verbose=False),0)
+
+            """ Import pedons from memory to the FGDB after about 40000 pedons have been requested to avoid Memory Errors"""
+            if j > 40000  or i == numOfPedonStrings:
+
+                # Only print if number of pedons exceed 40,000
+                if not i == numOfPedonStrings:
+                    AddMsgAndPrint("\n\tUnloading pedon data into FGDB to avoid memory issues. Current size: " + str(getObjectSize(pedonGDBtables, verbose=False)) + " -- Number of Pedons: " + splitThousands(j) ,1)
+
+                # Import Pedon Information into Pedon FGDB
+                if len(pedonGDBtables['site']):
+                    if not importPedonData(tblAliases,verbose=(True if i==numOfPedonStrings else False)):
+                        sys.exit()
+
+                    del pedonGDBtables
+
+                    # recreate pedonGDBtables dictionary only if the requests are not done
+                    if not i == numOfPedonStrings:
+                        pedonGDBtables = createEmptyDictOfTables()
+                        j=0
+
             i+=1
 
-        """ ------------------------------------------ Import Pedon Information into Pedon FGDB -------------------------------------"""
-        # if the site table has records, proceed to transerring them to the FGDB
-        if len(pedonGDBtables['site']):
-            if not importPedonData(tblAliases):
-                sys.exit()
+        """ ------------------------------------ Report Summary of results -----------------------------------"""
+        sitePedonCount = int(arcpy.GetCount_management(pedonFGDB + os.sep + 'site').getOutput(0))
+        if totalPedons == sitePedonCount:
+            AddMsgAndPrint("\n\nSuccessfully downloaded " + splitThousands(totalPedons) + " pedons from NASIS",0)
+        else:
+            AddMsgAndPrint("\n\nDownloaded " + splitThousands(sitePedonCount) + " from NASIS",2)
+            AddMsgAndPrint("\tFailed to download " + splitThousands(totalPedons - sitePedonCount) + " pedons from NASIS",2)
+
+        """ ---------------------------Add Site Feature Class to ArcMap Session if available ------------------"""
         try:
             mxd = arcpy.mapping.MapDocument("CURRENT")
             df = arcpy.mapping.ListDataFrames(mxd)[0]
             lyr = os.path.join(pedonFGDB,'site')
             newLayer = arcpy.mapping.Layer(lyr)
             arcpy.mapping.AddLayer(df, newLayer, "TOP")
-            AddMsgAndPrint("\nSuccessfully added the site Table to your ArcMap Session",0)
+            AddMsgAndPrint("\nAdded the site feature class to your ArcMap Session",0)
         except:
             pass
 
