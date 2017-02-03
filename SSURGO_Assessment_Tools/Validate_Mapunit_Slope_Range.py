@@ -16,7 +16,7 @@
 # directory as the user-defined Mapunit Layer.
 #
 # Created:        03/02/2015
-# Last Modified:  09/15/2016
+# Last Modified:  02/3/2017
 # Copyright:   (c) Adolfo.Diaz 2015
 
 #-------------------------------------------------------------------------------
@@ -391,11 +391,13 @@ def getBinHeight(value,option=1):
     # directly corresponds to the 1st tuple element returned by the histogram function (n), which records
     # the height of that specific bin.
     # Return the height of the bin normalized on a 1.0 scale
+    # sample of a bin: [  0.   1.   2.   3.   4.   5.   6.   7.   8.   9.  10.  11.  12.  13.  14. 15.]
 
     try:
         binPos = -1
 
         for bin in bins:
+            print bin
 
             if value <= bin:
                 break
@@ -403,12 +405,11 @@ def getBinHeight(value,option=1):
             else:
                 binPos+=1
 
-        if n[binPos] < n[binPos+1]:
-            binPos += 1
-
-    ##    # binPos is the last element in bins; could be that the value falls in the last bin or
-    ##    # value was errorneous
-    ##    if binPos == len(bins) - 1:
+        try:
+            if n[binPos] < n[binPos+1]:
+                binPos += 1
+        except:
+            pass
 
         # if the value exceed the last value in bins then simply take the last value in the bin.  This is due to the fact
         # that the histogram is created using the stretchedArray and not the slopeArray.
@@ -633,11 +634,6 @@ def createShapefile(below5,above95,zsTable):
             return False, False
 
         # Isolate anomaly polygons using the query from above
-##        tempMULayer = "tempMUlayer"
-##        if arcpy.Exists(tempMULayer):
-##            arcpy.Delete_management(tempMULayer)
-
-##        arcpy.MakeFeatureLayer_management(muLayerPath,tempMULayer,sQuery)
         arcpy.SelectLayerByAttribute_management(tempMuLayer,"NEW_SELECTION",sQuery)
         lyrField = "Layer"
         symbField = "Symbology"
@@ -733,10 +729,10 @@ if __name__ == '__main__':
     lowSlope = arcpy.GetParameter(2)
     highSlope = arcpy.GetParameter(3)
 
-##    muLayer = r'D:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAprojects\layers\SDJR___MLRA_103___Houghton_and_Muskego_soils__0_to_1_percent_slopes.shp'
-##    slopeLayer = r'D:\MLRA_Geodata\MLRA_Workspace_Bemidji\MLRAGeodata\elevation\Elevation.gdb\Slope_10m_MLRA'
+##    muLayer = r'C:\flex\SDJR___MLRA_56___Maddock_units.shp'
+##    slopeLayer = r'E:\SSR10_Geodata\MLRAGeodata\elevation\Elevation.gdb\slope_10m_SSR10'
 ##    lowSlope = 0
-##    highSlope = 3
+##    highSlope = 30
 
     try:
 
@@ -820,8 +816,8 @@ if __name__ == '__main__':
 
         """ ------------ determine overlap between mupolygon and raster ------------"""
         # determine overlap using input and SAPOLYGON
-        if not determineOverlap(muLayer):
-            raise ExitError, "\n\tNo Overlap with geodata extent.  Come Back Later!"
+##        if not determineOverlap(muLayer):
+##            raise ExitError, "\n\tNo Overlap with geodata extent.  Come Back Later!"
 
         # Isolate the name of the input layers and remove and double blanks and underscores and extentions.
         projectName = ((os.path.basename(muLayerPath).replace("_"," ")).split('.')[0]).replace("  "," ")
@@ -856,27 +852,6 @@ if __name__ == '__main__':
         """ ---------------------------------------- Create Numpy Array from extracted slope values  -----------------------------------"""
         """ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"""
         """ ----------------------   Extract Slope values for all polygons OR by MUKEY; depending on analysis type    ----------------------"""
-    ##    AddMsgAndPrint("\nExtracting Slope for unique mapunits")
-    ##    mukeyRasters = []
-
-##        if analysisType == "MUKEY":
-##            for mukey in uniqueMukeys:
-##
-##                # Make a feature layer with the mukey subset delineations
-##                featureLayer = env.scratchGDB + os.sep + "temp_" + str(mukey)
-##                if arcpy.Exists(featureLayer):
-##                    arcpy.Delete_management(featureLayer)
-##
-##                where_clause = arcpy.AddFieldDelimiters(muLayerPath,"MUKEY") + " = '" + mukey + "'"
-##                arcpy.MakeFeatureLayer_management(muLayerPath,featureLayer,where_clause)
-##
-##                rasterMask = env.scratchGDB + os.sep + "tempRast_" + str(mukey)
-##                if arcpy.Exists(rasterMask):
-##                    arcpy.Delete_management(rasterMask)
-##
-##                outExtractByMask = ExtractByMask(slopeLayer,featureLayer)
-##                outExtractByMask.save(rasterMask)
-##                mukeyRasters.append(rasterMask)
         # Create a feature layer from input; had trouble using the input directly
         tempMuLayer = "tempMuLayer"
         if arcpy.Exists(tempMuLayer):
@@ -886,9 +861,7 @@ if __name__ == '__main__':
         # In order for the slope extraction process to go faster whenever a subset of
         # polygons was selected an extent environment needed to be set.
         if bSubset:
-            muLayerExtent = os.path.join(env.scratchGDB, "muLayerExtent")
-            if arcpy.Exists(muLayerExtent):
-                arcpy.Delete_management(muLayerExtent)
+            muLayerExtent = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
             arcpy.CopyFeatures_management(tempMuLayer, muLayerExtent)
             arcpy.env.extent = muLayerExtent
             arcpy.env.mask = muLayerExtent
@@ -901,10 +874,8 @@ if __name__ == '__main__':
         arcpy.env.snapRaster = slopeLayerPath
         arcpy.SetProgressorLabel("Extracting Slope")
         env.workspace = os.path.dirname(slopeLayerPath)
-        outSlope = env.scratchGDB + os.sep + "outSlope"
 
-        if arcpy.Exists(outSlope):
-            arcpy.Delete_management(outSlope)
+        outSlope = arcpy.CreateScratchName("xSlope",data_type="RasterDataset",workspace=arcpy.env.scratchGDB)
 
         # Add 0.5 to slope layer and convert to Integer
         if not descRaster.isInteger:
@@ -930,10 +901,7 @@ if __name__ == '__main__':
 
         arcpy.SetProgressorLabel("Converting Extracted Slope to Points")
 
-        rasterPoint = env.scratchGDB + os.sep + "rasterPoint"
-        if arcpy.Exists(rasterPoint):
-            arcpy.Delete_management(rasterPoint)
-
+        rasterPoint = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
         env.workspace = os.path.dirname(outSlope)
 
         try:
@@ -1021,7 +989,6 @@ if __name__ == '__main__':
         AddMsgAndPrint("\tSlope Min: " + str(slopeMin) + " %",0)
         AddMsgAndPrint("\tSlope Max: " + str(slopeMax) + " %",0)
         arcpy.SetProgressorPosition()
-
 
         """ +-+-+-+-+-+-+-+-+-+-+-+-+ Calculate amount of area below the user lowSlope, above the user highSlope and in between +-+-+-+-+-+-+-+-+-+-+-+"""
         arcpy.SetProgressorLabel("Calculating amount of area < than " + str(lowSlope) + " and > than " + str(highSlope) + "% slope")
@@ -1546,8 +1513,7 @@ if __name__ == '__main__':
         arcpy.Compact_management(arcpy.env.scratchGDB)
         os.startfile(histogramFile)
 
-        del plot
-        del muLayer,slopeLayer,lowSlope,highSlope,muLayerName, muLayerPath, outputFolder, projectName, rasterName, totalPolys
+        del plot,muLayer,slopeLayer,lowSlope,highSlope,muLayerName, muLayerPath, outputFolder, projectName, rasterName, totalPolys
         del outSlope, outExtractByMask, rasterPoint, totalPixels, gridCodeField, slopeArray, slopeMin, slopeMax,
         del slopeMedian, slopeMean, slopeArrayInt, slopeArrayInt_uniqueKeys, slopeArrayInt_bins, maxFrequency, maxFrequencyPos, slopeMode
         del slopeStd, percentile5, percentile25, percentile75, percentile95, outZStable, outZonalStatistics, wherePolysBelow5, polysBelow5
