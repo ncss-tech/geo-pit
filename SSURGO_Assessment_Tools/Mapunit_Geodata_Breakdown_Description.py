@@ -2050,22 +2050,22 @@ def processClimate():
                             if zoneField == "MLRA_Temp":
                                 for j in range(0,3):
                                     firstSpace = " " * (32 - len(climateLyrDef[j]))
-                                    field1 = str(round(((float(row[j]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
-                                    field2 = str(round(float(row[j]) / 100)) + " C"                  # Temp Celsius converted from values
+                                    field1 = str(round(((float(row[j]) / 100) * 1.8) + 32,1)) + " F"   # Temp Fehrenheit
+                                    field2 = str(round(float(row[j]) / 100,1)) + " C"                  # Temp Celsius converted from values
                                     AddMsgAndPrint(theTab + climateLyrDef[j] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
                             # Only report the average for MUKEY analysis; Not enough variation between min and max
                             else:
                                 firstSpace = " " * (32 - len(climateLyrDef[1]))
-                                field1 = str(round(((float(row[1]) / 100) * 1.8) + 32)) + " F"   # Temp Fehrenheit
-                                field2 = str(round(float(row[1]) / 100)) + " C"                  # Temp Celsius converted from values
+                                field1 = str(round(((float(row[1]) / 100) * 1.8) + 32,1)) + " F"   # Temp Fehrenheit
+                                field2 = str(round(float(row[1]) / 100,1)) + " C"                  # Temp Celsius converted from values
                                 AddMsgAndPrint(theTab + climateLyrDef[1] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
                         # Report Precipitation in mm and inches
                         else:
                             firstSpace = " " * (32 - len(climateLyrDef[3]))
-                            field1 = str(int(round(float(row[1]) / 100))) + " mm"                      # Precip units in MM rounded to the nearest mm
-                            field2 = str(int(round((float(row[1]) / 100) * 0.0393701))) + " inches"    # Precip units in inches
+                            field1 = str(int(round(float(row[1]) / 100,1))) + " mm"                      # Precip units in MM rounded to the nearest mm
+                            field2 = str(int(round((float(row[1]) / 100) * 0.0393701,1))) + " inches"    # Precip units in inches
                             AddMsgAndPrint(theTab + climateLyrDef[3] + firstSpace + "  --  " + field1 + "  --  " + field2,1)
 
                         del firstSpace,field1,field2
