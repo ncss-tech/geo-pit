@@ -11,7 +11,7 @@
 #              adolfo.diaz@wi.usda.gov
 #
 # Created:     8.28.2014
-# Last Modified 12.16.2016
+# Last Modified 02.17.2017
 # Copyright:   (c) Adolfo.Diaz 2014
 #
 #
@@ -1570,7 +1570,11 @@ def processElevation():
             return False
 
         # Get the linear unit of the DEM (Feet or Meters)
-        rasterUnit = arcpy.Describe(DEMraster[0]).SpatialReference.LinearUnitName
+        try:
+            rasterUnit = arcpy.Describe(DEMraster[0]).SpatialReference.LinearUnitName
+        except:
+            # Had to introduce the workspace path into the describe b/c DEM was not being found.  very strange.
+            rasterUnit = arcpy.Describe(arcpy.env.workspace + os.sep + DEMraster[0]).SpatialReference.LinearUnitName
 
         # Get Linear Units of DEM
         if rasterUnit == "Meter":
