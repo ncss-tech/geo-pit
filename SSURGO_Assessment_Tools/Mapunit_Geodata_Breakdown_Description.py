@@ -1564,17 +1564,14 @@ def processElevation():
             arcpy.env.workspace = workspaces[0]
 
         DEMraster = arcpy.ListRasters("DEM_*","GRID")
+        DEMrasterPath = arcpy.env.workspace + os.sep + DEMraster[0]  # introduced to substitute DEMraster[0]
 
         if not len(DEMraster):
             AddMsgAndPrint("\tDEM Grid was not found in the Elevation File Geodatabase",2)
             return False
 
         # Get the linear unit of the DEM (Feet or Meters)
-        try:
-            rasterUnit = arcpy.Describe(DEMraster[0]).SpatialReference.LinearUnitName
-        except:
-            # Had to introduce the workspace path into the describe b/c DEM was not being found.  very strange.
-            rasterUnit = arcpy.Describe(arcpy.env.workspace + os.sep + DEMraster[0]).SpatialReference.LinearUnitName
+        rasterUnit = arcpy.Describe(DEMrasterPath).SpatialReference.LinearUnitName
 
         # Get Linear Units of DEM
         if rasterUnit == "Meter":
@@ -1596,19 +1593,20 @@ def processElevation():
 
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
+        # converted DEMraster[0] to DEMrasterPath
         try:
             arcpy.env.extent = muLayer
             arcpy.env.mask = muLayer
-            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
         except:
             if bFeatureLyr:
                 arcpy.env.extent = muLayerExtent
                 arcpy.env.mask = muLayerExtent
-                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
             else:
                 arcpy.env.extent = tempMuLayer
                 arcpy.env.mask = tempMuLayer
-                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, DEMraster[0], outZoneTable, "DATA", "ALL")
+                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
