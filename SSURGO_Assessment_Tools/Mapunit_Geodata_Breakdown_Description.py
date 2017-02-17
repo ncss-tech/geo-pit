@@ -1585,11 +1585,7 @@ def processElevation():
             units = "$$"
 
         # output Zonal Statistics Table
-        outZoneTable = scratchWS + os.sep +"demZoneTable"
-
-        # Delete Zonal Statistics Table if it exists
-        if arcpy.Exists(outZoneTable):
-            arcpy.Delete_management(outZoneTable)
+        outZoneTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
 
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
