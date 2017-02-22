@@ -12,7 +12,7 @@
 # Created:     7/04/2016
 # Last Modified: 1/19/2017
 # Copyright:   (c) Adolfo.Diaz 2016
-# TEST
+
 #-------------------------------------------------------------------------------
 
 ## ===================================================================================
@@ -895,6 +895,7 @@ def parsePedonsIntoLists():
                     pedonIDstr = pedonIDstr + str(pedonID) + ",";i+=1
 
         numOfPedonStrings = len(listOfPedonStrings)  # Number of unique requests that will be sent
+
         if not numOfPedonStrings:
             AddMsgAndPrint("\n\t Something Happened here.....WTF!",2)
             sys.exit()
