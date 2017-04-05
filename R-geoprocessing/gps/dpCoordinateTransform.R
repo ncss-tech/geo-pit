@@ -6,9 +6,9 @@ library(rgdal)
 
 # longlatdms to longlatdd and utm
 setwd("C:/Users/stephen.roecker/Documents")
-test <- read.csv("ca795_dp.csv")
+test <- read.csv("coords.csv")
 attach(test)
-test$latdms <-paste(latd,"d",latm,"'","\"N",sep="")
+test$latdms <-paste(Std.Longitude,"d",Lat..Degrees,"'", Lat..Seconds, "\"N",sep="")
 test$longdms <-paste(longd,"d",longm,"'","\"W",sep="")
 test$latdd <- as.numeric.DMS(char2dms(test$latdms))
 test$longdd <- as.numeric.DMS(char2dms(test$longdms))
