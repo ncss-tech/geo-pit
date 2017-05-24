@@ -1,4 +1,5 @@
 # geo-pit
+http://ncss-tech.github.io/geo-pit/
 
 This repository contains spatial functions for soil survey.
 
