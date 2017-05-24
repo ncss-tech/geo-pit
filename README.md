@@ -3,8 +3,6 @@ http://ncss-tech.github.io/geo-pit/
 
 This repository contains spatial functions for soil survey.
 
-Help files can be found in the Wiki tab.
-
 <ul>
 <li>R-geoprocessing</li>
 <li>SSURGO Assessment Tools</li>
@@ -14,4 +12,18 @@ Help files can be found in the Wiki tab.
 <li>Sandbox</li>
 <li>Update Att Table</li>
 </ul>
+
+
+Help files can be found in the Wiki tab.
+
+<ul>
+<li><a href="https://github.com/ncss-tech/geo-pit/wiki/How-to-Make-ESRI-Desktop-ArcMap-Faster">How to Make ESRI Desktop ArcMap Faster</a></li>
+</ul>
+<ul>
+<li><a href="https://github.com/ncss-tech/geo-pit/wiki/NED-geoprocessing-instructons">NED Geoprocessing Instructions</a></li>
+</ul>
+<ul>
+<li><a href="https://github.com/ncss-tech/geo-pit/wiki/RSAGA-geoprocessing-instructions">RSAGA Geoprocessing Instructions</a></li>
+</ul>
+
 
