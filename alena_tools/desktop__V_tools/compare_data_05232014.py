@@ -24,12 +24,12 @@ arcpy.CopyFeatures_management ("union_compare_data_lyr", "outFC")
 
 dissolveFields = ["AREASYMBOL", "MUSYM", "MUSYM_1"]
 #Dissolve Features
-arcpy.Dissolve_management ("outFC", "COMPARE", dissolveFields)
+arcpy.Dissolve_management ("outFC", "COMPARE", dissolveFields, "Compare_DIS")
 
 
 #Delete Features
 arcpy.Delete_management("union_compare_data")
-arcpy.Delete_management("outFC")
+#arcpy.Delete_management("outFC")
 
 #Add Field
 
