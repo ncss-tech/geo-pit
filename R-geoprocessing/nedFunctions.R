@@ -2,41 +2,54 @@
 ############################################################################
 ### Generate list from intersection of SAPOLYGON and NED metadata layer
 ############################################################################
-make_ned_list <- function(ned_dsn, mo_dsn, mo_layer, crsarg){
+make_ned_list <- function(ned_dsn, sso_dsn, sso, crsarg){
   ned_l <- list()
-  ned_tiles <- readOGR(dsn = ned_dsn, layer = "ned_13arcsec_g")
-  ned_tiles <- spTransform(ned_tiles, CRS(crsarg))
-  for(i in seq(mo_dsn)){
-    mo_pol <- readOGR(dsn = mo_dsn[i], layer = mo_layer)
-    mo_pol <- spTransform(mo_pol, CRS(crsarg))
-    int <- intersect(mo_pol, ned_tiles)
-    ned_l[[i]] <- sort(unique(as.character(int@data$FILE_ID)))
+  ned_tiles <- read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
+  st_crs(ned_tiles) <- st_crs("+init=epsg:4326")
+  ned_tiles <- st_transform(ned_tiles, crs = crsarg)
+  
+  for (i in seq(sso_dsn)) {
+    
+    sapolygon <- read_sf(dsn = sso_dsn[i], layer = "SAPOLYGON")
+    st_crs(sapolygon) <- st_crs("+init=epsg:5070")
+    
+    idx <- st_intersects(sapolygon, ned_tiles)
+    idx2 <- lapply(idx, function(x) ifelse(length(x) == 0, NA, x))
+    
+    ned_sub <- ned_tiles[unlist(idx2), ]
+    ned_sub <- within(ned_sub, {
+      sso = sso[i]
+      sso_key = paste(sso, UL_LAT, abs(UL_LON), sep = "_")
+      })
+                         
+    ned_l[[i]] <- ned_sub
+    }
+  
+  ned_df <- do.call("rbind", ned_l)
+    
+  return(ned_df = ned_df)
   }
-  return(ned_l = ned_l)
-}
 
 
 #########################################################################
 ### Clean ned list of duplicates
 #########################################################################
-remove_dups <- function(files, file_names){
-  zips_idx <- grep(".zip", files)
-  zip_files <- files[zips_idx]
-  zip_names <- unlist(strsplit(zip_files, ".zip"))
+remove_dups <- function(files, file_names) {
+  zip_names <- gsub(".zip", "", files)
   dup <- match(file_names, zip_names)
-  missing <- file_names[is.na(dup)]  
-}
+  missing <- file_names[is.na(dup)]
+  }
 
 
 ########################################################################
 ### Download img NED tiles
 # For some reason this only works from the R console not Rstudio
 ########################################################################
-batch_download <- function(url, destfile){
-    for(i in seq(url)){
+batch_download <- function(url, destfile) {
+    for (i in seq(url)) {
     download.file(url = url[i], destfile = destfile[i], mode = "wb")
+    }
   }
-}
 
 ##########################################
 ### unzip nedlist

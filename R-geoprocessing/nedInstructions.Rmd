@@ -14,28 +14,27 @@ The primary workhorse of these batch functions is GDAL (Geospatial Data Abstract
 Once you begin this sequence of commands will last several days. However it is not terribly memory intensize, so you should be able to work on other projects while it is running. The first thing that needs to be done, is loading the necessary R libraries. If they're not already installed you will have to do this the first time (e.g. "install.packages("gdalUtils", dependencies=TRUE)").
 
 ```{r install and load packages, eval=FALSE}
-#install.packages(c("gdalUtils", "foreign", "rgdal", "raster"), dependencies=TRUE)
 library(gdalUtils)
 library(rgdal)
 library(raster)
+library(FedData)
 ```
 
 Next the proper GDAL path has to be set. The first location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use. 
 ```{r set gdal path, eval=FALSE}
-gdal_setInstallation(search_path="C:/Program Files/QGIS Wien/bin", rescan=T)
-gdal_setInstallation(search_path="C:/OSGeo4W64/bin", rescan=T)
+gdal_setInstallation(search_path="C:/Program Files/QGIS Essen/bin")
 ```
 
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
 ```{r, eval=FALSE}
 # Set parameters
-source("C:/workspace/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-office <- c("8-VIC")
-region <- c("8REGION")
+source("C:/workspace2/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+ssoffice <- c("R11-ATL", "R11-AUR", "R11-MAN", "R11-CLI", "R11-FIN", "R11-GAL", "R11-IND", "R11-JUE", "R11-SPR", "R11-UNI", "R11-WAV")
+region <- c("R11")
 pd <- paste0("M:/geodata/project_data/", office, "/")
 rd <- paste0("M:/geodata/project_data/", region, "/")
-crsarg <- CRSargs(CRS("+init=epsg:5070"))
+crsarg <- "+init=epsg:5070"
 
 mo <- list(
   ned09d.tif  = paste0(pd, "ned09d_", office, ".tif"),
@@ -59,18 +58,19 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 
 ```{r, eval=FALSE}
 ned_dsn <- "M:/geodata/elevation/ned/ned_13arcsec_g.shp"
-mo_dsn <- paste0("M:/geodata/project_data/", office, "/", "RTSD_Region_11_", sub("11", "", office), "_FY15.gdb")
-mo_layer <- "SAPOLYGON"
-mo_ned<- make_ned_list(ned_dsn, mo_dsn, mo_layer, crsarg)
+sso_dsn <- paste0("M:/geodata/project_data/", ssoffice, "/RTSD_", ssoffice, "_FY17.gdb")
+sso_ned<- make_ned_list(ned_dsn, sso_dsn, sso = ssoffice, crsarg)
+sso_ned_nodups <- sso_ned[!duplicated(sso_ned$sso_key), ]
+sso_ned_nodups <- sso_ned_nodups[order(sso_ned_nodups$FILE_ID), ]
 
+mapply(res = "13", tileNorthing = sso_ned_nodups$UL_LAT, tileWesting = abs(sso_ned_nodups$UL_LON), raw.dir = "M:/geodata/elevation/ned/tiles/img/", format = "IMG", download_ned_tile)
 
-ned_names <- sort(unique(unlist(mo_ned)))
+ned_files <- sso_ned[!duplicated(sso_ned$sso_key), "FILE_ID", drop = TRUE]
 files <- list.files("M:/geodata/elevation/ned/tiles/img/")
-missing <- remove_dups(files, ned_names)
-
+missing <- remove_dups(files, ned_files)
 
 url_in <- paste0("ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/13/IMG/", missing, ".zip")
-file_out <- paste0("M:/geodata/elevation/ned/tiles/img/", missing, ".zip")
+file_out <- paste0("M:/geodata/elevation/ned/tiles/ArcGrid/", missing, ".zip")
 
 batch_download(url_in, file_out)
 
