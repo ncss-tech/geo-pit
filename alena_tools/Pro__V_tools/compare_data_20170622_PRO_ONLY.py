@@ -24,12 +24,12 @@ arcpy.CopyFeatures_management ("union_compare_data_lyr", "outFC")
 
 dissolveFields = ["AREASYMBOL", "MUSYM", "MUSYM_1"]
 #Dissolve Features
-arcpy.Dissolve_management ("outFC", "COMPARE", dissolveFields, "COMPARE")
+arcpy.PairwiseDissolve_analysis ("outFC", "COMPARE", dissolveFields)
 
 
 #Delete Features
-#arcpy.Delete_management("union_compare_data")
-#arcpy.Delete_management("outFC")
+arcpy.Delete_management("union_compare_data")
+arcpy.Delete_management("outFC")
 
 #Add Field
 
@@ -40,5 +40,5 @@ arcpy.AddField_management("COMPARE", "ACRES", "DOUBLE", )
 arcpy.CalculateField_management("COMPARE", "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
 
 
-print "Script Completed"
-#print ('Script Completed')
+#print "Script Completed"
+print ('Script Completed')
