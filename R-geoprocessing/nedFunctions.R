@@ -55,11 +55,11 @@ batch_download <- function(url, destfile) {
 ### unzip nedlist
 ##########################################
 batch_unzip <- function(zipfile, files, dir_out){
-  for(i in seq(zipfile)){
+  for (i in seq(zipfile)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "unzipping", zipfile[i], "\n"))
     unzip(zipfile = zipfile[i], files = files[i], exdir = dir_out)
+    }
   }
-}
 
 
 #################################################
@@ -67,9 +67,9 @@ batch_unzip <- function(zipfile, files, dir_out){
 #################################################
 # Beware, using the cutline option shifts the raster, this can rectified using the -tap option, and shifting the output using raster shift() or gdal_translate -prjwin
 # In order to correct for the half cell shift due to the GTIFF library its necessary to set --config GTIFF_POINT_GEO_IGNORE = TRUE preceding the other gdwarp arguements
-batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg){
+batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg) {
   original_temp <- paste0(unlist(strsplit(subsets, ".tif")), "_temp.tif")
-  for(i in seq(subsets)){
+  for (i in seq(subsets)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "WARPING", subsets[i], "\n"))
     te <- c(bbox(spTransform(readOGR(dsn = mo_dsn[i], layer = mo_layer[i]), CRS(crsarg))))
     gdalwarp(
@@ -99,7 +99,8 @@ batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg){
       a_nodata = 0,
       overwrite = TRUE,
       verbose = TRUE
-    )
+      )
+    
     file.remove(original_temp[i])
     gdaladdo(
       filename = subsets[i],
@@ -107,7 +108,8 @@ batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg){
       levels = c(2, 4, 8, 16),
       clean = TRUE,
       ro = TRUE
-    )
+      )
+    
     gdalinfo(
       datasetname = subsets[i], 
       stats = TRUE,
