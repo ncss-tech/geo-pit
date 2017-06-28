@@ -2,23 +2,22 @@
 ############################################################################
 ### Generate list from intersection of SAPOLYGON and NED metadata layer
 ############################################################################
-make_ned_list <- function(ned_dsn, sso_dsn, sso, crsarg){
+make_ned_df <- function(ned_dsn, sso_dsn, crsarg){
   ned_l <- list()
   ned_tiles <- read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
   st_crs(ned_tiles) <- st_crs("+init=epsg:4326")
   ned_tiles <- st_transform(ned_tiles, crs = crsarg)
   
-  for (i in seq(sso_dsn)) {
+  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Offices_Dec2015_r11")
+  sso_pol <- st_transform(sso_pol, crs = crsarg)
+  
+  for (i in 1:nrow(sso_pol)) {
     
-    sapolygon <- read_sf(dsn = sso_dsn[i], layer = "SAPOLYGON")
-    st_crs(sapolygon) <- st_crs("+init=epsg:5070")
+    idx <- unlist(st_intersects(sso_pol[i, ], ned_tiles))
     
-    idx <- st_intersects(sapolygon, ned_tiles)
-    idx2 <- lapply(idx, function(x) ifelse(length(x) == 0, NA, x))
-    
-    ned_sub <- ned_tiles[unlist(idx2), ]
+    ned_sub <- as.data.frame(ned_tiles[idx, ])
     ned_sub <- within(ned_sub, {
-      sso = sso[i]
+      sso = sso_pol$NEW_SSAID[i]
       sso_key = paste(sso, UL_LAT, abs(UL_LON), sep = "_")
       })
                          
@@ -67,43 +66,31 @@ batch_unzip <- function(zipfile, files, dir_out){
 #################################################
 # Beware, using the cutline option shifts the raster, this can rectified using the -tap option, and shifting the output using raster shift() or gdal_translate -prjwin
 # In order to correct for the half cell shift due to the GTIFF library its necessary to set --config GTIFF_POINT_GEO_IGNORE = TRUE preceding the other gdwarp arguements
-batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg) {
-  original_temp <- paste0(unlist(strsplit(subsets, ".tif")), "_temp.tif")
-  for (i in seq(subsets)) {
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "WARPING", subsets[i], "\n"))
-    te <- c(bbox(spTransform(readOGR(dsn = mo_dsn[i], layer = mo_layer[i]), CRS(crsarg))))
-    gdalwarp(
-      srcfile = original,
-      dstfile = original_temp[i],
-      of = "GTiff",
-      r = "near",
-      te = te,
-      tr = c(30,30),
-      tap = T,
-      ot = "Byte",
-      co = c("TILED=YES", "COMPRESS=DEFLATE"),
-      overwrite = T,
-      verbose = T)
+
+batch_crop <- function(input, output, sso_dsn, method, crsarg) {
+  
+  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Offices_Dec2015_r11")
+  sso_pol <- st_transform(sso_pol, crs = crsarg)
+  
+  for (i in seq_along(output)) {
     
-    bb <- c(bbox(raster(original_temp[i])))
-    rat <- raster(original)@data@attributes
-    foreign::write.dbf(rat, paste0(strsplit(subsets[i], ".tif"), ".tif.vat.dbf"))
+    cat("CROPPING", output[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+    
+    bb <- st_bbox(sso_pol[i, ])
     
     gdal_translate(
-      src_dataset = original_temp[i],
-      dst_dataset = subsets[i],
-      a_ullr = c(bb[1]+15, bb[4]-15, bb[3]+15, bb[2]-15),
+      src_dataset = input,
+      dst_dataset = output[i],
       a_srs = crsarg,
-      ot = "Byte",
-      co = c("TILED=YES", "COMPRESS=DEFLATE"),
-      a_nodata = 0,
+      projwin = c(bb[1], bb[4], bb[3], bb[2]),
+      of = "GTiff",
+      a_nodata = -99999,
       overwrite = TRUE,
       verbose = TRUE
       )
-    
-    file.remove(original_temp[i])
+
     gdaladdo(
-      filename = subsets[i],
+      filename = output[i],
       r = "nearest",
       levels = c(2, 4, 8, 16),
       clean = TRUE,
@@ -111,12 +98,12 @@ batch_subset <- function(original, subsets, mo_dsn, mo_layer, crsarg) {
       )
     
     gdalinfo(
-      datasetname = subsets[i], 
+      datasetname = output[i], 
       stats = TRUE,
       hist = TRUE
-    )
+      )
+    }
   }
-}
 
 
 

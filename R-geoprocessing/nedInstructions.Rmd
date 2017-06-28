@@ -7,6 +7,8 @@ output: word_document
 
 ```{r setup, echo = FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, eval=FALSE)
+
+options(stringsAsFactors = FALSE)
 ```
 
 # Introduction
@@ -42,27 +44,25 @@ Next numerous parameters need to be set which get used later by many of the func
 # Set parameters
 ssoffice <- c("R11-ATL", "R11-AUR", "R11-MAN", "R11-CLI", "R11-FIN", "R11-GAL", "R11-IND", "R11-JUE", "R11-SPR", "R11-UNI", "R11-WAV")
 region <- c("R11")
-pd <- paste0("M:/geodata/project_data/", ssoffice, "/")
-rd <- paste0("M:/geodata/project_data/", region, "/")
+sso_fp <- paste0("M:/geodata/project_data/", ssoffice, "/")
+ro_fp <- paste0("M:/geodata/project_data/", region, "/")
 crsarg <- "+init=epsg:5070"
 
-geodata <- c(
-  ned09d.tif  = "ned09d",
-  ned10m.tif  = "ned10m",
-  ned30m.tif  = "ned30m",
-  hil10m.tif  = "ned10m",
-  slp10m.tif  = "ned10m",
-  nlcd30m.tif = "nlcd30m"
-  )
-mo <- lapply(pd, function(x) paste0(
-  x, 
-  geodata, 
-  c(rep(".tif", 3), 
-  c("_hillshade.tif", "_slope.tif", "_lulc2011.tif"))
-  ))
+source <- c("nlcd30m", "ned09d", "ned30m", rep("ned10m", 3))
+sso <- data.frame(ssoffice = rep(ssoffice, each = 6),
+                  variables = paste0(source, c("_lulc2011", rep("", 3), "_slope", "_hillshade")),
+                  file_paths = paste0(rep(sso_fp, each = 6),
+                                      paste0(source, "_", 
+                                             rep(ssoffice, each = 6), 
+                                             c("_lulc2011", rep("", 3), "_slope", "_hillshade"),
+                                             ".tif")
+                                      )
+                  )
 
-idx <- c(2:3, 6]
-ro <- lapply(rd, function(x) paste0(x, geodata[idx], ".tif"))
+ro <- data.frame(roffice = "Indianapolis",
+                 variables = paste0(source, c("_lulc2011", rep("", 3), "_slope", "_hillshade")),
+                 file_paths = paste0(ro_fp, source, "_", region, c("_lulc2011", rep("", 3), "_slope", "_hillshade"), ".tif")
+                 )
 ```
 
 
@@ -73,21 +73,27 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 ```{r}
 # create list of ned tiles by intersecting ssoffice boundaries with latlong tiles
 ned_dsn <- "M:/geodata/elevation/ned/ned_13arcsec_g.shp"
-sso_dsn <- paste0("M:/geodata/project_data/", ssoffice, "/RTSD_", ssoffice, "_FY17.gdb")
+sso_dsn <- "C:/geodata/project_data/R11/MLRA_Soil_Survey_Offices_Dec2015_r11.shp"
 
-sso_ned<- make_ned_list(ned_dsn, sso_dsn, sso = ssoffice, crsarg)
+sso_ned <- make_ned_df(ned_dsn, sso_dsn, crsarg)
 idx <- !duplicated(sso_ned$FILE_ID)
 sso_ned_nodups <- sso_ned[idx, ]
 sso_ned_nodups <- sso_ned_nodups[order(sso_ned_nodups$FILE_ID), ]
 
 # download files via FedData package
-mapply(res = "13", tileNorthing = sso_ned_nodups$UL_LAT, tileWesting = abs(sso_ned_nodups$UL_LON), raw.dir = "M:/geodata/elevation/ned/tiles/img/", format = "IMG", download_ned_tile)
+mapply(res = "13", 
+       tileNorthing = sso_ned_nodups$UL_LAT, 
+       tileWesting = abs(sso_ned_nodups$UL_LON), 
+       raw.dir = "M:/geodata/elevation/ned/tiles/img/", 
+       format = "IMG", 
+       download_ned_tile
+       )
 
 # unzip
 ned_names <- sso_ned_nodups$FILE_ID
-zip_in   <- paste0("M:/geodata/elevation/ned/tiles/img/", ned_names, ".zip")
+zip_in   <- paste0("M:/geodata/elevation/ned/tiles/img/13/", ned_names, ".zip")
 file_out <- paste0("img", ned_names, "_13.img")
-dir_out  <-  paste0("M:/geodata/elevation/ned/tiles/img")
+dir_out  <- paste0("M:/geodata/elevation/ned/tiles/img/13")
 
 batch_unzip(zip_in, file_out, dir_out)
 ```
@@ -99,8 +105,9 @@ The NLCD layer is used as a standard coordinate reference system from which to w
 
 ```{r}
 nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
+sso_nlcd <-  sso[sso$variables == "nlcd30m_lulc2011", "file_paths"]
 
-batch_subset(nlcd, mo$nlcd30m.tif, mo_dsn, mo_layer, crsarg)
+batch_crop(nlcd, sso_nlcd, sso_dsn, "nearest", crsarg)
 ```
 
 
@@ -109,9 +116,10 @@ batch_subset(nlcd, mo$nlcd30m.tif, mo_dsn, mo_layer, crsarg)
 Beware building the pyramids takes a long time.
 
 ```{r}
-mo_img <- lapply(mo_ned, function(x) paste0("M:/geodata/elevation/ned/tiles/img/img", x, "_13.img"))
+sso_img <- by(sso_ned, sso_ned$sso, function(x) paste0("M:/geodata/elevation/ned/tiles/img/13/img", x$FILE_ID, "_13.img"))
+sso_ned09d <- sso[sso$variables == "ned09d", "file_paths"]
 
-batch_mosaic(mo_img, mo$ned09d.tif, "Float32", c("BIGTIFF=YES"), -99999)
+batch_mosaic(sso_img, sso_ned09d, "Float32", c("BIGTIFF=YES"), -99999)
 ```
 
 
