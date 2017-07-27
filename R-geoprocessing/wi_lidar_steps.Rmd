@@ -1,0 +1,71 @@
+
+# Steps for processing WI LiDAR data
+
+```{r}
+options(stringsAsFactors = FALSE)
+
+library(gdalUtils)
+library(rgdal)
+library(raster)
+library(sf)
+library(FedData)
+
+gdal_setInstallation(search_path = "C:/Program Files/QGIS Essen/bin")
+
+setwd("M:/geodata/elevation/lidar/wi")
+
+dems_orig <- list.files(pattern = ".tif$")
+dems_new1 <- gsub(".m_wi|.ft_wi", "0m_wi", dems_orig)
+dems_new2 <- gsub(".m_wi|.ft_wi", "10m_wi", dems_orig)
+dems <- data.frame(old = dems_orig, new1 = dems_new1, new2 = dems_new2)
+dems[order(dems$new2), ]
+
+for (i in nrow(dems)) {
+  cat(dems$new1[i], Sys.time(), "\n")
+  gdalwarp(
+    srcfile = dems2$old[i],
+    dstfile = dems2$new1[i],
+    t_srs = "+init=epsg:5070",
+    r = "bilinear",
+    of = "GTiff",
+    dstnodata = "-99999",
+    verbose = TRUE,
+    overwrite = TRUE
+    )
+  }
+
+# no translation for Lambert_Conformal_Conic to PROJ.$ is known for the following files, must do manually with ArcGIS
+files <- list.files()
+f_sub <- files[grepl("0m_", files)]
+idx <- which(! dems$new1 %in% f_sub)
+print(dems[idx,])
+
+
+for (i in 2:nrow(dems)) {
+  cat(dems$new1[i], Sys.time(), "\n")
+  gdalwarp(
+    srcfile = dems$new1[i],
+    dstfile = dems$new2[i],
+    t_srs = "+init=epsg:5070",
+    r = "average",
+    tr = c(10, 10),
+    of = "GTiff",
+    dstnodata = "-99999",
+    verbose = TRUE,
+    co = c("TILED=YES", "COMPRESS=DEFLATE"),
+    overwrite = TRUE
+    )
+  }
+
+# doesn't work well with this data, use gdalwarp and cblend argument
+mosaic_rasters(
+  gdalfile = dems$new2,
+  dst_dataset = "lidar10m_wi.tif",
+  of = "GTiff",
+  vrtnodata = "-99999",
+  verbose = TRUE,
+  overwrite = TRUE
+  )
+
+```
+
