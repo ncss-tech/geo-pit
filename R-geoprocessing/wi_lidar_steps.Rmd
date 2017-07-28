@@ -13,18 +13,32 @@ library(FedData)
 gdal_setInstallation(search_path = "C:/Program Files/QGIS Essen/bin")
 
 setwd("M:/geodata/elevation/lidar/wi")
+file_path <- paste0(getwd(), "/")
 
-dems_orig <- list.files(pattern = ".tif$")
-dems_new1 <- gsub(".m_wi|.ft_wi", "0m_wi", dems_orig)
-dems_new2 <- gsub(".m_wi|.ft_wi", "10m_wi", dems_orig)
-dems <- data.frame(old = dems_orig, new1 = dems_new1, new2 = dems_new2)
-dems[order(dems$new2), ]
+dems_wi <- list.files(pattern = ".tif$")
+dems_wi <- dems_wi[!grepl("0m_|10m_|nlcd", dems_wi)]
+dems <- data.frame(
+  old = dems_wi, 
+  new1 = gsub(".m_wi|.ft_wi", "0m_wi", dems_wi), 
+  new2 = gsub(".m_wi|.ft_wi", "10m_wi", dems_wi),
+  new3 = ifelse(grepl("ft_wi", dems_wi), 
+                gsub(".m_wi|.ft_wi", "10m2_wi", dems_wi), 
+                gsub(".m_wi|.ft_wi", "10m_wi", dems_wi)
+                ),
+  areasymbol = sapply(dems_wi, function(x) strsplit(x, "_")[[1]][3]),
+  units = ifelse(grepl("ft_wi", dems_wi), "ft", "m")
+  )
+dems$areasymbol <- gsub(".tif", "", dems$areasymbol)
 
-for (i in nrow(dems)) {
-  cat(dems$new1[i], Sys.time(), "\n")
+
+# reproject lidar to EPSG:5070
+for (i in 2) {
+  
+  cat(dems$new1[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+  
   gdalwarp(
-    srcfile = dems2$old[i],
-    dstfile = dems2$new1[i],
+    srcfile = dems$old[i],
+    dstfile = dems$new1[i],
     t_srs = "+init=epsg:5070",
     r = "bilinear",
     of = "GTiff",
@@ -41,21 +55,58 @@ idx <- which(! dems$new1 %in% f_sub)
 print(dems[idx,])
 
 
-for (i in 2:nrow(dems)) {
-  cat(dems$new1[i], Sys.time(), "\n")
+# Setup output extent to match nlcd layer
+sso_pol <- read_sf(dsn = "M:/geodata/soils/SSURGO_CONUS_FY2016.gdb", layer = "SAPOLYGON")
+st_crs(sso_pol) <- "+init=epsg:5070"
+sso_wi <- sso_pol[grepl("WI", sso_pol$AREASYMBOL), ]
+bb <- st_bbox(sso_wi)
+
+nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
+
+gdal_translate(
+  src_dataset = nlcd,
+  dst_dataset = "nlcd_wi.tif",
+  a_srs = "+init=epsg:5070",
+  projwin = c(bb[1], bb[4], bb[3], bb[2]),
+  of = "GTiff",
+  a_nodata = -99999,
+  overwrite = TRUE,
+  verbose = TRUE
+  )
+
+# resample lidar to 10-meters
+for (i in 3) {
+  
+  cat(dems$new1[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+  
+  te <-  c(bbox(raster("nlcd_wi.tif")))
+  
   gdalwarp(
     srcfile = dems$new1[i],
     dstfile = dems$new2[i],
     t_srs = "+init=epsg:5070",
     r = "average",
     tr = c(10, 10),
+    te = te,
     of = "GTiff",
     dstnodata = "-99999",
     verbose = TRUE,
-    co = c("TILED=YES", "COMPRESS=DEFLATE"),
     overwrite = TRUE
     )
   }
+
+# convert feet to meters
+for (i in 1:nrow(dems)) {
+  if (dems$units[i] == "ft") {
+    
+    cat(dems$new2[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+
+    test <- raster(dems$new2[i])
+    test2 <- calc(test, function(x) x * 0.3048, progress = "text")
+    writeRaster(test2, filename = dems$new3[i], progress = "text")
+    }
+  }
+
 
 # doesn't work well with this data, use gdalwarp and cblend argument
 mosaic_rasters(
@@ -66,6 +117,10 @@ mosaic_rasters(
   verbose = TRUE,
   overwrite = TRUE
   )
+
+gdalwarp(
+  srcfile = dems$new2
+)
 
 ```
 
