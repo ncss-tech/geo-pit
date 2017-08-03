@@ -12,11 +12,11 @@ library(FedData)
 
 gdal_setInstallation(search_path = "C:/Program Files/QGIS Essen/bin")
 
-setwd("M:/geodata/elevation/lidar/wi")
+setwd("D:/geodata/elevation/lidar/wi")
 file_path <- paste0(getwd(), "/")
 
 dems_wi <- list.files(pattern = ".tif$")
-dems_wi <- dems_wi[!grepl("0m_|10m_|nlcd", dems_wi)]
+dems_wi <- dems_wi[!grepl("0m_|10m_|10m2_|nlcd", dems_wi)]
 dems <- data.frame(
   old = dems_wi, 
   new1 = gsub(".m_wi|.ft_wi", "0m_wi", dems_wi), 
@@ -29,10 +29,19 @@ dems <- data.frame(
   units = ifelse(grepl("ft_wi", dems_wi), "ft", "m")
   )
 dems$areasymbol <- gsub(".tif", "", dems$areasymbol)
+row.names(dems) <- 1:nrow(dems)
 
+
+# no translation for Lambert_Conformal_Conic to PROJ.$ is known for the following files, must do manually with ArcGIS
+files <- list.files()
+f_sub <- files[grepl("0m_", files)]
+idx <- which(! dems$new1 %in% f_sub)
+print(dems[idx,])
+
+idx <- which(dems$areasymbol %in% c("wi021", "wi023", "wi079"))
 
 # reproject lidar to EPSG:5070
-for (i in 2) {
+for (i in (1:nrow(dems))[-idx]) {
   
   cat(dems$new1[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
   
@@ -48,20 +57,6 @@ for (i in 2) {
     )
   }
 
-# no translation for Lambert_Conformal_Conic to PROJ.$ is known for the following files, must do manually with ArcGIS
-files <- list.files()
-f_sub <- files[grepl("0m_", files)]
-idx <- which(! dems$new1 %in% f_sub)
-print(dems[idx,])
-
-
-# Setup output extent to match nlcd layer
-sso_pol <- read_sf(dsn = "M:/geodata/soils/SSURGO_CONUS_FY2016.gdb", layer = "SAPOLYGON")
-st_crs(sso_pol) <- "+init=epsg:5070"
-sso_wi <- sso_pol[grepl("WI", sso_pol$AREASYMBOL), ]
-bb <- st_bbox(sso_wi)
-
-nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
 
 gdal_translate(
   src_dataset = nlcd,
@@ -75,11 +70,11 @@ gdal_translate(
   )
 
 # resample lidar to 10-meters
-for (i in 3) {
+for (i in c(19, 20, 25)) {
   
   cat(dems$new1[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
   
-  te <-  c(bbox(raster("nlcd_wi.tif")))
+  #te <-  c(bbox(raster("nlcd_wi.tif")))
   
   gdalwarp(
     srcfile = dems$new1[i],
@@ -87,7 +82,7 @@ for (i in 3) {
     t_srs = "+init=epsg:5070",
     r = "average",
     tr = c(10, 10),
-    te = te,
+    #te = te,
     of = "GTiff",
     dstnodata = "-99999",
     verbose = TRUE,
@@ -97,30 +92,57 @@ for (i in 3) {
 
 # convert feet to meters
 for (i in 1:nrow(dems)) {
-  if (dems$units[i] == "ft") {
+  if (dems$units[i] == "ft" & file.exists(dems$new2[i])) {
     
     cat(dems$new2[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
 
     test <- raster(dems$new2[i])
     test2 <- calc(test, function(x) x * 0.3048, progress = "text")
-    writeRaster(test2, filename = dems$new3[i], progress = "text")
+    writeRaster(test2, filename = dems$new3[i], overwrite = TRUE, progress = "text")
+    #rm(list(test, test2))
     }
   }
 
 
 # doesn't work well with this data, use gdalwarp and cblend argument
 mosaic_rasters(
-  gdalfile = dems$new2,
-  dst_dataset = "lidar10m_wi.tif",
+  gdalfile = dems$new3,
+  dst_dataset = "lidar10m_wi_noSmoothing.tif",
   of = "GTiff",
   vrtnodata = "-99999",
   verbose = TRUE,
   overwrite = TRUE
   )
 
+gdaldem(
+  mode = "hillshade",
+  input_dem = "lidar10m_wi_noSmoothing.tif",
+  output = "lidar10m_wi_noSmoothing_hs.tif",
+  verbose = TRUE
+  )
+
+
+# Setup output extent to match nlcd layer
+sso_pol <- read_sf(dsn = "D:/geodata/soils/SSURGO_R11_FY17.gdb", layer = "SAPOLYGON")
+st_crs(sso_pol) <- "+init=epsg:5070"
+sso_wi <- sso_pol[grepl("WI", sso_pol$AREASYMBOL), ]
+bb <- st_bbox(sso_wi)
+
+nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
+
+te <-  c(bbox(raster("nlcd_wi.tif")))
+
+
 gdalwarp(
-  srcfile = dems$new2
-)
+  srcfile = c("D:/geodata/project_data/R11-JUE/ned10m_R11-JUE.tif", dems$new3),
+  dstfile = "lidarNed10m_R11-JUE.tif",
+  cutline = "D:/geodata/project_data/R11-JUE/RTSD_R11JUE_FY17.gdb",
+  te = te,
+  cl = "SAPOLYGON",
+  cblend = 10,
+  overwrite = TRUE,
+  verbose = TRUE
+  )
 
 ```
 
