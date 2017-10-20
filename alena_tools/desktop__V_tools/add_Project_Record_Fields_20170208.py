@@ -2,6 +2,7 @@
 #A. Stephens
 
 #02/08/2017 Updated Workspace, add fields for Project_Record
+#helps for queries and making maps for ArcGIS Online
 
 
 import arcpy
