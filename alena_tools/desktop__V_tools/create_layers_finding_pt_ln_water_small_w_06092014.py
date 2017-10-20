@@ -1,7 +1,8 @@
 #Create layers for Finding Point and Line Features in Water Bodies and Water smaller than 1.4 acres
 #A. Stephens
 #02/26/2015
-
+#commented out acres calculations to not screw up Editor Tracking and small water polygons, every state is different
+# could add code to find duplication of data such as gravel pit points in gravel pit polygons?
 
 import arcpy
 arcpy.env.overwriteOutput = True
@@ -13,11 +14,11 @@ workspace = arcpy.GetParameterAsText (3) # Choose Workspace
 
 #Add Field
 
-arcpy.AddField_management(inpolyFC, "ACRES", "DOUBLE",)
+#arcpy.AddField_management(inpolyFC, "ACRES", "DOUBLE",)
 
 #Calculate Field
 
-arcpy.CalculateField_management(inpolyFC, "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3")
+#arcpy.CalculateField_management(inpolyFC, "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3")
 
 #Select all Water bodies
 arcpy.SelectLayerByAttribute_management (inpolyFC, "NEW_SELECTION", " MUSYM = 'W' ")
@@ -37,10 +38,10 @@ arcpy.SelectLayerByLocation_management (insflnFC, "INTERSECT", "soil_w_lyr", "",
 arcpy.CopyFeatures_management(insflnFC, workspace+'\\'+"SFL_in_W")
 
 #Select Layer By Location SUBSET_SELECTION "Acres" < 1.35
-arcpy.SelectLayerByAttribute_management ("soil_w_lyr", "NEW_SELECTION", "ACRES < 1.35")
+#arcpy.SelectLayerByAttribute_management ("soil_w_lyr", "NEW_SELECTION", "ACRES < 1.35")
 
 #Export the selected features to a new featureclass
-arcpy.CopyFeatures_management("soil_w_lyr", workspace+'\\'+"Small_W")
+#arcpy.CopyFeatures_management("soil_w_lyr", workspace+'\\'+"Small_W")
 
 #Clear Selected Features
 arcpy.SelectLayerByAttribute_management (inpolyFC, "CLEAR_SELECTION")

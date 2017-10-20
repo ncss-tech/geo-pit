@@ -7,7 +7,7 @@ import arcpy
 arcpy.env.overwriteOutput = True
 inFC = arcpy.GetParameterAsText(0)
 #outFC = arcpy.GetParameterAsText(1)
-#outFCDISSOLVE = arcpy.GetParameterAsText(2)
+outFCDISSOLVE = arcpy.GetParameterAsText(2)
 
 
 #Union update soils and original soils

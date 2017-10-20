@@ -2,6 +2,8 @@
 #09/23/2016
 #Alena Stephens
 #9/30/2016 Updated by adding Acres Column and dissolving fields feature Class to create a minimized list (convert to a table?)
+#2017 removed acres calculation because it messed up the editor tracking
+#Tool compares columns to find changes. 
 
 import arcpy
 import os
@@ -22,11 +24,11 @@ arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " MUSYM <> ORIG_
 
 #Add Field
 
-arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
 
 #Calculate Field
 
-arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
+#arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Export the selected features to a new featureclass
 arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON_MUSYM_VS_ORIGMUSYM")
@@ -45,10 +47,10 @@ arcpy.SelectLayerByAttribute_management (inFC, "CLEAR_SELECTION")
 arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " Editor_Field LIKE '%' ")
 
 #Add Field
-arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
 
 #Calculate Field
-arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
+#arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Export the selected features to a new featureclass
 arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON__Editor_Field")
@@ -65,7 +67,7 @@ arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " Creator_Field 
 
 #Add Field
 
-arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
 
 #Calculate Field
 
