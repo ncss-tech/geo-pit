@@ -264,8 +264,8 @@ def getNATMUSYM(listsOfValues, featureLayer):
             # use this query if submitting request by AREASYMBOL
             if bAreaSym:
                 sQuery = 'SELECT mapunit.mukey, nationalmusym, muname '\
-                          'FROM sacatalog ' \
-                          'INNER JOIN legend ON legend.areasymbol = sacatalog.areasymbol AND sacatalog.areasymbol IN (' + values + ')' \
+                          'FROM sacatalog '\
+                          'INNER JOIN legend ON legend.areasymbol = sacatalog.areasymbol AND sacatalog.areasymbol IN (' + values + ') '\
                           'INNER JOIN mapunit ON mapunit.lkey = legend.lkey'
 
             # use this query if submitting request by MUKEY
@@ -275,9 +275,9 @@ def getNATMUSYM(listsOfValues, featureLayer):
 
             # Create request using JSON, return data as JSON
             dRequest = dict()
-            dRequest["FORMAT"] = "JSON"
+            dRequest["format"] = "JSON"
             ##dRequest["FORMAT"] = "JSON+COLUMNNAME+METADATA"
-            dRequest["QUERY"] = sQuery
+            dRequest["query"] = sQuery
             jData = json.dumps(dRequest)
 
             # Send request to SDA Tabular service using urllib2 library
