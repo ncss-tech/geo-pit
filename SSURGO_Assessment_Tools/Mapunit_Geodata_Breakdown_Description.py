@@ -33,7 +33,7 @@ def AddMsgAndPrint(msg, severity=0):
 
         f = open(textFilePath,'a+')
         f.write(msg + " \n")
-        f.close
+        f.close()
 
         del f
 
@@ -3794,12 +3794,15 @@ if __name__ == '__main__':
             if arcpy.CheckExtension("Spatial") == "Available":
                 arcpy.CheckOutExtension("Spatial")
             else:
-                raise ExitError,"\n\nSpatial Analyst license is unavailable.  May need to turn it on!"
+                AddMsgAndPrint("\n\nSpatial Analyst license is unavailable.  May need to turn it on!",2)
+                exit()
 
         except LicenseError:
-            raise ExitError,"\n\nSpatial Analyst license is unavailable.  May need to turn it on!"
+            AddMsgAndPrint("\n\nSpatial Analyst license is unavailable.  May need to turn it on!",2)
+            exit()
         except arcpy.ExecuteError:
-            raise ExitError, arcpy.GetMessages(2)
+            AddMsgAndPrint(arcpy.GetMessages(2),2)
+            exit()
 
         # Set overwrite option
         arcpy.env.overwriteOutput = True

@@ -347,7 +347,7 @@ def importTabularData(accessDB,pedonFGDB):
 
             # Check if access Table exists.  Skip if it doesn't
             if not arcpy.Exists(targetTable):
-                AddMsgAndPrint("\t--> " + accessTable + " table does NOT exist in " + os.path.basename(pedonFGDB) + ".....Skipping",2)
+                AddMsgAndPrint("\t--> " + accessTable + " table does NOT exist in " + os.path.basename(pedonFGDB) + ".....Skipping\n",1)
                 arcpy.SetProgressorPosition()
                 continue
 
