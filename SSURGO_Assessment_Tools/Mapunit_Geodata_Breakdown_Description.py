@@ -19,10 +19,6 @@
 #-------------------------------------------------------------------------------
 
 ## ===================================================================================
-class ExitError(Exception):
-    pass
-
-## ===================================================================================
 def AddMsgAndPrint(msg, severity=0):
     # prints message to screen if run as a python script
     # Adds tool message to the geoprocessor
@@ -3836,7 +3832,8 @@ if __name__ == '__main__':
             textFilePath = outputFolder + os.sep + muLayerName[0:len(muLayerName)-4] + ("_MUKEY.txt" if analysisType == "Mapunit (MUKEY)" else "_MLRA.txt")
 
         else:
-            raise ExitError,"Invalid input data type (" + muLayerDT + ")"
+            AddMsgAndPrint("Invalid input data type (" + muLayerDT + ")",2)
+            exit()
 
         if os.path.isfile(textFilePath):
             os.remove(textFilePath)
@@ -3852,20 +3849,23 @@ if __name__ == '__main__':
 
             # determine overlap using input and SAPOLYGON
             if not determineOverlap(muLayer):
-                raise ExitError, "\n\tNo Overlap with geodata extent.  Come Back Later!"
+                AddMsgAndPrint("\n\tNo Overlap with geodata extent.  Come Back Later!",2)
+                exit()
 
             zoneField = getZoneField(analysisType)
 
             # set the zone field depending on analysis type
             if not zoneField:
-                raise ExitError, "\nCould not determine Zone field"
+                AddMsgAndPrint("\nCould not determine Zone field",2)
+                exit()
 
             # ------------- Report how many polygons will be processed; exit if input is empty -------------------------
             totalPolys = int(arcpy.GetCount_management(muLayerPath).getOutput(0))
             selectedPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
 
             if totalPolys == 0:
-                raise ExitError, "\nNo Polygons found to process.  Empty Feature layer"
+                AddMsgAndPrint("\nNo Polygons found to process.  Empty Feature layer",2)
+                exit()
 
             elif selectedPolys < totalPolys:
                 AddMsgAndPrint("\n" + str(splitThousands(selectedPolys)) + " out of " + str(splitThousands(totalPolys)) + " polygons will be assessed",0)
@@ -4122,7 +4122,8 @@ if __name__ == '__main__':
             arcpy.Compact_management(arcpy.env.scratchGDB)
 
         else:
-            raise ExitError, "\nFailed to set scratchworkspace\n"
+            AddMsgAndPrint("\nFailed to set scratchworkspace\n",2)
+            exit()
 
         arcpy.CheckInExtension("Spatial Analyst")
 
