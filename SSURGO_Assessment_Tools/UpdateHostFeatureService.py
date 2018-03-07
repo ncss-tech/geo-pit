@@ -2,19 +2,52 @@
 #   and calling publishing (with overwrite) to update the feature service
 #
 
-import ConfigParser
-import ast
-import os, sys, time, string
-
+import os, sys, time, string, random, traceback
 import urllib2, urllib, json
-import mimetypes
-import gzip
+
+import ConfigParser, ast
+
+import mimetypes, gzip
 from io import BytesIO
-import random
 
 from xml.etree import ElementTree as ET
 import arcpy
 
+
+## ===================================================================================
+def AddMsgAndPrint(msg, severity=0):
+    # prints message to screen if run as a python script
+    # Adds tool message to the geoprocessor
+    #
+    #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
+    try:
+        #print msg
+
+        if severity == 0:
+            arcpy.AddMessage(msg)
+
+        elif severity == 1:
+            arcpy.AddWarning(msg)
+
+        elif severity == 2:
+            arcpy.AddError("\n" + msg)
+
+    except:
+        pass
+
+## ===================================================================================
+def errorMsg():
+
+    try:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        theMsg = "\t" + traceback.format_exception(exc_type, exc_value, exc_traceback)[1] + "\n\t" + traceback.format_exception(exc_type, exc_value, exc_traceback)[-1]
+        AddMsgAndPrint(theMsg,2)
+
+    except:
+        AddMsgAndPrint("Unhandled error in errorMsg method", 2)
+        pass
+
+## ===================================================================================
 
 class AGOLHandler(object):
 
@@ -36,6 +69,8 @@ class AGOLHandler(object):
         self.folderID = self.findFolder()
 
     def getToken(self, username, password, exp=60):
+        """ Establish URL Token with AGOL
+            URL tokens are a way to give users access permission for various Web resources."""
 
         referer = "http://www.arcgis.com/"
         query_dict = {'username': username,
@@ -45,12 +80,13 @@ class AGOLHandler(object):
                       'referer': referer,
                       'f': 'json'}
 
-        token_url = '{}/generateToken'.format(self.base_url)
+        # add 'generateToken' to base_url:
+        token_url = '{}/generateToken'.format(self.base_url) # https://www.arcgis.com/sharing/rest/generateToken
 
-        token_response = self.url_request(token_url, query_dict, 'POST')
+        token_response = self.url_request(token_url, query_dict, request_type='POST', repeat=1)
 
         if "token" not in token_response:
-            print(token_response['error'])
+            AddMsgAndPrint(token_response['error'],2)
             sys.exit()
         else:
             return token_response['token']
@@ -263,12 +299,22 @@ class AGOLHandler(object):
                     additional_headers=None, files=None, repeat=0):
         """
         Make a request to the portal, provided a portal URL
-        and request parameters, returns portal response.
+        and request parameters.
+        returns portal response in JSON format
 
         Arguments:
-            in_url -- portal url
-            request_parameters -- dictionary of request parameters.
-            request_type -- HTTP verb (default: GET)
+            in_url -- portal url -- https://www.arcgis.com/sharing/rest/generateToken
+            request_parameters -- dictionary of request parameters:
+                {'client': 'referer',
+                'expiration': '60',
+                'f': 'json',
+                'password': 'somePassWord',
+                'referer': 'http://www.arcgis.com/',
+                'username': 'someUserName'}
+            request_type -- HTTP verb (default: GET, POST will be used for backups):
+                GET - Requests data from a specified resource
+                POST - Submits data to be processed to a specified resource
+                (for more info - https://www.w3schools.com/tags/ref_httpmethods.asp)
             additional_headers -- any headers to pass along with the request.
             files -- any files to send.
             repeat -- repeat the request up to this number of times.
@@ -277,17 +323,30 @@ class AGOLHandler(object):
             dictionary of response from portal instance.
         """
 
-        if request_type == 'GET':
-            req = urllib2.Request('?'.join((in_url, urllib.urlencode(request_parameters))))
-        elif request_type == 'MULTIPART':
-            req = urllib2.Request(in_url, request_parameters)
-        else:
-            req = urllib2.Request(
-                in_url, urllib.urlencode(request_parameters), self.headers)
+        # --------------------------------Send request to AGOL - backups will be sent via POST
+        try:
+            if request_type == 'GET':
+                req = urllib2.Request('?'.join((in_url, urllib.urlencode(request_parameters))))
+            elif request_type == 'MULTIPART':
+                req = urllib2.Request(in_url, request_parameters)
+            else:
+                req = urllib2.Request(
+                    in_url, urllib.urlencode(request_parameters), self.headers)
 
+        except urllib2.HTTPError, e:
+            checksLogger.error('HTTPError = ' + str(e.code))
+        except urllib2.URLError, e:
+            checksLogger.error('URLError = ' + str(e.reason))
+        except httplib.HTTPException, e:
+            checksLogger.error('HTTPException')
+        except:
+            errorMsg()
+
+        # --------------------------------------headers and proxyDict Not used in AGOL backups
         if additional_headers:
             for key, value in list(additional_headers.items()):
                 req.add_header(key, value)
+
         req.add_header('Accept-encoding', 'gzip')
 
         if self.proxyDict:
@@ -296,31 +355,39 @@ class AGOLHandler(object):
             opener = urllib2.build_opener(p, auth, urllib2.HTTPHandler)
             urllib2.install_opener(opener)
 
+        # ----------open the AGOL request, which will be returned as string or a Request object
         response = urllib2.urlopen(req)
 
+        # unzip the response if needed else just read it
         if response.info().get('Content-Encoding') == 'gzip':
             buf = BytesIO(response.read())
             with gzip.GzipFile(fileobj=buf) as gzip_file:
                 response_bytes = gzip_file.read()
         else:
-            response_bytes = response.read()
+            response_bytes = response.read()   # returns a dict but in string format.
 
-        response_text = response_bytes.decode('UTF-8')
-        response_json = json.loads(response_text)
+        response_text = response_bytes.decode('UTF-8')  # decode the response (not really necessary)
+        response_json = json.loads(response_text)       # returns 3 item dict
 
+        # --------------------------------------------------return valid response in JSON format
         if not response_json or "error" in response_json:
             rerun = False
             if repeat > 0:
                 repeat -= 1
                 rerun = True
 
+            # response was invalid; re-call the url_request subfunction
             if rerun:
+                AddMsgAndPrint("ArcGIS Online request Failed.  Trying Again!",2)
                 time.sleep(2)
                 response_json = self.url_request(
                     in_url, request_parameters, request_type,
                     additional_headers, files, repeat)
 
         return response_json
+        """{u'expires': 1520368134822L,
+            u'ssl': False,
+            u'token': u'O0Rqq08Bl7q8GLsmEOxU3sStN3uC2ZtwAC-WCB9NazkAxhu83IlKjBXqnjzV1Rjy1H3q0oBVebSuu-dcdbCgvhXF8316m9WtI8CSWQAZzpYInuZqvPfabVZJ2nuQAsKCOmLbbcbh-IdPjSIeZBhMpQ..'}"""
 
     def multipart_request(self, params, files):
         """ Uploads files as multipart/form-data. files is a dict and must
@@ -469,8 +536,9 @@ if __name__ == "__main__":
     localPath = sys.path[0]
     settingsFile = os.path.join(localPath, "settings.ini")
 
+    # Check if .ini file exists
     if os.path.isfile(settingsFile):
-        config = ConfigParser.ConfigParser()
+        config = ConfigParser.ConfigParser() # parser for .ini files
         config.read(settingsFile)
     else:
         print("INI file not found. \nMake sure a valid 'settings.ini' file exists in the same directory as this script.")
@@ -480,7 +548,7 @@ if __name__ == "__main__":
 ##    inputUsername = config.get('AGOL', 'USER')
 ##    inputPswd = config.get('AGOL', 'PASS')
 
-    # --------------------------------------------------- Feature Service Info
+    # --------------------------------------------------- get Feature Service Info from .ini file
     #MXD = config.get('FS_INFO', 'MXD')
     #serviceName = config.get('FS_INFO', 'SERVICENAME')
     folderName = config.get('FS_INFO', 'FOLDERNAME')
@@ -488,14 +556,14 @@ if __name__ == "__main__":
     summary = config.get('FS_INFO', 'DESCRIPTION')
     maxRecords = config.get('FS_INFO', 'MAXRECORDS')
 
-    # --------------------------------------------------- Feature Service Share settings: everyone, org, groups
+    # --------------------------------------------------- get Feature Service Share settings: everyone, org, groups from .ini file
     shared = False
     #shared = config.get('FS_SHARE', 'SHARE')
     everyone = config.get('FS_SHARE', 'EVERYONE')
     orgs = config.get('FS_SHARE', 'ORG')
     groups = config.get('FS_SHARE', 'GROUPS')  # Groups are by ID. Multiple groups comma separated
 
-    # --------------------------------------------------- Feature service Proxy Info
+    # --------------------------------------------------- get ArcGIS Server Proxy Info from .ini file
     use_prxy = False
     #use_prxy = config.get('PROXY', 'USEPROXY')
     pxy_srvr = config.get('PROXY', 'SERVER')
@@ -504,6 +572,8 @@ if __name__ == "__main__":
     pxy_pass = config.get('PROXY', 'PASS')
 
     proxyDict = {}
+
+    # If publishing to ArcGIS Server
     if ast.literal_eval(use_prxy):
         http_proxy = "http://" + pxy_user + ":" + pxy_pass + "@" + pxy_srvr + ":" + pxy_port
         https_proxy = "http://" + pxy_user + ":" + pxy_pass + "@" + pxy_srvr + ":" + pxy_port
