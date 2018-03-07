@@ -70,7 +70,18 @@ class AGOLHandler(object):
 
     def getToken(self, username, password, exp=60):
         """ Establish URL Token with AGOL
-            URL tokens are a way to give users access permission for various Web resources."""
+            URL tokens are a way to give users access permission for various Web resources.
+
+            returns token otherwise will return an error and immediately exit out of program
+
+            Correct Response:
+            {u'expires': 1520368134822L,
+            u'ssl': False,
+            u'token': u'O0Rqq08Bl7q8GLsmEOxU3sStN3uC2ZtwAC-WCB9NazkAxhu83IlKjBXqnjzV1Rjy1H3q0oB
+            VebSuu-dcdbCgvhXF8316m9WtI8CSWQAZzpYInuZqvPfabVZJ2nuQAsKCOmLbbcbh-IdPjSIeZBhMpQ..'}"""
+
+        #Junk Lines --- getToken
+        #req = urllib2.Request(token_url, urllib.urlencode(query_dict));response = urllib2.urlopen(req);response_bytes = response.read();response_text = response_bytes.decode('UTF-8');response_json = json.loads(response_text)
 
         referer = "http://www.arcgis.com/"
         query_dict = {'username': username,
@@ -83,16 +94,18 @@ class AGOLHandler(object):
         # add 'generateToken' to base_url:
         token_url = '{}/generateToken'.format(self.base_url) # https://www.arcgis.com/sharing/rest/generateToken
 
+        # Make a request to AGOL to obtain token.
         token_response = self.url_request(token_url, query_dict, request_type='POST', repeat=1)
 
         if "token" not in token_response:
-            AddMsgAndPrint(token_response['error'],2)
+            AddMsgAndPrint("\n" + token_response['error'],2)
             sys.exit()
         else:
             return token_response['token']
 
     def findItem(self, findType):
         """ Find the itemID of whats being updated
+        req = urllib2.Request(searchURL, urllib.urlencode(query_dict));response = urllib2.urlopen(req);response_bytes = response.read();response_text = response_bytes.decode('UTF-8');response_json = json.loads(response_text)
         """
 
         searchURL = self.base_url + "/search"
@@ -105,8 +118,9 @@ class AGOLHandler(object):
         jsonResponse = self.url_request(searchURL, query_dict, 'POST')
 
         if jsonResponse['total'] == 0:
-            print("\nCould not find a service to update. Check the service name in the settings.ini")
+            AddMsgAndPrint("\nCould not find a Feature Service to update",2)
             sys.exit()
+
         else:
             resultList = jsonResponse['results']
             for it in resultList:
@@ -376,7 +390,7 @@ class AGOLHandler(object):
                 repeat -= 1
                 rerun = True
 
-            # response was invalid; re-call the url_request subfunction
+            # response was invalid; loop through the 'url_request' subfunction
             if rerun:
                 AddMsgAndPrint("ArcGIS Online request Failed.  Trying Again!",2)
                 time.sleep(2)
@@ -385,9 +399,16 @@ class AGOLHandler(object):
                     additional_headers, files, repeat)
 
         return response_json
-        """{u'expires': 1520368134822L,
+
+        """ Correct Response:
+            {u'expires': 1520368134822L,
             u'ssl': False,
-            u'token': u'O0Rqq08Bl7q8GLsmEOxU3sStN3uC2ZtwAC-WCB9NazkAxhu83IlKjBXqnjzV1Rjy1H3q0oBVebSuu-dcdbCgvhXF8316m9WtI8CSWQAZzpYInuZqvPfabVZJ2nuQAsKCOmLbbcbh-IdPjSIeZBhMpQ..'}"""
+            u'token': u'O0Rqq08Bl7q8GLsmEOxU3sStN3uC2ZtwAC-WCB9NazkAxhu83IlKjBXqnjzV1Rjy1H3q0oBVebSuu-dcdbCgvhXF8316m9WtI8CSWQAZzpYInuZqvPfabVZJ2nuQAsKCOmLbbcbh-IdPjSIeZBhMpQ..'}
+
+            Wrong Response:
+            {u'error': {u'code': 400,
+            u'details': [u'Invalid username or password.'],
+            u'message': u'Unable to generate token.'}}"""
 
     def multipart_request(self, params, files):
         """ Uploads files as multipart/form-data. files is a dict and must
