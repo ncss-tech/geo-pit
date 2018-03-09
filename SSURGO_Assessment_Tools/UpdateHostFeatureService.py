@@ -48,7 +48,6 @@ def errorMsg():
         pass
 
 ## ===================================================================================
-
 class AGOLHandler(object):
 
     def __init__(self, username, password, serviceName, folderName, proxyDict):
@@ -61,13 +60,14 @@ class AGOLHandler(object):
         self.password = password
         self.base_url = "https://www.arcgis.com/sharing/rest"
         self.proxyDict = proxyDict
-        self.serviceName = serviceName
-        self.token = self.getToken(username, password)
-        self.itemID = self.findItem("Feature Service")
-        self.SDitemID = self.findItem("Service Definition")
-        self.folderName = folderName
-        self.folderID = self.findFolder()
+        self.serviceName = serviceName                      # MN075_AGOL
+        self.token = self.getToken(username, password)      # 9wy68dPDKti7XDFLwGkb_o81tvrBRQaiAzWPVfjMLQ5Vj_9-Two37vKil8X5fLUOePZW4Ed6iH7ylNpaGEZdXZtJ_sY97ATwLIv4HkjCrgMuzYy380aknwAodCke8cho4VfJhMuxA8P09f0fuwXLGQ..
+        self.itemID = self.findItem("Feature Service")      # 5d38dfbe9efb4b3793a4ac1398e8ea90
+        self.SDitemID = self.findItem("Service Definition") # ea84baf9c312475caceaa103726e5906
+        self.folderName = folderName                        # MN075_copy OR None
+        self.folderID = self.findFolder()                   # MN075_copy OR ""
 
+    ## ----------------------------------------------------------------------------------------------------------
     def getToken(self, username, password, exp=60):
         """ Establish URL Token with AGOL
             URL tokens are a way to give users access permission for various Web resources.
@@ -81,6 +81,7 @@ class AGOLHandler(object):
             VebSuu-dcdbCgvhXF8316m9WtI8CSWQAZzpYInuZqvPfabVZJ2nuQAsKCOmLbbcbh-IdPjSIeZBhMpQ..'}"""
 
         #Junk Lines --- getToken
+        # query_dict = {'username': username,'password': password,'expiration': str(exp),'client': 'referer','referer': referer,'f': 'json'}
         #req = urllib2.Request(token_url, urllib.urlencode(query_dict));response = urllib2.urlopen(req);response_bytes = response.read();response_text = response_bytes.decode('UTF-8');response_json = json.loads(response_text)
 
         referer = "http://www.arcgis.com/"
@@ -103,8 +104,76 @@ class AGOLHandler(object):
         else:
             return token_response['token']
 
+    ## ----------------------------------------------------------------------------------------------------------
     def findItem(self, findType):
-        """ Find the itemID of whats being updated
+        """ Submit a query to https://www.arcgis.com/sharing/rest/search to match
+            the title and findType (Feature Service or Service Definition) and
+            Return the itemID if found.  Exit if nothing was found
+
+                ------------------------------- example results of a Feature Service
+                {u'nextStart': -1,
+                 u'num': 10,
+                 u'query': u'title:"MN075_AGOL"AND owner:"adolfo.diaz_nrcs" AND type:"Feature Service"',
+                 u'results': [{u'access': u'private',
+                   u'accessInformation': u'Larissa Schmidt and Adolfo Diaz',
+                   u'appCategories': [],
+                   u'avgRating': 0,
+                   u'banner': None,
+                   u'categories': [],
+                   u'created': 1520456800000L,
+                   u'culture': u'en-us',
+                   u'description': u'MN075 backup of progressive mapping',
+                   u'documentation': None,
+                   u'extent': [[-91.83895536448605, 47.57199818503777],
+                               [-90.98356603656809, 48.188237918780814]],
+                   u'guid': None,
+                   u'id': u'5d38dfbe9efb4b3793a4ac1398e8ea90',
+                   u'industries': [],
+                   u'languages': [],
+                   u'largeThumbnail': None,
+                   u'licenseInfo': None,
+                   u'listed': False,
+                   u'modified': 1520456971210L,
+                   u'name': u'MN075_AGOL',
+                   u'numComments': 0,
+                   u'numRatings': 0,
+                   u'numViews': 0,
+                   u'owner': u'adolfo.diaz_nrcs',
+                   u'properties': None,
+                   u'proxyFilter': None,
+                   u'scoreCompleteness': 63,
+                   u'screenshots': [],
+                   u'size': -1,
+                   u'snippet': u'MN075 backup of progressive mapping',
+                   u'spatialReference': u'USA_Contiguous_Albers_Equal_Area_Conic_USGS_version',
+                   u'tags': [u'MN075',
+                             u'backup',
+                             u'copy',
+                             u'preliminary mapping'],
+                   u'thumbnail': u'thumbnail/thumbnail.png',
+                   u'title': u'MN075_AGOL',
+                   u'type': u'Feature Service',
+                   u'typeKeywords': [u'ArcGIS Server',
+                                     u'Data',
+                                     u'Feature Access',
+                                     u'Feature Service',
+                                     u'Multilayer',
+                                     u'Service',
+                                     u'Hosted Service'],
+                   u'url': u'https://services.arcgis.com/SXbDpmb7xQkk44JV/arcgis/rest/services/MN075_AGOL/FeatureServer'}],
+                 u'start': 1,
+                 u'total': 1}
+
+                ------------------------------- example results of a Service Definition
+                Everything is the same as a feature service except the typeKeywords:
+
+                   u'typeKeywords': [u'.sd',
+                                     u'ArcGIS',
+                                     u'File Geodatabase Feature Class',
+                                     u'Metadata',
+                                     u'Service Definition',
+                                     u'Online']
+
         req = urllib2.Request(searchURL, urllib.urlencode(query_dict));response = urllib2.urlopen(req);response_bytes = response.read();response_text = response_bytes.decode('UTF-8');response_json = json.loads(response_text)
         """
 
@@ -115,22 +184,106 @@ class AGOLHandler(object):
                       'q': "title:\"" + self.serviceName + "\"AND owner:\"" +
                       self.username + "\" AND type:\"" + findType + "\""}
 
+        #query_dict = {'f': 'json','token': token,'q': "title:\"" serviceName + "\"AND owner:\"" + username + "\" AND type:\"" + findType + "\""}
+
         jsonResponse = self.url_request(searchURL, query_dict, 'POST')
 
+        # No feature service match found
         if jsonResponse['total'] == 0:
-            AddMsgAndPrint("\nCould not find a Feature Service to update",2)
+            AddMsgAndPrint("\nCould not find a Feature Service with the name: " + serviceName,2)
             sys.exit()
 
+        # Feature service match found - return Feature service ID
         else:
             resultList = jsonResponse['results']
-            for it in resultList:
-                if it["title"] == self.serviceName:
-                    print("found {} : {}").format(findType, it["id"])
-                    return it["id"]
+            for result in resultList:
 
+                if result["title"] == self.serviceName:
+                    AddMsgAndPrint("Found {} : {}").format(findType, serviceName)
+                    AddMsgAndPrint("\n\tDescription {} : {}").format(findType, result["description"])
+                    AddMsgAndPrint("\n\tID {} : {}").format(findType, result["id"])
+
+                    return result["id"]
+
+    ## ----------------------------------------------------------------------------------------------------------
     def findFolder(self, folderName=None):
-        """ Find the ID of the folder containing the service
+        """ Submit a query to https://www.arcgis.com/sharing/rest/content/users/adolfo.diaz_nrcs
+            to search the folders created under the user's AGOL content.  If folderName exists
+            return the ID of the folder.  Exit if folderName was not found but specified.
+            Return "" if folderName was not specicified.
+
+                ------------------------------------------------- example results of folder query
+                {u'currentFolder': None,
+                 u'folders': [{u'created': 1519838483000L,
+                               u'id': u'1e74676d0f9a4b29b24f32963ee73953',
+                               u'title': u'MN075_backup',
+                               u'username': u'adolfo.diaz_nrcs'},
+                              {u'created': 1504721842000L,
+                               u'id': u'b02252382b30440d934c2d35f09bcc11',
+                               u'title': u'Ortho-Rectified Soil Survey Atlas Sheets',
+                               u'username': u'adolfo.diaz_nrcs'},
+                              {u'created': 1493822976000L,
+                               u'id': u'febbe12f6d7b4111806385d06f0c511f',
+                               u'title': u'Pine Co., MN',
+                               u'username': u'adolfo.diaz_nrcs'},
+                              {u'created': 1520451234000L,
+                               u'id': u'afc5053da224437092d52144f768795a',
+                               u'title': u'Test',
+                               u'username': u'adolfo.diaz_nrcs'}],
+                 u'items': [{u'access': u'private',
+                             u'accessInformation': u'Adolfo Diaz, Terry Schoepp, Onalaska MLRA Soil Survey Office',
+                             u'appCategories': [],
+                             u'avgRating': 0,
+                             u'banner': None,
+                             u'categories': [],
+                             u'created': 1469086587000L,
+                             u'culture': u'en-us',
+                             u'description': u'The purpose of this project is to inventory and geolocate every pedon that has ever collected for soils information purposes and build a database for them. These historical pedons have been categorized into different types for visual purposes and have not been entered into NASIS.  This in an ongoing project and quality control is on',
+                             u'documentation': None,
+                             u'extent': [[-115.207519929433, 37.718894003217],
+                                         [-81.612597405103, 49.9769327871396]],
+                             u'guid': u'DB54248B-8EF2-4074-99E8-696846158772',
+                             u'id': u'61566233eb964fc0bfe160e1b0c9948e',
+                             u'industries': [],
+                             u'languages': [],
+                             u'largeThumbnail': None,
+                             u'licenseInfo': None,
+                             u'listed': False,
+                             u'modified': 1469086587000L,
+                             u'name': u'Region10_Historical_Pedons.sd',
+                             u'numComments': 0,
+                             u'numRatings': 0,
+                             u'numViews': 1,
+                             u'owner': u'adolfo.diaz_nrcs',
+                             u'ownerFolder': None,
+                             u'properties': None,
+                             u'protected': False,
+                             u'proxyFilter': None,
+                             u'scoreCompleteness': 80,
+                             u'screenshots': [],
+                             u'size': 34215720513L,
+                             u'snippet': u'These are historical Soil Science Division pedons that have been geolocated, categorized and scanned.  ',
+                             u'spatialReference': u'USA_Contiguous_Albers_Equal_Area_Conic_USGS_version',
+                             u'tags': [u'soil pedons', u' historical pedons', u' pedons'],
+                             u'thumbnail': u'thumbnail/thumbnail.png',
+                             u'title': u'Region10_Historical_Pedons',
+                             u'type': u'Service Definition',
+                             u'typeKeywords': [u'.sd',
+                                               u'ArcGIS',
+                                               u'File Geodatabase Feature Class',
+                                               u'Metadata',
+                                               u'Service Definition',
+                                               u'Online'],
+                             u'url': None}],
+                 u'nextStart': 2,
+                 u'num': 1,
+                 u'start': 1,
+                 u'total': 15,
+                 u'username': u'adolfo.diaz_nrcs'}
         """
+        # Junk lines -- findFolder
+        # query_dict = {'f': 'json','num': 1,'token': token}
+        # req = urllib2.Request(findURL, urllib.urlencode(query_dict));response = urllib2.urlopen(req);response_bytes = response.read();response_text = response_bytes.decode('UTF-8');response_json = json.loads(response_text)
 
         if self.folderName == "None":
             return ""
@@ -147,10 +300,11 @@ class AGOLHandler(object):
             if folder['title'] == self.folderName:
                 return folder['id']
 
-        print("\nCould not find the specified folder name provided in the settings.ini")
-        print("-- If your content is in the root folder, change the folder name to 'None'")
+        AddMsgAndPrint("\nCould not find the folder name: " + folderName,2)
+        AddMsgAndPrint("-- If your content is in the root folder, change the folder name to 'None'",2)
         sys.exit()
 
+    ## ----------------------------------------------------------------------------------------------------------
     def upload(self, fileName, tags, description):
         """
          Overwrite the SD on AGOL with the new SD.
@@ -193,6 +347,7 @@ class AGOLHandler(object):
             print(itemPartJSON)
             sys.exit()
 
+    ## ----------------------------------------------------------------------------------------------------------
     def _add_part(self, file_to_upload, item_id, upload_type=None):
         """ Add the item to the portal in chunks.
         """
@@ -225,6 +380,7 @@ class AGOLHandler(object):
 
         return resp
 
+    ## ----------------------------------------------------------------------------------------------------------
     def item_status(self, item_id, jobId=None):
         """ Gets the status of an item.
         Returns:
@@ -240,6 +396,7 @@ class AGOLHandler(object):
 
         return self.url_request(url, parameters)
 
+    ## ----------------------------------------------------------------------------------------------------------
     def commit(self, item_id):
         """ Commits an item that was uploaded as multipart
         """
@@ -250,6 +407,7 @@ class AGOLHandler(object):
 
         return self.url_request(url, parameters)
 
+    ## ----------------------------------------------------------------------------------------------------------
     def publish(self):
         """ Publish the existing SD on AGOL (it will be turned into a Feature Service)
         """
@@ -288,7 +446,7 @@ class AGOLHandler(object):
             print(" -- quit --")
             sys.exit()
 
-
+    ## ----------------------------------------------------------------------------------------------------------
     def enableSharing(self, newItemID, everyone, orgs, groups):
         """ Share an item with everyone, the organization and/or groups
         """
@@ -309,6 +467,7 @@ class AGOLHandler(object):
 
         print("successfully shared...{}...".format(jsonResponse['itemId']))
 
+    ## ----------------------------------------------------------------------------------------------------------
     def url_request(self, in_url, request_parameters, request_type='GET',
                     additional_headers=None, files=None, repeat=0):
         """
@@ -410,6 +569,7 @@ class AGOLHandler(object):
             u'details': [u'Invalid username or password.'],
             u'message': u'Unable to generate token.'}}"""
 
+    ## ----------------------------------------------------------------------------------------------------------
     def multipart_request(self, params, files):
         """ Uploads files as multipart/form-data. files is a dict and must
             contain the required keys "filename" and "content". The "mimetype"
@@ -457,36 +617,74 @@ class AGOLHandler(object):
                            "Content-Length": str(len(request_data))}
         return request_data, request_headers
 
-
+## ===================================================================================
 def makeSD(MXD, serviceName, tempDir, outputSD, maxRecords, tags, summary):
-    """ create a draft SD and modify the properties to overwrite an existing FS
+    """ create a draft service definition and modify the properties to overwrite an existing FS
+        The draft service definition file is essentially an XML file or a file that is in
+        an inherently hierarchical format.
+
+            ------------------------------- Example of Child tags and attributes in .sddraft
+            Databases {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:ArrayOfSVCDatabase'}
+            Resources {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:ArrayOfSVCResource'}
+            ID {}
+            Name {}
+            OnPremisePath {}
+            StagingPath {}
+            ServerPath {}
+            InPackagePath {}
+            ByReference {}
+            Type {}
+            State {}
+            ServerType {}
+            DataFolder {}
+            StagingSettings {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:PropertySet'}
+            KeepExistingData {}
+            KeepExistingMapCache {}
+            ClientHostName {}
+            OnServerName {}
+            Configurations {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:ArrayOfSVCConfiguration'}
+            CacheSchema {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:CacheInfo'}
+            ItemInfo {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:ItemInfo'}
+            InitCacheLevels {'{http://www.w3.org/2001/XMLSchema-instance}type': 'typens:SVCInitialCache'}
+
+        All paths are built by joining names to the tempPath
     """
 
-    arcpy.env.overwriteOutput = True
-    # All paths are built by joining names to the tempPath
+##    arcpy.env.overwriteOutput = True
+
     SDdraft = os.path.join(tempDir, "tempdraft.sddraft")
     newSDdraft = os.path.join(tempDir, "updatedDraft.sddraft")
 
-    # Check the MXD for summary and tags, if empty, push them in.
+    # --------------------------------------------------- Check the MXD for summary and tags, if empty, push them in.
     try:
         mappingMXD = arcpy.mapping.MapDocument(MXD)
+
         if mappingMXD.tags == "":
             mappingMXD.tags = tags
             mappingMXD.save()
+
         if mappingMXD.summary == "":
             mappingMXD.summary = summary
             mappingMXD.save()
-    except IOError:
-        print("IOError on save, do you have the MXD open? Summary/tag info not pushed to MXD, publishing may fail.")
 
+    except IOError:
+        AddMsgAndPrint("Error updating MXD, do you have the MXD open? Summary/tag info not updated to MXD, publishing may fail.",1)
+
+    # --------------------------------------------------- Create and parse the .sddraft file
+    # Create Draft Service Definition file from MXD.
+    # Dict of errors, messages and warnings is return
+    # TO-DO: I think we should handle the errors
     arcpy.mapping.CreateMapSDDraft(MXD, SDdraft, serviceName, "MY_HOSTED_SERVICES")
 
     # Read the contents of the original SDDraft into an xml parser
-    doc = ET.parse(SDdraft)
+    tree = ET.parse(SDdraft)
+    root_element = tree.getroot()
 
-    root_elem = doc.getroot()
-    if root_elem.tag != "SVCManifest":
+    if root_element.tag != "SVCManifest":
+        #AddMsgAndPrint("Root tag is incorrect.  Error writing .sddraft file",2)
         raise ValueError("Root tag is incorrect. Is {} a .sddraft file?".format(SDDraft))
+
+    # --------------------------------------------------- Modify the .sddraft file
 
     # The following 6 code pieces modify the SDDraft from a new MapService
     # with caching capabilities to a FeatureService with Query,Create,
@@ -500,35 +698,35 @@ def makeSD(MXD, serviceName, tempDir, outputSD, maxRecords, tags, summary):
     # removing items.
     # Note you cannot disable Query from a Feature Service.
 
-    # doc.find("./Type").text = "esriServiceDefinitionType_Replacement"
-    # doc.find("./State").text = "esriSDState_Published"
+    # tree.find("./Type").text = "esriServiceDefinitionType_Replacement"
+    # tree.find("./State").text = "esriSDState_Published"
 
     # Change service type from map service to feature service
-    for config in doc.findall("./Configurations/SVCConfiguration/TypeName"):
-        if config.text == "MapServer":
-            config.text = "FeatureServer"
+    for serverType in tree.findall("./Configurations/SVCConfiguration/TypeName"):
+        if serverType.text == "MapServer":
+            serverType.text = "FeatureServer"
 
-    # Turn off caching
-    for prop in doc.findall("./Configurations/SVCConfiguration/Definition/" +
+    # set caching to False and set maxRecords (usually 1000)
+    for property in tree.findall("./Configurations/SVCConfiguration/Definition/" +
                             "ConfigurationProperties/PropertyArray/" +
                             "PropertySetProperty"):
-        if prop.find("Key").text == 'isCached':
-            prop.find("Value").text = "false"
-        if prop.find("Key").text == 'maxRecordCount':
-            prop.find("Value").text = maxRecords
+        if property.find("Key").text == 'isCached':
+            property.find("Value").text = "false"
+        if property.find("Key").text == 'maxRecordCount':
+            property.find("Value").text = maxRecords
 
-    # Turn on feature access capabilities
-    for prop in doc.findall("./Configurations/SVCConfiguration/Definition/Info/PropertyArray/PropertySetProperty"):
+    # set feature access capabilities to: "Query,Create,Update,Delete,Uploads,Editing"
+    for prop in tree.findall("./Configurations/SVCConfiguration/Definition/Info/PropertyArray/PropertySetProperty"):
         if prop.find("Key").text == 'WebCapabilities':
             prop.find("Value").text = "Query,Create,Update,Delete,Uploads,Editing"
 
-    # Add the namespaces which get stripped, back into the .SD
-    root_elem.attrib["xmlns:typens"] = 'http://www.esri.com/schemas/ArcGIS/10.1'
-    root_elem.attrib["xmlns:xs"] = 'http://www.w3.org/2001/XMLSchema'
+    # Add the namespaces which get stripped, back into the .SD - I didn't notice a difference here
+    root_element.attrib["xmlns:typens"] = 'http://www.esri.com/schemas/ArcGIS/10.1'
+    root_element.attrib["xmlns:xs"] = 'http://www.w3.org/2001/XMLSchema'
 
-    # Write the new draft to disk
+    # Write the new draft to disk in unicode
     with open(newSDdraft, 'w') as f:
-        doc.write(f, 'utf-8')
+        tree.write(f, 'utf-8')
 
     # Analyze the service
     analysis = arcpy.mapping.AnalyzeForSD(newSDdraft)
