@@ -371,7 +371,7 @@ try:
         selectedProjects = arcpy.GetParameter(2)           # selected project names in a list
         outputFolder = arcpy.GetParameterAsText(3)
 
-        searchString = searchString.replace("&","?")   # Replace '&' for '?';ampersand in project named messed up URL parameter
+        searchString = searchString.replace("&","?").replace("*","%")   # Replace '&' for '?';ampersand in project named messed up URL parameter
 
         # Hardcode NASIS-LIMS Report Webservice
         # Runs SDJR Status Report: Returns projects with similar name
