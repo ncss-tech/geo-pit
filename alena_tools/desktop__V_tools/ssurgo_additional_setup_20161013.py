@@ -3,6 +3,7 @@
 #11/18/2014
 #12/11/2014 Updated with Calculate Fields
 #10/12/2016 Updated Workspace, added acres field and calculation, add fields for Project_Record
+#11/03/2017 Updated code because of python code changes
 
 
 import arcpy
@@ -27,9 +28,9 @@ arcpy.AddField_management (workspace+'\\'"FEATLINE", "ORIG_FEATSYM", "TEXT", "",
 
 #Calculate Fields
 
-arcpy.CalculateField_management(workspace+'\\'"MUPOLYGON", "ORIG_MUSYM", '[MUSYM]', "VB" )
-arcpy.CalculateField_management(workspace+'\\'"FEATPOINT", "ORIG_FEATSYM", '[FEATSYM]', "VB" )
-arcpy.CalculateField_management(workspace+'\\'"FEATLINE", "ORIG_FEATSYM", '[FEATSYM]', "VB" )
+arcpy.CalculateField_management(workspace+'\\'"MUPOLYGON", "ORIG_MUSYM", '!MUSYM!', "PYTHON" )
+arcpy.CalculateField_management(workspace+'\\'"FEATPOINT", "ORIG_FEATSYM", '!FEATSYM!', "PYTHON" )
+arcpy.CalculateField_management(workspace+'\\'"FEATLINE", "ORIG_FEATSYM", '!FEATSYM!', "PYTHON" )
 
 #Add Field
 arcpy.AddField_management(workspace+'\\'"MUPOLYGON", "ACRES", "DOUBLE", )
@@ -52,20 +53,25 @@ arcpy.AddField_management(workspace+'\\'"Project_Record", "ORIG_MUSYM", "TEXT", 
 #10/12/2016
 
 #arcpy.AddIndex_management(inFC, "AREASYMBOL;MUSYM;MUKEY", "M_Att", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUSYM", "MUSYM", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUKEY", "MUKEY", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUNAME", "MUNAME", "UNIQUE", "ASCENDING")
+arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", ["AREASYMBOL", "MUSYM", "MUKEY", "MUNAME"], "MU_INDEX", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUSYM", "MUSYM", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUKEY", "MUKEY", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"MUPOLYGON", "MUNAME", "MUNAME", "UNIQUE", "ASCENDING")
 
-arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "FEATSYM", "FEATSYM", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "FEATKEY", "FEATKEY", "UNIQUE", "ASCENDING")
+arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", ["AREASYMBOL", "FEATSYM", "FEATKEY"],"FP_INDEX", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "FEATSYM", "FEATSYM", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATPOINT", "FEATKEY", "FEATKEY", "UNIQUE", "ASCENDING")
 
-arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "FEATSYM", "FEATSYM", "UNIQUE", "ASCENDING")
-arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "FEATKEY", "FEATKEY", "UNIQUE", "ASCENDING")
 
-arcpy.AddIndex_management(workspace+'\\'"SAPOLYGON", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
+arcpy.AddIndex_management(workspace+'\\'"FEATLINE", ["AREASYMBOL", "FEATSYM", "FEATKEY"],"FL_INDEX", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "FEATSYM", "FEATSYM", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"FEATLINE", "FEATKEY", "FEATKEY", "UNIQUE", "ASCENDING")
+
+arcpy.AddIndex_management(workspace+'\\'"SAPOLYGON", ["AREASYMBOL"], "SA_INDEX", "UNIQUE", "ASCENDING")
+#arcpy.AddIndex_management(workspace+'\\'"SAPOLYGON", "AREASYMBOL", "AREASYMBOL", "UNIQUE", "ASCENDING")
 
 doname = "RECERT_NEEDED" #Domain Name 
 

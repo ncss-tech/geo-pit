@@ -11,7 +11,7 @@ arcpy.env.overwriteOutput = True
 
 #inFC = arcpy.GetParameterAsText (0) #Input Feature Class
 
-#arcpy.EnableEditorTracking_management(inFC, "Creator_Field", "Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field", "ADD_FIELDS", "UTC")
+#arcpy.EnableEditorTracking_management(inFC, "Creator", "Creation_Date", "Editor", "Last_Edit_Date", "ADD_FIELDS", "UTC")
 
 # Set the workspace
 workspace = arcpy.GetParameterAsText(0)
@@ -33,11 +33,11 @@ arcpy.env.workspace = workspace
 # Execute enable editor tracking
 #for dataset in dataList:
 #    print 'Enabling tracking on ' + dataset
-#    arcpy.EnableEditorTracking_management(dataset,"Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+#    arcpy.EnableEditorTracking_management(dataset,"Creator","Creation_Date", "Editor", "Last_Edit_Date","ADD_FIELDS", "UTC")
 
 
-arcpy.EnableEditorTracking_management(workspace+'\\'"MUPOLYGON","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
-arcpy.EnableEditorTracking_management(workspace+'\\'"FEATPOINT","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
-arcpy.EnableEditorTracking_management(workspace+'\\'"FEATLINE","Creator_Field","Creation_Date_Field", "Editor_Field", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+arcpy.EnableEditorTracking_management(workspace+'\\'"MUPOLYGON","Creator","Creation_Date", "Editor", "Last_Edit_Date","ADD_FIELDS", "UTC")
+arcpy.EnableEditorTracking_management(workspace+'\\'"FEATPOINT","Creator","Creation_Date", "Editor", "Last_Edit_Date_Field","ADD_FIELDS", "UTC")
+arcpy.EnableEditorTracking_management(workspace+'\\'"FEATLINE","Creator","Creation_Date", "Editor", "Last_Edit_Date","ADD_FIELDS", "UTC")
 
 print 'Enabling complete'

@@ -1,6 +1,7 @@
 #split soils by MLRA with Acres
 #A. Stephens
 #09/18/2014
+#This tool splits soils by MLRA, calculates acres, and exports to excel spreadsheet.
 
 import arcpy
 

@@ -16,7 +16,7 @@ arcpy.Dissolve_management (inFCsoils, "outFCDISSOLVE", dissolveFields)
 
 #Add Field
 
-arcpy.AddField_management("outFCDISSOLVE", "ACRES", "DOUBLE", )
+arcpy.AddField_management("outFCDISSOLVE", "ACRES", "SHORT")
 
 #Calculate Field
 
