@@ -32,9 +32,13 @@ arcpy.CalculateField_management("outFCDISSOLVE", "ACRES", '!Shape.area@ACRES!', 
 
 arcpy.Sort_management ("outFCDISSOLVE", "outFCDISSOLVE_SORT", [["MLRARSYM", "ASCENDING"], ["MUSYM", "ASCENDING"]])
 
+
 #outa_xls = "MLRA_INTERSECT.xls"
 #Table to Excel
 arcpy.TableToExcel_conversion("outFCDISSOLVE_SORT", out_xls)
+
+#Delete Fields
+#arcpy.DeleteField_management(out_xls, ["OBJECTID", "Shape_Length", "Shape_Area"])
 
 #Delete Feature Classes
 arcpy.Delete_management ("outFC")
