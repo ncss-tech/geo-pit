@@ -14,6 +14,7 @@ out_xls = arcpy.GetParameterAsText (2)
 
 
 #INTERSECT
+
 arcpy.Intersect_analysis (inFC, "outFC", "ALL", "","") 
 
 dissolveFields = ["AREASYMBOL", "MUSYM", "MLRARSYM"]
@@ -21,15 +22,12 @@ dissolveFields = ["AREASYMBOL", "MUSYM", "MLRARSYM"]
 arcpy.Dissolve_management ("outFC", "outFCDISSOLVE", dissolveFields)
 
 #Add Field
-
-arcpy.AddField_management("outFCDISSOLVE", "ACRES", "SHORT", )
+#arcpy.AddField_management("outFCDISSOLVE", "ACRES", "SHORT", )
 
 #Calculate Field
-
 arcpy.CalculateField_management("outFCDISSOLVE", "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
 
 #Sort
-
 arcpy.Sort_management ("outFCDISSOLVE", "outFCDISSOLVE_SORT", [["MLRARSYM", "ASCENDING"], ["MUSYM", "ASCENDING"]])
 
 
