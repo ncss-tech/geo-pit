@@ -1,6 +1,7 @@
 #split soils by MLRA with Acres
 #A. Stephens
 #09/18/2014
+#03/21/2018 script updated to include Pairwise tools in ArcGIS Pro
 
 import arcpy
 
@@ -13,18 +14,19 @@ out_xls = arcpy.GetParameterAsText (2)
 
 
 #INTERSECT
-arcpy.Intersect_analysis (inFC, "outFC", "ALL", "","") 
+#arcpy.Intersect_analysis (inFC, "outFC", "ALL", "","") 
+arcpy.PairwiseIntersect_analysis(inFC, "outFC", "ALL", "","")
+
 
 dissolveFields = ["AREASYMBOL", "MUSYM", "MLRARSYM"]
 #Dissolve Features
-arcpy.Dissolve_management ("outFC", "outFCDISSOLVE", dissolveFields)
+#arcpy.Dissolve_management ("outFC", "outFCDISSOLVE", dissolveFields)
+arcpy.PairwiseDissolve_analysis("outFC", "outFCDISSOLVE", dissolveFields)
 
 #Add Field
-
 arcpy.AddField_management("outFCDISSOLVE", "ACRES", "DOUBLE", )
 
 #Calculate Field
-
 arcpy.CalculateField_management("outFCDISSOLVE", "ACRES", '!Shape.area@ACRES!', "PYTHON_9.3", )
 
 #Sort
