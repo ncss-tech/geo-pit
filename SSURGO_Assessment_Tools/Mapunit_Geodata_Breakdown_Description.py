@@ -330,7 +330,7 @@ def determineOverlap(muLayer):
             return False
 
         # Intersect the soils and input layer
-        outIntersect = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outIntersect = arcpy.CreateScratchName("intersect_soils",workspace=arcpy.env.scratchGDB,data_type='FeatureClass')
         arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
 
         totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
@@ -794,6 +794,7 @@ def getSlopeMode_ORIGINAL(field,zoneID,slopeRaster):
 def getSlopeMode(field,zoneID,slopeRaster):
 
     try:
+        AddMsgAndPrint("I'm in where I shouldn't be!  WTF")
         bMlraTemp = False
 
         # Analysis Mode is MUKEY
@@ -810,8 +811,8 @@ def getSlopeMode(field,zoneID,slopeRaster):
             arcpy.SelectLayerByAttribute_management("tempMUKEYlayer","NEW_SELECTION",where_clause)
 
             # Convert the mapunit polys from the layer above and convert it to a temporary FC
-            #outModeFC = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-            outModeFC = arcpy.env.scratchGDB + os.sep + "mode_" + str(zoneID)
+            outModeFC = arcpy.CreateScratchName("mode_" + str(zoneID),workspace=arcpy.env.scratchGDB,data_type="RasterDataset ")
+            #outModeFC = arcpy.env.scratchGDB + os.sep + "mode_" + str(zoneID)
             arcpy.CopyFeatures_management("tempMUKEYlayer",outModeFC)
 
             arcpy.SelectLayerByAttribute_management("tempMUKEYlayer","CLEAR_SELECTION")
@@ -828,22 +829,17 @@ def getSlopeMode(field,zoneID,slopeRaster):
                 outModeFC = muLayerPath
 
         # slope raster extraction by the polys of interest
-        outExtract = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outExtract = arcpy.CreateScratchName("slopeExt",workspace=arcpy.env.scratchGDB,data_type='RasterDataset')
         arcpy.env.extent = outModeFC
         arcpy.env.mask = outModeFC
 
-        if arcpy.Exists(outExtract):
-            arcpy.Delete_management(outExtract)
-
-        descRaster = arcpy.Describe(slopeRaster)
-
         # Add 0.5 to slope layer and convert to Integer if slopeRaster is floating
+        descRaster = arcpy.Describe(slopeRaster)
         if not descRaster.isInteger:
-            arcpy.env.mask = outModeFC
             arcpy.env.cellSize = descRaster.MeanCellWidth
             arcpy.env.snapRaster = slopeRaster
 
-            outExtractByMask = Int(Plus(slopeLayerName,0.5))
+            outExtractByMask = Int(Plus(slopeRaster,0.5))
             outExtractByMask.save(outExtract)
 
         # slope layer is already in Integer; extract by mask
@@ -860,13 +856,13 @@ def getSlopeMode(field,zoneID,slopeRaster):
 
         if not valueField:
             AddMsgAndPrint("\tVALUE field is missing from intExtract Raster",2)
-            return ""
+            return -1
 
         if not countField:
             AddMsgAndPrint("\tCOUNT field is missing from intExtract Raster",2)
-            return ""
+            return -1
 
-        # Extract the highest Integer Slope value
+        # Extract the highest Integer Slope value from the count field
         fields = [valueField, countField]
         sql_expression = (None, 'ORDER BY COUNT DESC')
         maxModeInt = [row[0] for row in arcpy.da.SearchCursor(outExtract, (fields),sql_clause=sql_expression)][0]
@@ -1351,7 +1347,7 @@ def processComponentComposition():
 
         # summarize acres by MUKEY for temp layer; Result will be the unique MUKEYS in the layer with their acres
         statsField = [["acres", "SUM"]]
-        outStatsTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outStatsTable = arcpy.CreateScratchName("compStats",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
         arcpy.Statistics_analysis(tempLayer, outStatsTable, statsField, "MUKEY")
 
         # Add 'compacre' field if it doesn't exist to the outStatsTable; This field will contain the
@@ -1365,7 +1361,7 @@ def processComponentComposition():
         arcpy.AddJoin_management(compView,"MUKEY",outStatsTable,"MUKEY","KEEP_COMMON")
 
         # Need to write the joined table out b/c you can't calculate a field on a right join
-        outCompView_joined = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outCompView_joined = arcpy.CreateScratchName("outCompView",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
         arcpy.CopyRows_management(compView, outCompView_joined)
         arcpy.RemoveJoin_management(compView)
 
@@ -1382,7 +1378,7 @@ def processComponentComposition():
         # summarize the outCompView_joined" table by compacres and component name.  This will give the total weighted acres
         # by component %RV for each unique component
         statsField = [[compAcresFld, "SUM"]]
-        outStatsTable2 = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outStatsTable2 = arcpy.CreateScratchName("compStats",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
         arcpy.Statistics_analysis(outCompView_joined, outStatsTable2, statsField, compNameFld)
         del compNameFld,compAcresFld,compPercentFld,sumAcreFld
 
@@ -1440,7 +1436,7 @@ def getElevationSource():
 # i.e. LiDAR 3M - 300 acres - 20%
 
     try:
-        AddMsgAndPrint("\nOriginal Elevation Source Information:\n",0)
+        AddMsgAndPrint("\nOriginal Elevation Source Information:",0)
 
         elevFolder = geoFolder + os.sep + "elevation"
 
@@ -1581,7 +1577,7 @@ def processElevation():
             units = "$$"
 
         # output Zonal Statistics Table
-        outZoneTable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+        outZoneTable = arcpy.CreateScratchName("elevZonal",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
 
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
@@ -1635,8 +1631,7 @@ def processElevation():
                 AddMsgAndPrint(theTab + "MEAN: "+ str(mean) + " (" + units + ") -- " + meanConv,1)
                 del min,max,mean,minConv,maxConv,meanConv,theTab
 
-        if arcpy.Exists(outZoneTable):
-            arcpy.Delete_management(outZoneTable)
+        if arcpy.Exists(outZoneTable):arcpy.Delete_management(outZoneTable)
 
         del elevFolder,workspaces,DEMraster,rasterUnit,units,outZoneTable,outZSaT,zoneTableFields
         return True
@@ -1682,35 +1677,56 @@ def processSlope():
             return False
 
         if len(slopeRaster) > 1:
-            AddMsgAndPrint("\tMultiple Slope Rasters were found inthe Elevation.gdb File Geodatabase",2)
+            AddMsgAndPrint("\tMultiple Slope Rasters were found in the Elevation.gdb File Geodatabase",2)
             return False
 
         slopeRasterPath = workspaces[0] + os.sep + slopeRaster[0]
 
         # output Zonal Statistics Table
-        outZoneTable = scratchWS + os.sep +"slopeZoneTable"
+        outZoneTable = arcpy.CreateScratchName("slopeZoneTable",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
 
-        # Delete Zonal Statistics Table if it exists
-        if arcpy.Exists(outZoneTable):
-            arcpy.Delete_management(outZoneTable)
+        """-----------------------------------------------"""
+        # Extract slope raster by the polys of interest
+        arcpy.env.extent = muLayer
+        arcpy.env.mask = muLayer
+
+        outExtract = arcpy.CreateScratchName("slopeExt",workspace=arcpy.env.scratchGDB,data_type='RasterDataset')
+        descRaster = arcpy.Describe(slopeRasterPath)
+
+        # Add 0.5 to slope layer and convert to Integer if slopeRaster is floating
+        if not descRaster.isInteger:
+            arcpy.env.cellSize = descRaster.MeanCellWidth
+            arcpy.env.snapRaster = slopeRaster[0]
+
+            outExtractByMask = Int(Plus(ExtractByMask(slopeRaster[0],muLayer),0.5))
+            outExtractByMask.save(outExtract)
+
+        # slope layer is already in Integer; extract by mask
+        else:
+            outExtractByMask = ExtractByMask(slopeRaster,muLayer)
+            outExtractByMask.save(outExtract)
+        """---------------------------------------------------------"""
 
         # Run Zonal Statistics on the muLayer against the DEM
         # NODATA cells are not ignored;
         try:
-            arcpy.env.extent = muLayer
-            arcpy.env.mask = muLayer
-            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+            #arcpy.env.extent = muLayer
+            #arcpy.env.mask = muLayer
+            #outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, outExtract, outZoneTable, "DATA", "ALL")
         except:
             if bFeatureLyr:
-                arcpy.env.extent = muLayerExtent
-                arcpy.env.mask = muLayerExtent
-                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+                #arcpy.env.extent = muLayerExtent
+                #arcpy.env.mask = muLayerExtent
+                #outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, outExtract, outZoneTable, "DATA", "ALL")
             else:
-                arcpy.env.extent = tempMuLayer
-                arcpy.env.mask = tempMuLayer
-                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+                #arcpy.env.extent = tempMuLayer
+                #arcpy.env.mask = tempMuLayer
+                #outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
+                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, outExtract, outZoneTable, "DATA", "ALL")
 
-        zoneTableFields = [zoneField,"MIN","MAX","MEAN","STD"]
+        zoneTableFields = [zoneField,"MIN","MAX","MEAN","STD","MAJORITY"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
 
             for row in cursor:
@@ -1720,12 +1736,13 @@ def processSlope():
                 max = round(row[2],1)
                 mean = round(row[3],1)
                 std = round(row[4],1)
+                mode = row[5]
 
-                mode = getSlopeMode(zoneField, zone, slopeRasterPath)
+                #mode = getSlopeMode(zoneField, zone, slopeRasterPath)
 
                 # Failed to calculate mode
-                if not mode > -1:
-                    mode = "N/A"
+##                if not mode > -1:
+##                    mode = "N/A"
 
                 if bMunamePresent and bAreasymPresent and bMukeyPresent and zoneField != "MLRA_Temp":
                     spaceAfter = " " * (maxMukeyLength - len(zone))
@@ -1752,8 +1769,8 @@ def processSlope():
                 AddMsgAndPrint(theTab + "ST.DEV: "+ str(std),1)
                 del zone,min,max,mean,mode,std,theTab
 
-        if arcpy.Exists(outZoneTable):
-            arcpy.Delete_management(outZoneTable)
+        if arcpy.Exists(outZoneTable):arcpy.Delete_management(outZoneTable)
+        if arcpy.Exists(outExtract):arcpy.Delete_management(outExtract)
 
 ##        # delete feature layer if created; can't delete the original muLayer
 ##        if arcCatalog and arcpy.Exists(tempMuLayer):
@@ -2112,6 +2129,9 @@ def processNLCD():
 
         for nlcd in nlcdRasters:
 
+            # Skip the Canopy Layer
+            if nlcd == "NLCD_2011_Canopy":continue
+
             AddMsgAndPrint("\n\t" + nlcd.replace("_"," "),0)
 
             # Get the linear unit of the DEM (Feet or Meters)
@@ -2126,13 +2146,8 @@ def processNLCD():
                 AddMsgAndPrint("\tCould not determine linear units of " + nlcd,1)
                 acreConv = 1
 
-            # output Zonal Statistics Table
-            #outTAtable = scratchWS + os.sep + "nlcdTAtable"
-            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-
-            # Delete Zonal Statistics Table if it exists
-            if arcpy.Exists(outTAtable):
-                arcpy.Delete_management(outTAtable)
+            # output Tabulate Area Table
+            outTAtable = arcpy.CreateScratchName("nlcdTA",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
 
             theValueField = FindField(nlcd,"VALUE")
             if not theValueField:
@@ -2304,12 +2319,7 @@ def processNASS():
                 acreConv = 1
 
             # output Tabulate Areas Table
-            #outTAtable = scratchWS + os.sep + "nassTAtable"
-            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-
-            # Delete Tabulate Areas Table if it exists
-            if arcpy.Exists(outTAtable):
-                arcpy.Delete_management(outTAtable)
+            outTAtable = arcpy.CreateScratchName("nassTA",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
 
             theValueField = FindField(nass,"VALUE")
             if not theValueField:
@@ -2421,8 +2431,7 @@ def processNASS():
                             del totalArea, valueList, valueListSorted, maxAcreLength
                     del expression
 
-            if arcpy.Exists(outTAtable):
-                arcpy.Delete_management(outTAtable)
+            if arcpy.Exists(outTAtable):arcpy.Delete_management(outTAtable)
 
             del rasterUnit, cellSize, acreConv, classFields, nassLU, classNameField, ta_zoneFields
 
@@ -2482,13 +2491,8 @@ def processNatureServe():
                 AddMsgAndPrint("\tCould not determine linear units of " + raster,1)
                 acreConv = 1
 
-            # output Zonal Statistics Table
-            #outTAtable = scratchWS + os.sep + "rasterTAtable"
-            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-
-            # Delete Zonal Statistics Table if it exists
-            if arcpy.Exists(outTAtable):
-                arcpy.Delete_management(outTAtable)
+            # output Tabulate Area Table
+            outTAtable = arcpy.CreateScratchName("natureTA",workspace=arcpy.env.scratchGDB,data_type='ArcInfoTable')
 
             theValueField = FindField(raster,"VALUE")
             if not theValueField:
@@ -2659,13 +2663,8 @@ def processLandFire():
                 AddMsgAndPrint("\tCould not determine linear units of " + raster,1)
                 acreConv = 1
 
-            # output Zonal Statistics Table
-            #outTAtable = scratchWS + os.sep + "rasterTAtable"
-            outTAtable = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
-
-            # Delete Zonal Statistics Table if it exists
-            if arcpy.Exists(outTAtable):
-                arcpy.Delete_management(outTAtable)
+            # output Tabulate Area Table
+            outTAtable = arcpy.CreateScratchName("landfireTA",workspace=arcpy.env.scratchGDB,data_type="ArcInfoTable")
 
             theValueField = FindField(raster,"VALUE")
             if not theValueField:
@@ -3780,10 +3779,10 @@ if __name__ == '__main__':
         geoFolder = arcpy.GetParameterAsText(1) # D:\MLRA_Workspace_Stanton\MLRAGeodata
         analysisType = arcpy.GetParameterAsText(2) # MLRA (Object ID)
 
-##        muLayer = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAprojects\layers\SDJR___MLRA_103___Lester_Storden_complex__6_to_10_percent_slopes__moderately_eroded.shp'
-##        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_AlbertLea\MLRAGeodata'
-##        #analysisType = 'Mapunit (MUKEY)'
-##        analysisType = 'MLRA Mapunit'
+##        muLayer = r'E:\Temp\SDJR___MLRA_105___Fivepoints_silt_loam__20_to_30_percent_slopes__moderately_eroded.shp'
+##        geoFolder = r'I:\MLRA_Workspace_SSR10\MLRAGeodata'
+##        analysisType = 'Mapunit (MUKEY)'
+##        #analysisType = 'MLRA Mapunit'
 
         # Check Availability of Spatial Analyst Extension
         try:
@@ -3880,7 +3879,7 @@ if __name__ == '__main__':
 
             tempMuLayer = "tempMuLayer"
             if bFeatureLyr:
-                muLayerExtent = arcpy.CreateScratchName(workspace=arcpy.env.scratchGDB)
+                muLayerExtent = arcpy.CreateScratchName("muLayerExt",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
                 arcpy.CopyFeatures_management(muLayer, muLayerExtent)
                 muLayerPath = muLayerExtent
                 arcpy.env.extent = muLayerExtent
@@ -3892,6 +3891,9 @@ if __name__ == '__main__':
                 arcpy.MakeFeatureLayer_management(muLayer,tempMuLayer)
                 arcpy.env.extent = tempMuLayer
                 arcpy.env.mask = tempMuLayer
+
+            print "\n\nLayer you are using is: " + muLayerPath
+            print "bFeatureLyr: " + str(bFeatureLyr)
 
             bMunamePresent = FindField(muLayerPath,"MUNAME")
             bAreasymPresent = FindField(muLayerPath,"AREASYMBOL")
