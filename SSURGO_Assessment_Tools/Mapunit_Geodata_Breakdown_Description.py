@@ -25,7 +25,7 @@ def AddMsgAndPrint(msg, severity=0):
     #
     #Split the message on \n first, so that if it's multiple lines, a GPMessage will be added for each line
     try:
-        #print msg
+        print msg
 
         f = open(textFilePath,'a+')
         f.write(msg + " \n")
@@ -330,10 +330,10 @@ def determineOverlap(muLayer):
             return False
 
         # Intersect the soils and input layer
-        outIntersect = arcpy.CreateScratchName("intersect_soils",workspace=arcpy.env.scratchGDB,data_type='FeatureClass')
-        arcpy.Intersect_analysis([muLayer,saPolygonPath], outIntersect,"ALL","","INPUT")
+        outIntersect = arcpy.CreateScratchName("soilsIntersect",workspace=arcpy.env.scratchGDB,data_type='FeatureClass')
+        arcpy.Intersect_analysis([muLayerPath,saPolygonPath], outIntersect,"ALL","","INPUT")
 
-        totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayer, ("SHAPE@AREA"))]) / 4046.85642
+        totalMUacres = sum([row[0] for row in arcpy.da.SearchCursor(muLayerPath, ("SHAPE@AREA"))]) / 4046.85642
         totalIntAcres = sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))]) / 4046.85642
 
         # All features are within the geodata extent
@@ -1466,12 +1466,10 @@ def getElevationSource():
             AddMsgAndPrint("\t feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "elevIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("elevIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
         # Intersect the mulayer with the SSR10 Elevation Source
-        arcpy.Intersect_analysis([[muLayer,1],[elevSource[0],2]],outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[elevSource[0],2]],outIntersect,"ALL","","")
 
         # Make sure there are output polygons as a result of intersection
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
@@ -1582,19 +1580,7 @@ def processElevation():
         # Run Zonal Statistics on the muLayer agains the DEM
         # NODATA cells are not ignored;
         # converted DEMraster[0] to DEMrasterPath
-        try:
-            arcpy.env.extent = muLayer
-            arcpy.env.mask = muLayer
-            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
-        except:
-            if bFeatureLyr:
-                arcpy.env.extent = muLayerExtent
-                arcpy.env.mask = muLayerExtent
-                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
-            else:
-                arcpy.env.extent = tempMuLayer
-                arcpy.env.mask = tempMuLayer
-                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
+        outZSaT = ZonalStatisticsAsTable(muRaster, zoneField, DEMrasterPath, outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
@@ -1687,8 +1673,8 @@ def processSlope():
 
         """-----------------------------------------------"""
         # Extract slope raster by the polys of interest
-        arcpy.env.extent = muLayer
-        arcpy.env.mask = muLayer
+        #arcpy.env.extent = muLayer
+        #arcpy.env.mask = muLayer
 
         outExtract = arcpy.CreateScratchName("slopeExt",workspace=arcpy.env.scratchGDB,data_type='RasterDataset')
         descRaster = arcpy.Describe(slopeRasterPath)
@@ -1699,32 +1685,18 @@ def processSlope():
             arcpy.env.snapRaster = slopeRaster[0]
 
             outExtractByMask = Int(Plus(ExtractByMask(slopeRaster[0],muLayer),0.5))
-            outExtractByMask.save(outExtract)
+            #outExtractByMask.save(outExtract)
 
         # slope layer is already in Integer; extract by mask
         else:
-            outExtractByMask = ExtractByMask(slopeRaster,muLayer)
-            outExtractByMask.save(outExtract)
+            outExtractByMask = slopeRaster[0]
+            #outExtractByMask = ExtractByMask(slopeRaster[0],muLayer)
+            #outExtractByMask.save(outExtract)
         """---------------------------------------------------------"""
 
         # Run Zonal Statistics on the muLayer against the DEM
         # NODATA cells are not ignored;
-        try:
-            #arcpy.env.extent = muLayer
-            #arcpy.env.mask = muLayer
-            #outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
-            outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, outExtract, outZoneTable, "DATA", "ALL")
-        except:
-            if bFeatureLyr:
-                #arcpy.env.extent = muLayerExtent
-                #arcpy.env.mask = muLayerExtent
-                #outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
-                outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, outExtract, outZoneTable, "DATA", "ALL")
-            else:
-                #arcpy.env.extent = tempMuLayer
-                #arcpy.env.mask = tempMuLayer
-                #outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, slopeRaster[0], outZoneTable, "DATA", "ALL")
-                outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, outExtract, outZoneTable, "DATA", "ALL")
+        outZSaT = ZonalStatisticsAsTable(muRaster, zoneField, outExtractByMask, outZoneTable, "DATA", "ALL")
 
         zoneTableFields = [zoneField,"MIN","MAX","MEAN","STD","MAJORITY"]
         with arcpy.da.SearchCursor(outZoneTable, zoneTableFields) as cursor:
@@ -1817,11 +1789,7 @@ def processAspect():
             return False
 
         # output Zonal Statistics Table
-        outTAtable = scratchWS + os.sep +"aspectTAtable"
-
-        # Delete Zonal Statistics Table if it exists
-        if arcpy.Exists(outTAtable):
-            arcpy.Delete_management(outTAtable)
+        outTAtable = arcpy.CreateScratchName("aspectTAtable",workspace=arcpy.env.scratchGDB,data_type="ArcInfoTable")
 
         # Get the linear unit of the DEM (Feet or Meters)
         rasterUnit = arcpy.Describe(aspectRaster[0]).SpatialReference.LinearUnitName
@@ -1842,16 +1810,7 @@ def processAspect():
 
         cellSize = arcpy.Describe(aspectRaster[0]).meanCellWidth
 
-        try:
-            arcpy.env.extent = muLayer
-            TabulateArea(muLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
-        except:
-            if bFeatureLyr:
-                arcpy.env.extent = muLayerExtent
-                TabulateArea(muLayerExtent, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
-            else:
-                arcpy.env.extent = tempMuLayer
-                TabulateArea(tempMuLayer, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
+        TabulateArea(muRaster, zoneField, aspectRaster[0], theValueField, outTAtable, cellSize)
 
         # list of unique VALUE fields generated from tabulate areas
         valueFields = [f.name for f in arcpy.ListFields(outTAtable,"VALUE*")]  #[u'VALUE_11', u'VALUE_21', u'VALUE_22']
@@ -1999,19 +1958,7 @@ def processClimate():
 
             # Run Zonal Statistics on the muLayer against the climate layer
             # NODATA cells are not ignored;
-            try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
-                outZSaT = ZonalStatisticsAsTable(muLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
-            except:
-                if bFeatureLyr:
-                    arcpy.env.extent = muLayerExtent
-                    arcpy.env.mask = muLayerExtent
-                    outZSaT = ZonalStatisticsAsTable(muLayerExtent, zoneField, raster[0], outZoneTable, "DATA", "ALL")
-                else:
-                    arcpy.env.extent = tempMuLayer
-                    arcpy.env.mask = tempMuLayer
-                    outZSaT = ZonalStatisticsAsTable(tempMuLayer, zoneField, raster[0], outZoneTable, "DATA", "ALL")
+            outZSaT = ZonalStatisticsAsTable(muRaster, zoneField, raster[0], outZoneTable, "DATA", "ALL")
 
             del raster, outZoneTable
 
@@ -2156,19 +2103,7 @@ def processNLCD():
 
             cellSize = arcpy.Describe(nlcd).meanCellWidth
 
-            try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
-                TabulateArea(muLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
-            except:
-                if bFeatureLyr:
-                    arcpy.env.extent = muLayerExtent
-                    arcpy.env.mask = muLayerExtent
-                    TabulateArea(muLayerExtent, zoneField, nlcd, theValueField, outTAtable, cellSize)
-                else:
-                    arcpy.env.extent = tempMuLayer
-                    arcpy.env.mask = tempMuLayer
-                    TabulateArea(tempMuLayer, zoneField, nlcd, theValueField, outTAtable, cellSize)
+            TabulateArea(muRaster, zoneField, nlcd, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
             classFields = [f.name for f in arcpy.ListFields(outTAtable,"VALUE*")]  #[u'VALUE_11', u'VALUE_21', u'VALUE_22']
@@ -2328,19 +2263,7 @@ def processNASS():
 
             cellSize = arcpy.Describe(nass).meanCellWidth
 
-            try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
-                TabulateArea(muLayer, zoneField, nass, theValueField, outTAtable, cellSize)
-            except:
-                if bFeatureLyr:
-                    arcpy.env.extent = muLayerExtent
-                    arcpy.env.mask = muLayerExtent
-                    TabulateArea(muLayerExtent, zoneField, nass, theValueField, outTAtable, cellSize)
-                else:
-                    arcpy.env.extent = tempMuLayer
-                    arcpy.env.mask = tempMuLayer
-                    TabulateArea(tempMuLayer, zoneField, nass, theValueField, outTAtable, cellSize)
+            TabulateArea(muRaster, zoneField, nass, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
             classFields = [f.name for f in arcpy.ListFields(outTAtable,"VALUE*")]  #[u'VALUE_11', u'VALUE_21', u'VALUE_22']
@@ -2501,19 +2424,7 @@ def processNatureServe():
 
             cellSize = arcpy.Describe(raster).meanCellWidth
 
-            try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
-                TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
-            except:
-                if bFeatureLyr:
-                    arcpy.env.extent = muLayerExtent
-                    arcpy.env.mask = muLayerExtent
-                    TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
-                else:
-                    arcpy.env.extent = tempMuLayer
-                    arcpy.env.mask = tempMuLayer
-                    TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
+            TabulateArea(muRaster, zoneField, raster, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
             classFields = [f.name for f in arcpy.ListFields(outTAtable,"VALUE*")]  #[u'VALUE_11', u'VALUE_21', u'VALUE_22']
@@ -2673,19 +2584,7 @@ def processLandFire():
 
             cellSize = arcpy.Describe(raster).meanCellWidth
 
-            try:
-                arcpy.env.extent = muLayer
-                arcpy.env.mask = muLayer
-                TabulateArea(muLayer, zoneField, raster, theValueField, outTAtable, cellSize)
-            except:
-                if bFeatureLyr:
-                    arcpy.env.extent = muLayerExtent
-                    arcpy.env.mask = muLayerExtent
-                    TabulateArea(muLayerExtent, zoneField, raster, theValueField, outTAtable, cellSize)
-                else:
-                    arcpy.env.extent = tempMuLayer
-                    arcpy.env.mask = tempMuLayer
-                    TabulateArea(tempMuLayer, zoneField, raster, theValueField, outTAtable, cellSize)
+            TabulateArea(muRaster, zoneField, raster, theValueField, outTAtable, cellSize)
 
             # list of unique VALUE fields generated from tabulate areas
             classFields = [f.name for f in arcpy.ListFields(outTAtable,"VALUE*")]  #[u'VALUE_11', u'VALUE_21', u'VALUE_22']
@@ -2831,11 +2730,9 @@ def processMLRAInfo():
             AddMsgAndPrint("\tMLRA feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "mlraIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("mlraIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
             AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayerPath) + " and 'MLRA' layer" ,2)
@@ -2927,11 +2824,9 @@ def processLRRInfo():
             AddMsgAndPrint("\tLRR feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "lrrIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("lrrIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
             AddMsgAndPrint("\tThere is no overlap between layers " + os.path.basename(muLayerPath) + " and 'LRR' layer" ,2)
@@ -3019,11 +2914,9 @@ def processEcoregions():
             AddMsgAndPrint("\ecoregion feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "ecoIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("ecoRegionsIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         # Make sure there are output polygons as a result of intersection
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
@@ -3115,12 +3008,10 @@ def processLandOwnership():
             return False
 
         # if temp intersect layer exists delete it
-        outIntersect = scratchWS + os.sep + "padusIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("padusIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
         # Intersect muLayer with the land ownership layer
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         # Check if there is any overlap; return false if no intersect exists.
         if not int(arcpy.GetCount_management(outIntersect).getOutput(0)) > 0:
@@ -3220,11 +3111,9 @@ def processHydro():
             AddMsgAndPrint("\tHydro feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "hydroIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("hydroIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         # Represents the total hydro length of every intersected feature
         totalHydroLength = float("%.3f" % (sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@LENGTH"))])))
@@ -3414,11 +3303,9 @@ def processNWI():
             AddMsgAndPrint("\tWetlands feature class is missing necessary fields",2)
             return False
 
-        outIntersect = scratchWS + os.sep + "wetlandIntersect"
-        if arcpy.Exists(outIntersect):
-            arcpy.Delete_management(outIntersect)
+        outIntersect = arcpy.CreateScratchName("wetlandIntersect",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
-        arcpy.Intersect_analysis([[muLayer,1],[fcList[0],2]], outIntersect,"ALL","","")
+        arcpy.Intersect_analysis([[muLayerPath,1],[fcList[0],2]], outIntersect,"ALL","","")
 
         # Represents the total hydro length of every intersected feature
         totalWetlandAcres = float("%.3f" % ((sum([row[0] for row in arcpy.da.SearchCursor(outIntersect, ("SHAPE@AREA"))])) / 4046.85642))
@@ -3684,10 +3571,11 @@ def processPedons():
                 return False
 
         # Select all polys that intersect with the SAPOLYGON
-        if bFeatureLyr:
-            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayer,"", "NEW_SELECTION")
-        else:
-            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",tempMuLayer,"", "NEW_SELECTION")
+        arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayerPath,"", "NEW_SELECTION")
+##        if bFeatureLyr:
+##            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayer,"", "NEW_SELECTION")
+##        else:
+##            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",tempMuLayer,"", "NEW_SELECTION")
 
         # Count the # of features of select by location
         numOfPedons = int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))
@@ -3779,10 +3667,10 @@ if __name__ == '__main__':
         geoFolder = arcpy.GetParameterAsText(1) # D:\MLRA_Workspace_Stanton\MLRAGeodata
         analysisType = arcpy.GetParameterAsText(2) # MLRA (Object ID)
 
-##        muLayer = r'E:\Temp\SDJR___MLRA_105___Fivepoints_silt_loam__20_to_30_percent_slopes__moderately_eroded.shp'
-##        geoFolder = r'I:\MLRA_Workspace_SSR10\MLRAGeodata'
-##        analysisType = 'Mapunit (MUKEY)'
-##        #analysisType = 'MLRA Mapunit'
+##        muLayer = r'O:\Temp\ES___MLRA_53A___Swale__Se_.shp'
+##        geoFolder = r'P:\MLRA_Geodata\MLRA_Workspace_Havre\MLRAGeodata'
+##        #analysisType = 'Mapunit (MUKEY)'
+##        analysisType = 'MLRA Mapunit'
 
         # Check Availability of Spatial Analyst Extension
         try:
@@ -3861,6 +3749,7 @@ if __name__ == '__main__':
             # ------------- Report how many polygons will be processed; exit if input is empty -------------------------
             totalPolys = int(arcpy.GetCount_management(muLayerPath).getOutput(0))
             selectedPolys = int(arcpy.GetCount_management(muLayer).getOutput(0))
+            bSelection = False
 
             if totalPolys == 0:
                 AddMsgAndPrint("\nNo Polygons found to process.  Empty Feature layer",2)
@@ -3868,6 +3757,7 @@ if __name__ == '__main__':
 
             elif selectedPolys < totalPolys:
                 AddMsgAndPrint("\n" + str(splitThousands(selectedPolys)) + " out of " + str(splitThousands(totalPolys)) + " polygons will be assessed",0)
+                bSelection = True
 
             else:
                 AddMsgAndPrint("\n" + str(splitThousands(totalPolys)) + " polygons will be assessed",0)
@@ -3877,23 +3767,30 @@ if __name__ == '__main__':
                 Tabulate Areas fails to execute.  I was continously having grid reading errors with Tabulate area
                 and could not figure out why.  This is a workaround"""
 
-            tempMuLayer = "tempMuLayer"
-            if bFeatureLyr:
-                muLayerExtent = arcpy.CreateScratchName("muLayerExt",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
-                arcpy.CopyFeatures_management(muLayer, muLayerExtent)
-                muLayerPath = muLayerExtent
-                arcpy.env.extent = muLayerExtent
-                arcpy.env.mask = muLayerExtent
+            if bSelection:
+                muLayerPath = arcpy.CreateScratchName("muLayerExt",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
+                arcpy.CopyFeatures_management(muLayer, muLayerPath)
 
-            else:
-                if arcpy.Exists(tempMuLayer):
-                    arcpy.Delete_management(tempMuLayer)
-                arcpy.MakeFeatureLayer_management(muLayer,tempMuLayer)
-                arcpy.env.extent = tempMuLayer
-                arcpy.env.mask = tempMuLayer
+            AddMsgAndPrint("\nRasterizing input layer for faster analysis")
+            muRaster = arcpy.CreateScratchName("muRaster",workspace=arcpy.env.scratchGDB,data_type="RasterDataset")
+            arcpy.FeatureToRaster_conversion(muLayerPath,zoneField,muRaster,10)
+            arcpy.BuildRasterAttributeTable_management(muRaster,"Overwrite")
+            arcpy.env.mask = muRaster
 
-            print "\n\nLayer you are using is: " + muLayerPath
-            print "bFeatureLyr: " + str(bFeatureLyr)
+##            if bFeatureLyr or bSelection:
+##                muLayerExtent = arcpy.CreateScratchName("muLayerExt",workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
+##                arcpy.CopyFeatures_management(muLayer, muLayerExtent)
+##                muLayerPath = muLayerExtent
+##                arcpy.env.extent = muLayerExtent
+##                arcpy.env.mask = muLayerExtent
+##
+##            else:
+##                tempMuLayer = "tempMuLayer"
+##                if arcpy.Exists(tempMuLayer):
+##                    arcpy.Delete_management(tempMuLayer)
+##                arcpy.MakeFeatureLayer_management(muLayer,tempMuLayer)
+##                arcpy.env.extent = tempMuLayer
+##                arcpy.env.mask = tempMuLayer
 
             bMunamePresent = FindField(muLayerPath,"MUNAME")
             bAreasymPresent = FindField(muLayerPath,"AREASYMBOL")
@@ -4112,13 +4009,15 @@ if __name__ == '__main__':
                 if arcpy.ListFields(muLayer, "MLRA_Temp") > 0:
                     arcpy.DeleteField_management(muLayer, "MLRA_Temp")
 
-            # Delete the muLayer copy from the scratch workspace
-            if bFeatureLyr and arcpy.Exists(muLayerExtent):
-                arcpy.Delete_management(muLayerExtent)
-
-            # Delete the feature layer created in memory
-            if not bFeatureLyr and arcpy.Exists(tempMuLayer):
-                arcpy.Delete_management(tempMuLayer)
+            if bSelection:
+               arcpy.Delete_management(muLayerPath)
+##            # Delete the muLayer copy from the scratch workspace
+##            if bFeatureLyr and arcpy.Exists(muLayerExtent):
+##                arcpy.Delete_management(muLayerExtent)
+##
+##            # Delete the feature layer created in memory
+##            if not bFeatureLyr and arcpy.Exists(tempMuLayer):
+##                arcpy.Delete_management(tempMuLayer)
 
             AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
             arcpy.Compact_management(arcpy.env.scratchGDB)
