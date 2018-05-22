@@ -395,35 +395,35 @@ def getZoneField(analysisType):
 
         if analysisType.find('Mapunit (MUKEY)') > -1:
 
-            if len(arcpy.ListFields(muLayer,"MUKEY")) > 0:
+            if len(arcpy.ListFields(muLayerPath,"MUKEY")) > 0:
                 return "MUKEY"
             else:
                 AddMsgAndPrint("\nAnalysis Cannot be done by Mapunit since MUKEY is missing.",1)
                 AddMsgAndPrint("Proceeding with analysis using MLRA ",1)
 
-                if not len(arcpy.ListFields(muLayer,mlraTempFld)) > 0:
-                    arcpy.AddField_management(muLayer,mlraTempFld,"TEXT", "", "", 15)
+                if not len(arcpy.ListFields(muLayerPath,mlraTempFld)) > 0:
+                    arcpy.AddField_management(muLayerPath,mlraTempFld,"TEXT", "", "", 15)
 
-            # Calculate the new field using an UpdateCursor b/c Calc tool threw an 000728 error
-            with arcpy.da.UpdateCursor(muLayer,mlraTempFld) as cursor:
-                for row in cursor:
-                    row[0] = "MLRA_Mapunit"
-                    cursor.updateRow(row)
+                # Calculate the new field using an UpdateCursor b/c Calc tool threw an 000728 error
+                with arcpy.da.UpdateCursor(muLayerPath,mlraTempFld) as cursor:
+                    for row in cursor:
+                        row[0] = "MLRA_Mapunit"
+                        cursor.updateRow(row)
 
-            return "MLRA_Temp"
+                return mlraTempFld
 
         elif analysisType.find('MLRA Mapunit') > -1:
-            if not len(arcpy.ListFields(muLayer,mlraTempFld)) > 0:
-                arcpy.AddField_management(muLayer,mlraTempFld,"TEXT", "", "", 15)
+            if not len(arcpy.ListFields(muLayerPath,mlraTempFld)) > 0:
+                arcpy.AddField_management(muLayerPath,mlraTempFld,"TEXT", "", "", 15)
                 arcpy.RefreshCatalog(outputFolder)
 
             # Calculate the new field using an UpdateCursor b/c Calc tool threw an 000728 error
-            with arcpy.da.UpdateCursor(muLayer,mlraTempFld) as cursor:
+            with arcpy.da.UpdateCursor(muLayerPath,mlraTempFld) as cursor:
                 for row in cursor:
                     row[0] = "MLRA_Mapunit"
                     cursor.updateRow(row)
 
-            return "MLRA_Temp"
+            return mlraTempFld
 
         # Analysis Type = Polygon
         else:
@@ -1330,11 +1330,7 @@ def processComponentComposition():
         # Make a layer from the input muLayer
         tempLayer = "tempLayer"
         if arcpy.Exists(tempLayer):arcpy.Delete_management(tempLayer)
-
-        if bFeatureLyr:
-            arcpy.MakeFeatureLayer_management(muLayerExtent,tempLayer)
-        else:
-            arcpy.MakeFeatureLayer_management(muLayer,tempLayer)
+        arcpy.MakeFeatureLayer_management(muLayerPath,tempLayer)
 
         # Add an acre field if it doesn't exist
         if arcpy.ListFields(tempLayer, "acres") > 0:
@@ -2237,7 +2233,11 @@ def processNASS():
             AddMsgAndPrint("\tNASS Grids were not found in the NASS.gdb File Geodatabase",2)
             return False
 
+        j = 1
         for nass in sorted(nassRasters,reverse=True):
+
+            # Only process the 4 most current layers i.e. 2012 - 2016
+            if j==5: break
 
             AddMsgAndPrint("\n\t" + nass.replace("_"," "),0)
 
@@ -2354,6 +2354,7 @@ def processNASS():
                             del totalArea, valueList, valueListSorted, maxAcreLength
                     del expression
 
+            j+=1
             if arcpy.Exists(outTAtable):arcpy.Delete_management(outTAtable)
 
             del rasterUnit, cellSize, acreConv, classFields, nassLU, classNameField, ta_zoneFields
@@ -3465,33 +3466,6 @@ def processNWI():
         return True
 
     except:
-##        exc_type, exc_value, exc_traceback = sys.exc_info()
-##
-##        AddMsgAndPrint("\n\t***** print_tb:",2)
-##        AddMsgAndPrint(traceback.print_tb(exc_traceback, limit=1, file=sys.stdout))
-##
-##        AddMsgAndPrint("\n\t***** print_exception:",2)
-##        AddMsgAndPrint(traceback.print_exception(exc_type, exc_value, exc_traceback,
-##                                  limit=2, file=sys.stdout))
-##        AddMsgAndPrint("\n\t***** print_exc:",2)
-##        AddMsgAndPrint(traceback.print_exc())
-##
-##        AddMsgAndPrint("\n\t***** format_exc, first and last line:",2)
-##        formatted_lines = traceback.format_exc().splitlines()
-##        AddMsgAndPrint(formatted_lines[0])
-##        AddMsgAndPrint(formatted_lines[-1])
-##
-##        AddMsgAndPrint("\n\t***** format_exception:",2)
-##        AddMsgAndPrint(repr(traceback.format_exception(exc_type, exc_value,
-##                                              exc_traceback)))
-##        AddMsgAndPrint("\n\t***** extract_tb:",2)
-##        AddMsgAndPrint(repr(traceback.extract_tb(exc_traceback)))
-##
-##        AddMsgAndPrint("\n\t***** format_tb:",2)
-##        AddMsgAndPrint(repr(traceback.format_tb(exc_traceback)))
-##
-##        AddMsgAndPrint("\n\t***** tb_lineno:", exc_traceback.tb_lineno,2)
-
         errorMsg()
         return False
 
@@ -3572,10 +3546,6 @@ def processPedons():
 
         # Select all polys that intersect with the SAPOLYGON
         arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayerPath,"", "NEW_SELECTION")
-##        if bFeatureLyr:
-##            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayer,"", "NEW_SELECTION")
-##        else:
-##            arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",tempMuLayer,"", "NEW_SELECTION")
 
         # Count the # of features of select by location
         numOfPedons = int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))
@@ -3773,8 +3743,10 @@ if __name__ == '__main__':
 
             AddMsgAndPrint("\nRasterizing input layer for faster analysis")
             muRaster = arcpy.CreateScratchName("muRaster",workspace=arcpy.env.scratchGDB,data_type="RasterDataset")
-            arcpy.FeatureToRaster_conversion(muLayerPath,zoneField,muRaster,10)
-            arcpy.BuildRasterAttributeTable_management(muRaster,"Overwrite")
+
+            #arcpy.FeatureToRaster_conversion(muLayerPath,testField,muRaster,10)
+            arcpy.PolygonToRaster_conversion(muLayerPath,zoneField,muRaster,"CELL_CENTER","#",10)
+            #arcpy.BuildRasterAttributeTable_management(muRaster,"Overwrite")
             arcpy.env.mask = muRaster
 
 ##            if bFeatureLyr or bSelection:
@@ -4002,22 +3974,16 @@ if __name__ == '__main__':
             arcpy.ResetProgressor()
             arcpy.SetProgressorLabel(" ")
 
-            # Delete the MLRA_temp field from the feature classes if they exist
+            # Delete the MLRA_temp field if they exist
             if zoneField == "MLRA_Temp":
                 if arcpy.ListFields(muLayerPath, "MLRA_Temp") > 0:
                     arcpy.DeleteField_management(muLayerPath, "MLRA_Temp")
-                if arcpy.ListFields(muLayer, "MLRA_Temp") > 0:
-                    arcpy.DeleteField_management(muLayer, "MLRA_Temp")
 
             if bSelection:
                arcpy.Delete_management(muLayerPath)
-##            # Delete the muLayer copy from the scratch workspace
-##            if bFeatureLyr and arcpy.Exists(muLayerExtent):
-##                arcpy.Delete_management(muLayerExtent)
-##
-##            # Delete the feature layer created in memory
-##            if not bFeatureLyr and arcpy.Exists(tempMuLayer):
-##                arcpy.Delete_management(tempMuLayer)
+
+            if arcpy.Exists(muRaster):
+               arcpy.Delete_management(muRaster)
 
             AddMsgAndPrint("\nThis Report is saved in the following path: " + textFilePath + "\n",0)
             arcpy.Compact_management(arcpy.env.scratchGDB)
