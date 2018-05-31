@@ -3544,7 +3544,7 @@ def processPedons():
                 AddMsgAndPrint("\tPedon Path: " + scratchWS + os.sep + "tempPedonLayer")
                 return False
 
-        # Select all polys that intersect with the SAPOLYGON
+        # Select all pedons that intersect with the mulayerPath
         arcpy.SelectLayerByLocation_management(tempPedonLayer,"INTERSECT",muLayerPath,"", "NEW_SELECTION")
 
         # Count the # of features of select by location
@@ -3581,10 +3581,11 @@ def processPedons():
             distExpression = str(miles) + " Miles"
             arcpy.SelectLayerByAttribute_management(tempPedonLayer,"CLEAR_SELECTION")
 
-            if bFeatureLyr:
-                arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",muLayer, distExpression, "NEW_SELECTION")
-            else:
-                arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",tempMuLayer, distExpression, "NEW_SELECTION")
+            arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",muLayerPath, distExpression, "NEW_SELECTION")
+##            if bFeatureLyr:
+##                arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",muLayerPath, distExpression, "NEW_SELECTION")
+##            else:
+##                arcpy.SelectLayerByLocation_management(tempPedonLayer,"WITHIN_A_DISTANCE",tempMuLayer, distExpression, "NEW_SELECTION")
 
             numOfDistantPedons = int(arcpy.GetCount_management(tempPedonLayer).getOutput(0))
 
