@@ -17,23 +17,23 @@ out_FGB = arcpy.GetParameterAsText (1)#Output Folder, Workspace, Required
 
 
 #Make a feature from the feature class
-arcpy.MakeFeatureLayer_management(inFC, 'lyr')
+arcpy.MakeFeatureLayer_management(inFC, "lyr")
 
 #Select By Attributes MUSYM <> ORIG_MUSYM
-arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " MUSYM <> ORIG_MUSYM ")
+arcpy.SelectLayerByAttribute_management("lyr", "NEW_SELECTION", " MUSYM <> ORIG_MUSYM ")
 
 #Add Field
 
-#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management("lyr", "ACRES", "DOUBLE", )
 
 #Calculate Field
 
-#arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
+#arcpy.CalculateField_management("lyr", "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Export the selected features to a new featureclass
 arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON_MUSYM_VS_ORIGMUSYM")
 
-dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY", "muname", "ORIG_MUSYM"]
+dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY", "MUNAME", "ORIG_MUSYM"]
 #Dissolve Features
 arcpy.Dissolve_management ("lyr", out_FGB+'\\'+"MUPOLYGON_MUSYM_VS_ORIGMUSYM_DIS", dissolveFields)
 
@@ -44,34 +44,34 @@ arcpy.Dissolve_management ("lyr", out_FGB+'\\'+"MUPOLYGON_MUSYM_VS_ORIGMUSYM_DIS
 arcpy.SelectLayerByAttribute_management (inFC, "CLEAR_SELECTION")
 
 #Select By Attributes
-arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " Editor_Field LIKE '%' ")
+arcpy.SelectLayerByAttribute_management("lyr", "NEW_SELECTION", " Editor LIKE '%' ")
 
 #Add Field
-#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management("lyr", "ACRES", "DOUBLE", )
 
 #Calculate Field
-#arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
+#arcpy.CalculateField_management("lyr", "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Export the selected features to a new featureclass
-arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON__Editor_Field")
+arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON_Editor")
 
-dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY", "muname", "ORIG_MUSYM"]
+dissolveFields = ["AREASYMBOL", "MUSYM", "MUKEY", "MUNAME", "ORIG_MUSYM"]
 #Dissolve Features
-arcpy.Dissolve_management ("lyr", out_FGB+'\\'+"MUPOLYGON__Editor_Field_DIS", dissolveFields)
+arcpy.Dissolve_management ("lyr", out_FGB+'\\'+"MUPOLYGON_Editor_Field_DIS", dissolveFields)
 
 #Clear Selected Features
 arcpy.SelectLayerByAttribute_management (inFC, "CLEAR_SELECTION")
 
 #Select By Attributes
-arcpy.SelectLayerByAttribute_management('lyr', "NEW_SELECTION", " Creator_Field LIKE '%' ")
+arcpy.SelectLayerByAttribute_management("lyr", "NEW_SELECTION", " Creator LIKE '%' ")
 
 #Add Field
 
-#arcpy.AddField_management('lyr', "ACRES", "DOUBLE", )
+#arcpy.AddField_management("lyr", "ACRES", "DOUBLE", )
 
 #Calculate Field
 
-arcpy.CalculateField_management('lyr', "ACRES", '!Shape.area@acres!', "PYTHON", )
+arcpy.CalculateField_management("lyr", "ACRES", '!Shape.area@acres!', "PYTHON", )
 
 #Export the selected features to a new featureclass
 arcpy.CopyFeatures_management("lyr", out_FGB+'\\'+"MUPOLYGON_Creator_Editor")
