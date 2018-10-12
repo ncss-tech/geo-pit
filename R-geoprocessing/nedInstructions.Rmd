@@ -1,8 +1,16 @@
 ---
 title: "Batch functions for downloading and processing the 10-meter NED"
 author: "Stephen Roecker"
-date: "Wednesday, October 01, 2014"
-output: word_document
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    number_sections: yes
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, echo = FALSE}
@@ -35,34 +43,40 @@ library(FedData)
 Next the proper GDAL path has to be set. The first location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
 
 ```{r set gdal path}
-gdal_setInstallation(search_path="C:/Program Files/QGIS Essen/bin")
+gdal_setInstallation(search_path="C:/Program Files/QGIS 3.2/bin")
 ```
 
-Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective Regions.
+Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
 
 ```{r}
 # Set parameters
-ssoffice <- c("R11-ATL", "R11-AUR", "R11-MAN", "R11-CLI", "R11-FIN", "R11-GAL", "R11-IND", "R11-JUE", "R11-SPR", "R11-UNI", "R11-WAV")
-region <- c("R11")
-sso_fp <- paste0("M:/geodata/project_data/", ssoffice, "/")
-ro_fp <- paste0("M:/geodata/project_data/", region, "/")
+mlrassoarea <- paste0("11-", c("ATL", "AUR", "MAN", "CLI", "FIN", "GAL", "IND", "JUE", "SPR", "UNI", "WAV"))
+mlraoffice <- c("11")
 crsarg <- "+init=epsg:5070"
 
-source <- c("nlcd30m", "ned09d", "ned30m", rep("ned10m", 3))
-sso <- data.frame(ssoffice = rep(ssoffice, each = 6),
-                  variables = paste0(source, c("_lulc2011", rep("", 3), "_slope", "_hillshade")),
-                  file_paths = paste0(rep(sso_fp, each = 6),
-                                      paste0(source, "_", 
-                                             rep(ssoffice, each = 6), 
-                                             c("_lulc2011", rep("", 3), "_slope", "_hillshade"),
-                                             ".tif")
-                                      )
-                  )
-
-ro <- data.frame(roffice = "Indianapolis",
-                 variables = paste0(source, c("_lulc2011", rep("", 3), "_slope", "_hillshade")),
-                 file_paths = paste0(ro_fp, source, "_", region, c("_lulc2011", rep("", 3), "_slope", "_hillshade"), ".tif")
+# construct table of geodata
+gd <- {
+  rbind(
+    expand.grid(variable   = c("nlcd"),
+               resolution  = c("30m"),
+               office = c(mlrassoarea, mlraoffice),
+               stringsAsFactors = FALSE
+               ),
+     expand.grid(variable  = c("ned"),
+                 resolution = c("09d", "10m", "30m"),
+                 office     = c(mlrassoarea, mlraoffice),
+                 stringsAsFactors = FALSE
                  )
+    ) ->.;
+  within(., {
+    file_path = paste0("M:/geodata/project_data/R", office, paste0("/", variable, resolution, "_", office))
+    file_path = ifelse(grepl("nlcd", file_path), 
+                        paste0(file_path, "_lulc2011.tif"),
+                        paste0(file_path, ".tif")
+                        )
+    }) ->.;
+  .[order(.$variable, .$resolution, .$office), ] ->.;
+}
 ```
 
 
@@ -71,31 +85,28 @@ ro <- data.frame(roffice = "Indianapolis",
 To start you need to download the 10-meter NED tiles from the USGS. Because the USGS manages these tiles using an ftp server it's easy for R download them one at a time with the following function. For whatever reason the downloading fuction doesn't work from RStudio, when the Global Option "Use Internet Explorer library/proxy for HTTP" is selected under Packages. Either uncheck or run from the vanilla R console. Beware hiccups with your internet connection may terminate the downloading process.
 
 ```{r}
-# create list of ned tiles by intersecting ssoffice boundaries with latlong tiles
+# create list of ned tiles by intersecting mlrassoarea boundaries with latlong tiles
 ned_dsn <- "M:/geodata/elevation/ned/ned_13arcsec_g.shp"
-sso_dsn <- "C:/geodata/project_data/R11/MLRA_Soil_Survey_Offices_Dec2015_r11.shp"
+sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
 
-sso_ned <- make_ned_df(ned_dsn, sso_dsn, crsarg)
+sso_ned <- make_ned_df(ned_dsn, sso_dsn, 11, crsarg)
 idx <- !duplicated(sso_ned$FILE_ID)
 sso_ned_nodups <- sso_ned[idx, ]
 sso_ned_nodups <- sso_ned_nodups[order(sso_ned_nodups$FILE_ID), ]
 
 # download files via FedData package
-mapply(res = "13", 
-       tileNorthing = sso_ned_nodups$UL_LAT, 
-       tileWesting = abs(sso_ned_nodups$UL_LON), 
-       raw.dir = "M:/geodata/elevation/ned/tiles/img/", 
-       format = "IMG", 
-       download_ned_tile
-       )
+subset(test, mlrassoarea == "11-JUE") ->.;
+split(., .$FILE_ID) ->.;
+lapply(., function(x) {
+  download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
+})
+
 
 # unzip
-ned_names <- sso_ned_nodups$FILE_ID
-zip_in   <- paste0("M:/geodata/elevation/ned/tiles/img/13/", ned_names, ".zip")
-file_out <- paste0("img", ned_names, "_13.img")
-dir_out  <- paste0("M:/geodata/elevation/ned/tiles/img/13")
+lf <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
+# idx <- grepl(paste0(test$FILE_ID, collapse = "|"), lf) & grepl(".zip", lf)
+lapply(lf[idx], function(x) unzip(zipfile = x, exdir = "M:/geodata/elevation/ned/tiles/ArcGrid/13"))
 
-batch_unzip(zip_in, file_out, dir_out)
 ```
 
 
@@ -105,9 +116,14 @@ The NLCD layer is used as a standard coordinate reference system from which to w
 
 ```{r}
 nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
-sso_nlcd <-  sso[sso$variables == "nlcd30m_lulc2011", "file_paths"]
+sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
+sso_nlcd <-  subset(gd, variable == "nlcd")
 
-batch_crop(nlcd, sso_nlcd, sso_dsn, "nearest", crsarg)
+subset(gd, office == "11-JUE" & variable == "nlcd") ->.;
+split(., .$file_path) ->.;
+lapply(., function(x) {
+  batch_crop(nlcd, sso_dsn, x$office, x$file_path, "nearest", crsarg)
+  })
 ```
 
 
@@ -116,10 +132,15 @@ batch_crop(nlcd, sso_nlcd, sso_dsn, "nearest", crsarg)
 Beware building the pyramids takes a long time.
 
 ```{r}
-sso_img <- by(sso_ned, sso_ned$sso, function(x) paste0("M:/geodata/elevation/ned/tiles/img/13/img", x$FILE_ID, "_13.img"))
-sso_ned09d <- sso[sso$variables == "ned09d", "file_paths"]
 
-batch_mosaic(sso_img, sso_ned09d, "Float32", c("BIGTIFF=YES"), -99999)
+gd_sub <- subset(gd, variable == "ned" & resolution == "09d" & office == "11-JUE")
+sso_ned_sub <- subset(sso_ned, mlrassoarea == "11-JUE")
+idx <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
+idx <- idx[grepl(paste0(sso_ned_sub$FILE_ID, collapse = "|"), idx) & grepl("_13$", idx)]
+
+sso_ned_grid <- file.path(idx, "w001001.adf")
+
+batch_mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999)
 ```
 
 
@@ -143,7 +164,7 @@ batch_DEM(mo$ned10m.tif, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 ```
 
 
-# Mosaic the 30-meter MLRA office mosaics into a Region office mosaic
+# Mosaic the 30-meter MLRA office mosaics into a mlraoffice office mosaic
 
 ```{r}
 batch_mosaic(list(mo$ned30m.tif), ro$ned30m.tif)

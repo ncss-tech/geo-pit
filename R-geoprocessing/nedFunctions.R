@@ -2,31 +2,24 @@
 ############################################################################
 ### Generate list from intersection of SAPOLYGON and NED metadata layer
 ############################################################################
-make_ned_df <- function(ned_dsn, sso_dsn, crsarg){
-  ned_l <- list()
-  ned_tiles <- read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
-  st_crs(ned_tiles) <- st_crs("+init=epsg:4326")
-  ned_tiles <- st_transform(ned_tiles, crs = crsarg)
+make_ned_df <- function(ned_dsn, sso_dsn, mlraoffice, crsarg){
+  ned_l     = list()
+  ned_tiles = read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
+  st_crs(ned_tiles) = st_crs("+init=epsg:4326")
+  ned_tiles = st_transform(ned_tiles, crs = crsarg)
   
-  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Offices_Dec2015_r11")
-  sso_pol <- st_transform(sso_pol, crs = crsarg)
+  sso_pol = read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Areas_Dec2015")
+  sso_pol = st_transform(sso_pol, crs = crsarg)
+  sso_pol = subset(sso_pol, NEW_MO == mlraoffice)
   
-  for (i in 1:nrow(sso_pol)) {
-    
-    idx <- unlist(st_intersects(sso_pol[i, ], ned_tiles))
-    
-    ned_sub <- as.data.frame(ned_tiles[idx, ])
-    ned_sub <- within(ned_sub, {
-      sso = sso_pol$NEW_SSAID[i]
-      sso_key = paste(sso, UL_LAT, abs(UL_LON), sep = "_")
-      })
-                         
-    ned_l[[i]] <- ned_sub
-    }
-  
-  ned_df <- do.call("rbind", ned_l)
-    
-  return(ned_df = ned_df)
+  split(sso_pol, sso_pol$NEW_SSAID) ->.;
+  lapply(., function(x) {
+    idx = unlist(st_intersects(x, ned_tiles))
+    ned_sub = as.data.frame(ned_tiles[idx, ])
+    ned_sub$mlrassoarea = x$NEW_SSAID[1]
+    return(ned_sub)
+    }) ->.;
+  do.call("rbind", .)
   }
 
 
@@ -67,42 +60,38 @@ batch_unzip <- function(zipfile, files, dir_out){
 # Beware, using the cutline option shifts the raster, this can rectified using the -tap option, and shifting the output using raster shift() or gdal_translate -prjwin
 # In order to correct for the half cell shift due to the GTIFF library its necessary to set --config GTIFF_POINT_GEO_IGNORE = TRUE preceding the other gdwarp arguements
 
-batch_crop <- function(input, output, sso_dsn, method, crsarg) {
+batch_crop <- function(input, sso_dsn, office, output, method, crsarg) {
   
-  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Offices_Dec2015_r11")
+  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Areas_Dec2015")
   sso_pol <- st_transform(sso_pol, crs = crsarg)
+  sso_pol <- subset(sso_pol, NEW_SSAID == office)
   
-  for (i in seq_along(output)) {
-    
-    cat("CROPPING", output[i], format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
-    
-    bb <- st_bbox(sso_pol[i, ])
-    
-    gdal_translate(
-      src_dataset = input,
-      dst_dataset = output[i],
-      a_srs = crsarg,
-      projwin = c(bb[1], bb[4], bb[3], bb[2]),
-      of = "GTiff",
-      a_nodata = -99999,
-      overwrite = TRUE,
-      verbose = TRUE
-      )
-
-    gdaladdo(
-      filename = output[i],
-      r = "nearest",
-      levels = c(2, 4, 8, 16),
-      clean = TRUE,
-      ro = TRUE
-      )
-    
-    gdalinfo(
-      datasetname = output[i], 
-      stats = TRUE,
-      hist = TRUE
-      )
-    }
+  cat("cropping", output, format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+  
+  bb <- st_bbox(sso_pol)
+  gdal_translate(
+    src_dataset = input,
+    dst_dataset = output,
+    a_srs = crsarg,
+    projwin = bb[c(1, 4, 3, 2)],
+    of = "GTiff",
+    a_nodata = -99999,
+    overwrite = TRUE,
+    verbose = TRUE
+    )
+  gdaladdo(
+    filename = output,
+    r = "nearest",
+    levels = c(2, 4, 8, 16),
+    clean = TRUE,
+    ro = TRUE
+    )
+  gdalinfo(
+    datasetname = output, 
+    stats = TRUE,
+    hist = TRUE,
+    raw_output = FALSE
+    )
   }
 
 
@@ -111,31 +100,31 @@ batch_crop <- function(input, output, sso_dsn, method, crsarg) {
 ### Mosaic rasters using gdalUtils:mosaic_rasters
 #################################################
 batch_mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
-  for(i in seq(mosaiclist)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "mosaicing", dstpath[i], "\n"))
-    mosaic_rasters(
-      gdalfile = unlist(mosaiclist[i]),
-      dst_dataset = dstpath[i],
-      of = "GTiff",
-      ot = datatype,
-      co = co,
-      vrtnodata = nodata,
-      overwrite = TRUE,
-      verbose = T
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "mosaicing", dstpath, "\n"))
+  mosaic_rasters(
+    gdalfile = mosaiclist,
+    dst_dataset = dstpath,
+    of = "GTiff",
+    ot = datatype,
+    co = co,
+    vrtnodata = nodata,
+    overwrite = TRUE,
+    verbose = T
     )
-    gdaladdo(
-      filename = dstpath[i],
-      r = "nearest",
-      levels = c(2, 4, 8, 16),
-      clean = TRUE,
-      ro = TRUE
+  gdaladdo(
+    filename = dstpath,
+    r = "nearest",
+    levels = c(2, 4, 8, 16),
+    clean = TRUE,
+    ro = TRUE
     )
-    gdalinfo(
-      datasetname = dstpath[i],
-      stats = TRUE
+  gdalinfo(
+    datasetname = dstpath,
+    stats = TRUE,
+    raw_output = FALSE
     )
   }
-}
 
 mosaicNlcdList <- function(mosaiclist, dstpath){
   for(i in seq(mosaiclist)){
