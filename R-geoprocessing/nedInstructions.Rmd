@@ -59,23 +59,24 @@ gd <- {
   rbind(
     expand.grid(variable   = c("nlcd"),
                resolution  = c("30m"),
-               office = c(mlrassoarea, mlraoffice),
+               folder = c(mlrassoarea, mlraoffice),
                stringsAsFactors = FALSE
                ),
      expand.grid(variable  = c("ned"),
                  resolution = c("09d", "10m", "30m"),
-                 office     = c(mlrassoarea, mlraoffice),
+                 folder     = c(mlrassoarea, mlraoffice),
                  stringsAsFactors = FALSE
                  )
     ) ->.;
   within(., {
-    file_path = paste0("M:/geodata/project_data/R", office, paste0("/", variable, resolution, "_", office))
+    var_res   = paste0(variable, resolution)
+    file_path = paste0("M:/geodata/project_data/R", folder, paste0("/", variable, resolution, "_", folder))
     file_path = ifelse(grepl("nlcd", file_path), 
                         paste0(file_path, "_lulc2011.tif"),
                         paste0(file_path, ".tif")
                         )
     }) ->.;
-  .[order(.$variable, .$resolution, .$office), ] ->.;
+  .[order(.$variable, .$resolution, .$folder), ] ->.;
 }
 ```
 
@@ -95,7 +96,7 @@ sso_ned_nodups <- sso_ned[idx, ]
 sso_ned_nodups <- sso_ned_nodups[order(sso_ned_nodups$FILE_ID), ]
 
 # download files via FedData package
-subset(test, mlrassoarea == "11-JUE") ->.;
+sso_ned_nodups[10:nrow(sso_ned_nodups), ] ->.;
 split(., .$FILE_ID) ->.;
 lapply(., function(x) {
   download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
@@ -119,10 +120,10 @@ nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03
 sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
 sso_nlcd <-  subset(gd, variable == "nlcd")
 
-subset(gd, office == "11-JUE" & variable == "nlcd") ->.;
+subset(gd, folder == "11-JUE" & variable == "nlcd") ->.;
 split(., .$file_path) ->.;
 lapply(., function(x) {
-  batch_crop(nlcd, sso_dsn, x$office, x$file_path, "nearest", crsarg)
+  crop(nlcd, x$file_path, x$folder, sso_dsn, crsarg)
   })
 ```
 
@@ -133,7 +134,7 @@ Beware building the pyramids takes a long time.
 
 ```{r}
 
-gd_sub <- subset(gd, variable == "ned" & resolution == "09d" & office == "11-JUE")
+gd_sub <- subset(gd, variable == "ned" & resolution == "09d" & folder == "11-JUE")
 sso_ned_sub <- subset(sso_ned, mlrassoarea == "11-JUE")
 idx <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
 idx <- idx[grepl(paste0(sso_ned_sub$FILE_ID, collapse = "|"), idx) & grepl("_13$", idx)]
@@ -149,7 +150,24 @@ batch_mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999
 For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is my personal preference for some of the reasons discussed by Frank Warmerdam (http://courses.neteler.org/gdal-raster-data-tips-and-tricks/). For upscaling or aggregating the 10-meter to 30-meter DEM I use average resampling. Consequentially this makes the most sense and has been the approach used in several studies (Smith et al, 2006; Roecker and Thompson, 2010). Because DEM are later used for terrain analysis they are left uncompressed and untiled, which results in file sizes of approximately 10GB.
 
 ```{r}
-batch_warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+
+
+vars <- c("folder", "var_res", "file_path")
+reshape(gd[vars],
+        direction = "wide",
+        idvar = "folder",
+        timevar = "var_res",
+        v.names = "file_path"
+        ) ->.;
+names(.) <- gsub("file_path.", "", names(.))
+# or unstack(gd[vars[2:3]], file_path ~ var_res)
+subset(., folder == "11-JUE") ->.;
+split(., .$folder) ->.;
+lapply(., function(x) {
+  warp(x$ned09d, x$ned10m, x$nlcd30m, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+})
+
 
 batch_average(mo$ned10m.tif, "10m", "30m")
 ```
@@ -160,7 +178,13 @@ batch_average(mo$ned10m.tif, "10m", "30m")
 GDALs DEM tools use Horn'n (1981) algorithms as the default, as does ArcInfo and GRASS.
 
 ```{r}
-batch_DEM(mo$ned10m.tif, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
+
+subset(gd, folder == "11-JUE" & var_res == "ned10m") ->.;
+split(., .$folder) ->.;
+lapply(., function(x) {
+  dem(x$file_path, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
+  })
+
 ```
 
 
