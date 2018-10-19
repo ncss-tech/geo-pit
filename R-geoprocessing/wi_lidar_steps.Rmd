@@ -97,6 +97,8 @@ lapply(., function(dems) {
     verbose   = TRUE,
     overwrite = TRUE
     )
+  
+  file.remove(dems$nlcd)
   })
 
 
@@ -157,6 +159,42 @@ gdaldem(
   mode = "hillshade",
   input_dem = "lidar10m_wi_noSmoothing.tif",
   output = "lidar10m_wi_noSmoothing_hs.tif",
+  verbose = TRUE
+  )
+
+lidar <- raster("lidar10m_wi_noSmoothing.tif")
+ned   <- raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")
+test  <- merge(lidar, ned, progress = "text")
+
+test2 <- crop(test, extent(ned), progress = "text")
+# test2 <- extend(test, extent(ned), progress = "text")
+
+idx <- sum(abs(ned - test2)) < 5
+
+test3 <- stack(ned, test2)
+test4 <- calc(test3, fun = function(x) {
+  idx <- sum(abs(x[1] -  x[2])) < 5
+  x[1][idx] <- x[2][idx]
+  return(x[1])
+}, progress = "text")
+
+
+# keeps failing part way thur
+test3 <- stack(ned, test2)
+beginCluster()
+f2 <- function(x) {
+  idx <- sum(abs(x[1] -  x[2])) < 5
+  x[1][idx] <- x[2][idx]
+  return(x[1])
+  }
+test4 <- clusterR(test3, overlay, args=list(fun = f2), progress = "text")
+endCluster()
+
+writeRaster(test4, "test.tif", overwrite = TRUE, NAflag = -99999, progress = "text")
+gdaldem(
+  mode = "hillshade",
+  input_dem = "test.tif",
+  output = "test_hs.tif",
   verbose = TRUE
   )
 
