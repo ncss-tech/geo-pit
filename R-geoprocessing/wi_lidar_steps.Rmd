@@ -143,13 +143,50 @@ lapply(., function(dems) {
   })
 
 
-# doesn't work well with this data, use gdalwarp and cblend argument
-test <- do.call(mosaic, lapply(dems$new3, raster))
+# WI021 needs to come first to remove its edges
+which(dems$areasymbol == "wi021")
+idx <- c(19, 1:18, 20:31)
+
+#test <- do.call(merge, lapply(dems$new3[idx], raster))
+te <- c(bbox(raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")))
 
 mosaic_rasters(
-  gdalfile = dems$new3,
-  dst_dataset = "lidar10m_wi_noSmoothing.tif",
+  gdalfile = dems$new3[idx], 
+  dst_dataset = "lidar10m_wi.tif",
   of = "GTiff",
+  vrtnodata = "-99999",
+  verbose = TRUE,
+  overwrite = TRUE
+  )
+
+# masklayer = readOGR("mask.shp", layer = "mask")
+# mask(x = raster("lidar10m_wi.tif"), 
+#      mask = masklayer,
+#      filename = "lidar10m_wi.tif",
+#      overwrite = TRUE, 
+#      progress = "text"
+#      )
+gdal_translate(
+  src_dataset = "lidar10m_wi.tif",
+  dst_dataset = "lidar10m_wi_mask.tif",
+  overwrite = TRUE,
+  verbose = TRUE
+  )
+gdal_rasterize(
+    src_datasource = "mask.shp",
+    dst_filename = "lidar10m_wi_mask.tif",
+    l = "mask",
+    b = 1,
+    burn = -99999,
+    verbose = TRUE
+    )
+
+te <- c(bbox(raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")))
+mosaic_rasters(
+  gdalfile = c("lidar10m_wi_mask.tif", "M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif"), 
+  dst_dataset = "lidar10m_wi_final.tif",
+  of = "GTiff",
+  te = te,
   vrtnodata = "-99999",
   verbose = TRUE,
   overwrite = TRUE
@@ -157,8 +194,8 @@ mosaic_rasters(
 
 gdaldem(
   mode = "hillshade",
-  input_dem = "lidar10m_wi_noSmoothing.tif",
-  output = "lidar10m_wi_noSmoothing_hs.tif",
+  input_dem = "lidar10m_wi_final.tif",
+  output = "lidar10m_wi_hillshade.tif",
   verbose = TRUE
   )
 
