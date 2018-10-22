@@ -181,12 +181,12 @@ gdal_rasterize(
     verbose = TRUE
     )
 
-te <- c(bbox(raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")))
+bb <- c(bbox(raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")))[c(1, 4, 3, 2)]
 mosaic_rasters(
-  gdalfile = c("lidar10m_wi_mask.tif", "M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif"), 
+  gdalfile = c("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif", "lidar10m_wi_mask.tif"), 
   dst_dataset = "lidar10m_wi_final.tif",
   of = "GTiff",
-  te = te,
+  projwin = bb,
   vrtnodata = "-99999",
   verbose = TRUE,
   overwrite = TRUE
