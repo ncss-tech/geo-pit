@@ -9,8 +9,8 @@ editor_options:
 ```{r}
 
 library(gdalUtils)
-library(rgdal)
 library(raster)
+library(rgdal)
 library(sf)
 library(FedData)
 
@@ -21,7 +21,7 @@ file_path <- paste0(getwd(), "/")
 crsarg <- "+init=epsg:5070"
 
 dems_wi <- list.files(path = "M:/geodata/elevation/lidar/wi", pattern = ".tif$", full.names = TRUE)
-dems_wi <- dems_wi[!grepl("0m_|10m_|10m2_|nlcd", dems_wi)]
+dems_wi <- dems_wi[!grepl("0m_|10m_|10m2_|nlcd|mask", dems_wi)]
 dems <- data.frame(
   old  = dems_wi, 
   new1 = gsub(".m_wi|.ft_wi", "0m_wi", dems_wi), 
@@ -184,7 +184,7 @@ gdal_rasterize(
 bb <- c(bbox(raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")))[c(1, 4, 3, 2)]
 mosaic_rasters(
   gdalfile = c("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif", "lidar10m_wi_mask.tif"), 
-  dst_dataset = "lidar10m_wi_final.tif",
+  dst_dataset = "lidar10m_11-JUE.tif",
   of = "GTiff",
   projwin = bb,
   vrtnodata = "-99999",
@@ -194,11 +194,13 @@ mosaic_rasters(
 
 gdaldem(
   mode = "hillshade",
-  input_dem = "lidar10m_wi_final.tif",
-  output = "lidar10m_wi_hillshade.tif",
+  input_dem = "lidar10m_11-JUE.tif",
+  output = "lidar10m_11-JUE_hillshade.tif",
   verbose = TRUE
   )
 
+
+# raster example 
 lidar <- raster("lidar10m_wi_noSmoothing.tif")
 ned   <- raster("M:/geodata/project_data/R11-JUE/ned10m_11-JUE.tif")
 test  <- merge(lidar, ned, progress = "text")

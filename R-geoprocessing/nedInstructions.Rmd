@@ -169,7 +169,7 @@ lapply(., function(x) {
 })
 
 
-batch_average(mo$ned10m.tif, "10m", "30m")
+resample(mo$ned10m.tif, 30)
 ```
 
 

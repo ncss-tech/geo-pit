@@ -55,59 +55,63 @@ rsaga_fill_thr <- function(grid){
 
 # Local morphometry
 rsaga.d0 <- function(dem, radiusD){
-  for (i in seq(dem)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", elev[i],"\n"))
-    rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
-      DEM=dem[i],
-      ELEVATION=elev[i],
-      SIZE=radiusD))
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", dem,"\n"))
+  
+  rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
+    DEM       = dem,
+    ELEVATION = elev,
+    SIZE      = radiusD)
+    )
   }
-}
 
-rsaga.d1 <- function(dem, radiusD){
-  for (i in seq(dem)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 1st derivatives for", dem[i],"\n"))
-    rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
-      DEM=dem[i],
-      SLOPE=slopeD[i],
-      ASPECT=aspect[i],
-      SIZE=radiusD))
+rsaga.d1 <- function(dem, slopeD, aspect, radiusD){
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 1st derivatives from", dem,"\n"))
+  
+  rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
+    DEM    = dem,
+    SLOPE  = slopeD,
+    ASPECT = aspect,
+    SIZE   = radiusD)
+    )
   }
-}
 
-rsaga.d2 <- function(dem, radiusD){
-  for (i in seq(dem)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives for", dem[i],"\n"))
-    rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
-      DEM=dem[i],
-      PROFC=cupro[i],
-      PLANC=cucon[i],
-      SIZE=radiusD)
-      )
+rsaga.d2 <- function(dem, cupro, cucon, radiusD){
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives from", dem,"\n"))
+  
+  rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
+    DEM   = dem,
+    PROFC = cupro,
+    PLANC = cucon,
+    SIZE  = radiusD)
+    )
   }
-}
 
-rsaga.d3 <- function(dem, radiusD){
-  for (i in seq(dem)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives for", dem[i],"\n"))
-    rsaga.geoprocessor("ta_morphometry", 23,  env=myenv, list(
-      DEM=dem[i],
-      MINIC=cumin[i],
-      MAXIC=cumax[i],
-      SIZE=radiusD))
+rsaga.d3 <- function(dem, cumin, cumax, radiusD){
+  
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives from", dem,"\n")
+  
+  rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
+    DEM   = dem,
+    MINIC = cumin,
+    MAXIC = cumax,
+    SIZE  = radiusD)
+    )
   }
-}
 
 
-rsaga.grid.calculus <- function(a.list, b.list, output.list, formula){
-  for (i in seq(a.list)) {
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", output.list[i],"\n"))
-    rsaga.geoprocessor("grid_calculus", 1, env=myenv, list(
-      GRIDS=paste(c(a.list[i],b.list[i]),collapse=";"),
-      RESULT=output.list[i],
-      FORMULA=formula))
+rsaga.grid.calculus <- function(a_list, b_list, output_list, formula){
+  
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", output_list,"\n")
+  
+  rsaga.geoprocessor("grid_calculus", 1, env = myenv, list(
+    GRIDS   = paste0(c(a_list, b_list), collapse = ";"),
+    RESULT  = output_list,
+    FORMULA = formula)
+    )
   }
-}
 
 
 rsaga.residual <- function(x, radius){
@@ -122,16 +126,15 @@ rsaga.residual <- function(x, radius){
 
 # Multiresolution Index of Valley Bottom Flatness (if grid system is large crop data or must do manually using file caching)
 rsaga.mrvbf <- function(dem, valleys, summits){
-  for (i in seq(dem)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating mrvbf for", dem[i],"\n"))
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating mrvbf for", dem,"\n"))
     
-    rsaga.geoprocessor("ta_morphometry", 8, env=myenv, list(
-      DEM=dem[i],
-      MRVBF=valleys[i],
-      MRRTF=summits[i])
+  rsaga.geoprocessor("ta_morphometry", 8, env = myenv, list(
+    DEM   = dem,
+    MRVBF = valleys,
+    MRRTF = summits)
     )
   }
-}
 
 
 # Radius of variance, 1000m seems to be the best radius threshold, after than the rovar starts taking on weird shapes 

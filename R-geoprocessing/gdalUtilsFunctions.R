@@ -1,43 +1,45 @@
-gdal_GTiff2SAGA <- function(x, copy){
-  for(i in seq(x)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy[i],"\n"))
-    gdal_translate(
-      src_dataset = x[i],
-      dst_dataset = copy[i], 
-      of = "SAGA",  
-      stats = TRUE,
-      verbose = T)
+gdal_tif2sdat <- function(x, copy){
+  
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy,"\n")
+  
+  gdal_translate(
+    src_dataset = x,
+    dst_dataset = copy, 
+    of      = "SAGA",  
+    stats   = TRUE,
+    verbose = TRUE
+    )
   }
-}
 
-gdal_SAGA2GTiff <- function(x, copy, datatype, nodata, of, co){
-  for(i in seq(x)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy[i],"\n"))
-    gdal_translate(
-      src_dataset = x[i],
-      dst_dataset = copy[i], 
-      ot = datatype,
-      of = of,
-      co = co,
-      stats = TRUE,
-      a_nodata = nodata,
-      verbose = T,
-      overwrite = TRUE
+
+gdal_sdat2tif <- function(x, copy, datatype, nodata, of, co){
+  
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy,"\n")
+  
+  gdal_translate(
+    src_dataset = x,
+    dst_dataset = copy, 
+    ot = datatype,
+    of = of,
+    co = co,
+    stats = TRUE,
+    a_nodata = nodata,
+    verbose = T,
+    overwrite = TRUE
     )
-    gdaladdo(
-      filename = copy[i],
-      r = "nearest",
-      levels = c(2, 4, 8, 16),
-      clean = TRUE,
-      ro = TRUE
+  gdaladdo(
+    filename = copy,
+    r = "nearest",
+    levels = c(2, 4, 8, 16),
+    clean = TRUE,
+    ro = TRUE
     )
-    gdalinfo(
-      datasetname = copy[i], 
-      stats = TRUE,
-      hist = TRUE
+  gdalinfo(
+    datasetname = copy, 
+    stats = TRUE,
+    hist = TRUE
     )
   }
-}
 
 
 batchSubsetSAGA <- function(grid, subsets, ref){

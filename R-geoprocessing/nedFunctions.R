@@ -182,38 +182,35 @@ warp <- function(input, output, reference, resto, r, s_srs, t_srs, datatype, nod
 #################################################################
 ### Warp 10m to 30m using -r average
 #################################################################
-batch_average <- function(demlist, resfrom, resto){
-  res <- as.numeric(unlist(strsplit(resto, "m")))
-  demwarp <- unlist(lapply(strsplit(demlist, resfrom), paste, collapse = resto, sep = ""))
+resample <- function(input, output, res){
   
-  for(i in seq(demlist)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"warping", demlist[i],"\n"))
-    gdalwarp(
-      srcfile = demlist[i],
-      dstfile = demwarp[i],
-      s_srs = crsarg,
-      t_srs = crsarg,
-      r = "average",
-      tr = c(res,res),
-      of = "GTiff",
-      ot = "Float32",
-      dstnodata = -99999,
-      overwrite = T,
-      verbose = T
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"warping", input, "\n")
+  
+  gdalwarp(
+    srcfile = input,
+    dstfile = output,
+    s_srs = crsarg,
+    t_srs = crsarg,
+    r  = "average",
+    tr = c(res, res),
+    of = "GTiff",
+    ot = "Float32",
+    dstnodata = -99999,
+    overwrite = TRUE,
+    verbose   = TRUE
     )
-    gdaladdo(
-      filename = demwarp[i],
-      r = "nearest",
-      levels = c(2, 4, 8, 16),
-      clean = TRUE,
-      ro = TRUE
+  gdaladdo(
+    filename = output,
+    r = "nearest",
+    levels = c(2, 4, 8, 16),
+    clean  = TRUE,
+    ro     = TRUE
     )
-      gdalinfo(
-      datasetname = demwarp[i],
-      stats = TRUE
+  gdalinfo(
+    datasetname = output,
+    stats = TRUE
     )
   }
-}
 
 
 #################################################################
