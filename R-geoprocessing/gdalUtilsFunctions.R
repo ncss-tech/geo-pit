@@ -12,7 +12,7 @@ gdal_tif2sdat <- function(x, copy){
   }
 
 
-gdal_sdat2tif <- function(x, copy, datatype, nodata, of, co){
+gdal_sdat2tif <- function(x, copy, datatype, nodata){
   
   cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"copying", copy,"\n")
   
@@ -20,8 +20,8 @@ gdal_sdat2tif <- function(x, copy, datatype, nodata, of, co){
     src_dataset = x,
     dst_dataset = copy, 
     ot = datatype,
-    of = of,
-    co = co,
+    of = "GTiff",
+    co = c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"),
     stats = TRUE,
     a_nodata = nodata,
     verbose = T,
@@ -75,40 +75,41 @@ gdal_shift <- function(x, s){
   }
 }
 
+
 gdal_stack <- function(x, fname, format, nodata){
-  fname.vrt <- paste0(strsplit(fname, ".tif"), ".vrt")
-  for(i in seq(fname)){
-    cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"stacking", fname[i],"\n"))
-    xi <- c(x[[1]][i], x[[2]][i], x[[3]][i])
-    gdalbuildvrt(
-      gdalfile = xi, 
-      output.vrt = fname.vrt[i],
-      separate = TRUE,
-      overwrite = TRUE,
-      verbose = TRUE
-      )
-    gdal_translate(
-      src_dataset = fname.vrt[i],
-      dst_dataset = fname[i],
-      of = "GTiff",
-      ot = format,
-      a_nodata = nodata,
-      co = c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"),
-      overwrite = TRUE,
-      verbose = TRUE
-      )
-    gdaladdo(
-      filename = fname[i],
-      r = "nearest",
-      levels = c(2, 4, 8, 16),
-      clean = TRUE,
-      ro = TRUE
+  
+  fname.vrt <- sub(".tif$", ".vrt", fname)
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"stacking", fname,"\n"))
+  
+  gdalbuildvrt(
+    gdalfile = x, 
+    output.vrt = fname.vrt,
+    separate  = TRUE,
+    overwrite = TRUE,
+    verbose   = TRUE
     )
-    gdalinfo(
-      datasetname = fname[i], 
-      stats = TRUE,
-      hist = TRUE
+  gdal_translate(
+    src_dataset = fname.vrt,
+    dst_dataset = fname,
+    of = "GTiff",
+    ot = format,
+    a_nodata = nodata,
+    co = c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"),
+    overwrite = TRUE,
+    verbose   = TRUE
+    )
+  gdaladdo(
+    filename = fname,
+    r = "nearest",
+    levels = c(2, 4, 8, 16),
+    clean  = TRUE,
+    ro     = TRUE
+    )
+  gdalinfo(
+    datasetname = fname, 
+    stats = TRUE,
+    hist  = TRUE
     )
   }
-}
 

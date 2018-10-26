@@ -215,11 +215,12 @@ rsaga_ofd <- function(x, streams){
 
 # SAGA Wetness Index
 rsaga.geoprocessor("ta_hydrology", 15, list(
-  DEM=paste(dem,"_filled.sgrd",sep=""),
-  C="test1.sgrd",
-  GN="test2.sgrd",
-  CS="test3.sgrd",
-  SB="test10.sgrd"))
+  DEM = paste(dem,"_filled.sgrd",sep = ""),
+  C   = "test1.sgrd",
+  GN  = "test2.sgrd",
+  CS  = "test3.sgrd",
+  SB  = "test10.sgrd")
+  )
 
 # Relative slope position
 rsaga.geoprocessor("ta_morphometry", 14, env=myenv, list(

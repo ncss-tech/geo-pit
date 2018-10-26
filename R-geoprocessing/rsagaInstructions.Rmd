@@ -18,9 +18,9 @@ To begin, the necessary libaries must be loaded, as well as the custom batch fun
 library(gdalUtils)
 library(RSAGA)
 
-source("C:/workspace2/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-source("C:/workspace2/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
+source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
 
 ```
 
@@ -48,120 +48,99 @@ crsarg <- "+init=epsg:5070"
 radiusD <- 2
 radiusV <- round(1000 / 30 / 2 - 1, 0)
 
+
 # construct data frame of 10-meter geodata
-g10 <- {
-  expand.grid(source   = "lidar",
-              res      = "10m",
-              variable = c("slopeR", "slope", "slopeD", "aspect", "cupro", "cucon", "cutan", "cumax", "cumin", "slp", "slpslp"),
-              folder     = c(mlrassoarea, mlraoffice),
+g10_tif <- {
+  expand.grid(source = "lidar",
+              res    = "10m",
+              var    = c("", "slopeR", "slope", "slopeD", "aspect", "cupro", "cucon", "cutan", "cumax", "cumin", "slp", "slpslp"),
+              office = c(mlraoffice, mlrassoarea),
+              format  = "tif",
               stringsAsFactors = FALSE
               ) ->.;
+  # build file paths
   within(., {
-    var_res = paste0(variable, res)
-    dem_fp  = file.path("M:/geodata/project_data", 
-                        paste0("R", folder),
-                        paste0(source, res, "_", folder)
-                        )
-    var_fp  = file.path("M:/geodata/project_data",
-                        paste0("R", folder),
-                        paste0(source, res, "_", folder, "_", variable, 1 + 2 * radiusD)
-                        )
+    fp = file.path("M:/geodata/project_data",
+                   paste0("R", office),
+                   paste0(source, res, "_", office, 
+                          ifelse(var != "", 
+                                 paste0("_", var, 1 + 2 * radiusD), 
+                                 ""
+                                 ),
+                          ".tif")
+                    )
+    var = ifelse(var == "", "elev", var)
     }) ->.;
-  .[order(.$variable, .$res, .$folder), ] ->.;
   }
 
-# construct data frame of 30-meter geodata
-g30 <- {
-  expand.grid(folder   = c(mlrassoarea, mlraoffice),
-              source   = "lidar",
-              res      = "30m",
-              variable = c("slope", "slopeR", "slopeD", "aspect", "mrvbf", "mrrtf", "caarea", "wetness", "strahler", "z2stream"),
-              stringsAsFactors = FALSE
-              ) ->.;
-  within(., {
-    var_res = paste0(variable, res)
-    dem_fp  = file.path("M:/geodata/project_data", 
-                        paste0("R", folder),
-                        paste0(source, res, "_", folder)
-                        )
-    var_fp  = file.path("M:/geodata/project_data",
-                        paste0("R", folder),
-                        paste0(source, res, "_", folder, "_", variable, 1 + 2 * radiusD)
-                        )
-    }) ->.;
-  .[order(.$variable, .$res, .$folder), ] ->.;
+# setup sdat and sgrd data frames
+g10_sdat <- {
+  split(g10_tif, g10_tif$fp) ->.;
+  lapply(., function(x) { data.frame(
+    x[- ncol(x)],
+    fp = gsub(paste0("R", x$office),
+              paste0("R", x$office, "/sdat"),
+              x$fp
+              )
+    )}) ->.;
+  do.call("rbind", .) ->.;
+  .$fp <- gsub(".tif", ".sdat", .$fp)
+  .$format <- "sdat"
+  row.names(.) <- 1:nrow(.)
+  .
   }
+
+g10_sgrd <- within(g10_sdat, {
+  format = "sgrd"
+  fp = gsub("\\.sdat", ".sgrd", fp)
+  })
+
+# combine tif and sdat folders
+g10 <- rbind(g10_tif, g10_sdat, g10_sgrd)
+g10$var_format <- paste0(g10$var, "_", g10$format)
+
+
+# convert the data frame to wide format
+g10 <- reshape(g10,
+       direction = "wide",
+       idvar = "office",
+       timevar = "var_format",
+       v.names = "fp"
+       )
+names(g10) <- gsub("fp.", "", names(g10))
+
+
+# construct data frame of 30-meter geodata
+g30 <- g10
+g30[1:ncol(g30)] <- lapply(g30, function(x) sub("10m", "30m", x))
+g30 <- within(g30, {
+  mrvbf_tif  = sub("\\.tif",  "_mrvbf.tif",  elev_tif)
+  mrvbf_sdat = sub("\\.sdat", "_mrvbf.sdat", elev_sdat)
+  mrvbf_sgrd = sub("\\.sgrd", "_mrvbf.sgrd", elev_sgrd)
+  mrrtf_tif  = sub("\\.tif",  "_mrrtf.tif",  elev_tif)
+  mrrtf_sdat = sub("\\.sdat", "_mrrtf.sdat", elev_sdat)
+  mrrtf_sgrd = sub("\\.sgrd", "_mrrtf.sgrd", elev_sgrd)
+  })
 
 ```
 
 ## Convert GTiff to SAGA
 ```{r, eval=FALSE}
 
-# 10-meter DEM
-dem10.tif  <- unique(g10$dem_fp[g10$folder != "11"])
-dem10.sdat <- gsub(paste0("R", mlrassoarea),
-               paste0("R", mlrassoarea, "/sdat"),
-               dem10.tif
-               )
-dem10 <- data.frame(
-  mlrassoarea = substr(dem10.tif, nchar(dem10.tif) - 5, nchar(dem10.tif)),
-  tif    = paste0(dem10.tif, ".tif"),
-  sdat   = paste0(dem10.sdat, ".sdat"),
-  elev   = paste0(dem10.sdat, ".sgrd"),
-  slope  = paste0(dem10.sdat, "_slope.sgrd"),
-  slopeR = paste0(dem10.sdat, "_slopeR.sgrd"),
-  slopeD = paste0(dem10.sdat, "_slopeD.sgrd"),
-  aspect = paste0(dem10.sdat, "_aspect.sgrd"),
-  cupro  = paste0(dem10.sdat, "_cupro.sgrd"),
-  cucon  = paste0(dem10.sdat, "_cucon.sgrd"),
-  cutan  = paste0(dem10.sdat, "_cutan.sgrd"),
-  cumin  = paste0(dem10.sdat, "_cumin.sgrd"),
-  cumax  = paste0(dem10.sdat, "_cumax.sgrd"),
-  stringsAsFactors = FALSE
-  )
-
-split(dem10, dem10$mlrassoarea) ->.;
+subset(g10, office == "11-JUE") ->.;
+split(., .$office) ->.;
 lapply(., function(x) {
-  gdal_tif2sdat(x$tif, x$sdat)
+  gdal_tif2sdat(x$elev_tif, x$elev_sdat)
   })
 
+resample(input = g10$elev_tif[2], output = g30$elev_tif[2], res = 30)
+dem(g30$elev_tif[2], c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
-# 30-meter DEM
-dem30.tif  <- unique(g30$dem_fp[g30$folder != "11"])
-dem30.sdat <- gsub(paste0("R", mlrassoarea),
-                   paste0("R", mlrassoarea, "/sdat"),
-                   dem30.tif
-                   )
-dem30 <- rbind(
-  data.frame(
-    mlrassoarea = substr(dem30.tif, nchar(dem30.tif) - 5, nchar(dem30.tif)),
-    format = "tif",
-    elev  = paste0(dem30.tif, ".tif"),
-    slope  = paste0(dem30.tif, "_slope.tif"),
-    slopeR = paste0(dem30.tif, "_slopeR.tif"),
-    slopeD = paste0(dem30.tif, "_slopeD.tif"),
-    aspect = paste0(dem30.tif, "_aspect.tif"),
-    stringsAsFactors = FALSE
-    ),
-  data.frame(
-    mlrassoarea = substr(dem30.tif, nchar(dem30.tif) - 5, nchar(dem30.tif)),
-    format = "sgrd",
-    elev   = paste0(dem30.sdat, ".sgrd"),
-    slope  = paste0(dem30.sdat, "_slope.sgrd"),
-    slopeR = paste0(dem30.sdat, "_slopeR.sgrd"),
-    slopeD = paste0(dem30.sdat, "_slopeD.sgrd"),
-    aspect = paste0(dem30.sdat, "_aspect.sgrd"),
-    stringsAsFactors = FALSE
-    )
-  )
-
-idx <- dem30$format == "tif"
-resample(input = dem10$elev[idx], output = dem30$elev[!idx], res = 30)
-
-split(dem30, dem30$mlrassoarea) ->.;
+subset(g30, office == "11-JUE") ->.;
+split(., .$office) ->.;
 lapply(., function(x) {
-  gdal_tif2sdat(x$tif[idx], sub(".sgrd", ".sdat", x$sgrd[!idx])
-})
+  gdal_tif2sdat(x$elev_tif, x$elev_sdat)
+  })
 
 ```
 
@@ -170,24 +149,50 @@ lapply(., function(x) {
 
 ```{r, eval = FALSE}
 
-split(dem10, dem10$mlrassoarea) ->.;
+subset(g10, office == "11-JUE") ->.;
+split(., .$office) ->.;
 lapply(., function(x) {
-  rsaga.d1(x$elev, x$slopeD, x$aspect, 2)
-  rsaga.d2(x$elev, x$cupro, x$cucon, 2)
-  rsaga.d3(x$elev, x$cumin, x$cumax, 2)
+  rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, 2)
+  rsaga.d2(x$elev_sgrd, x$cupro_sgrd,  x$cucon_sgrd, 2)
+  rsaga.d3(x$elev_sgrd, x$cumin_sgrd,  x$cumax_sgrd, 2)
   
   # Convert radians to percent, degrees = radians*180/pi, 180/pi = 57.29578 
-  rsaga.grid.calculus(x$slopeD, x$slopeD, x$slope, "tan(a  *(1 / 57.29578)) * 100")
+  rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slope_sgrd, "tan(a  *(1 / 57.29578)) * 100")
   
   # Rescale curvatures so they can be exported as UInt16 to save file size
-  rsaga.grid.calculus(x$cupro, x$cupro,  x$cupro,  "10000 * a")
-  rsaga.grid.calculus(x$cucon, x$cucon,  x$cucon, "-10000 * a")
-  rsaga.grid.calculus(x$cumin, x$cumin,  x$cumin,  "10000 * a")
-  rsaga.grid.calculus(x$cumax, x$cumax,  x$cumax,  "10000 * a")
-  rsaga.grid.calculus(x$cucon, x$slopeD, x$cutan, "a * sin(b / 57.29578)")
+  rsaga.grid.calculus(x$cupro_sgrd, x$cupro_sgrd,  x$cupro_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cucon_sgrd, x$cucon_sgrd,  x$cucon_sgrd, "-10000 * a")
+  rsaga.grid.calculus(x$cumin_sgrd, x$cumin_sgrd,  x$cumin_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cumax_sgrd, x$cumax_sgrd,  x$cumax_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cucon_sgrd, x$slopeD_sgrd, x$cutan_sgrd, "a * sin(b / 57.29578)")
   })
 
-rsaga.mrvbf(x$elev, x$mrvbf, x$mrrtf)
+
+
+# Write SAGA to GTiff
+
+subset(g10, office == "11-JUE") ->.;
+split(., .$office) ->.;
+lapply(., function(x) {
+  gdal_sdat2tif(x$slope_sdat,  x$slope_tif,  "Int16", -32768)
+  gdal_sdat2tif(x$aspect_sdat, x$aspect_tif, "Int16", -32768)
+  gdal_sdat2tif(x$cupro_sdat,  x$cupro_tif,  "Int16", -32768)
+  gdal_sdat2tif(x$cutan_sdat,  x$cutan_tif,  "Int16", -32768)
+  })
+
+subset(g10, office == "11-JUE") ->.;
+gdal_stack(x = c(.$cupro_tif, .$cutan_tif, .$slope_tif), fname = .$slpslp_tif, "Int16", -32768)
+
+
+subset(g30, office == "11-JUE") ->.;
+rsaga.mrvbf(.$elev_sgrd, .$mrvbf_sgrd, .$mrrtf_sgrd)
+
+subset(g30, office == "11-JUE") ->.;
+split(., .$office) ->.;
+lapply(., function(x) {
+  # gdal_sdat2tif(x$mrvbf_sdat, x$mrvbf_tif,  "Int16", -32768)
+  gdal_sdat2tif(x$mrrtf_sdat, x$mrrtf_tif, "Int16", -32768)
+  })
 
 ```
 
