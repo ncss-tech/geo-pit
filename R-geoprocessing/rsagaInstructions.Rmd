@@ -60,7 +60,7 @@ g10_tif <- {
               ) ->.;
   # build file paths
   within(., {
-    fp = file.path("M:/geodata/project_data",
+    fp = file.path("D:/geodata/project_data",
                    paste0("R", office),
                    paste0(source, res, "_", office, 
                           ifelse(var != "", 
@@ -190,7 +190,7 @@ rsaga.mrvbf(.$elev_sgrd, .$mrvbf_sgrd, .$mrrtf_sgrd)
 subset(g30, office == "11-JUE") ->.;
 split(., .$office) ->.;
 lapply(., function(x) {
-  # gdal_sdat2tif(x$mrvbf_sdat, x$mrvbf_tif,  "Int16", -32768)
+  gdal_sdat2tif(x$mrvbf_sdat, x$mrvbf_tif,  "Int16", -32768)
   gdal_sdat2tif(x$mrrtf_sdat, x$mrrtf_tif, "Int16", -32768)
   })
 
