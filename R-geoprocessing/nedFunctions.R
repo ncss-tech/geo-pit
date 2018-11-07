@@ -99,7 +99,7 @@ crop <- function(input, output, folder, sso_dsn, crsarg) {
 #################################################
 ### Mosaic rasters using gdalUtils:mosaic_rasters
 #################################################
-batch_mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
+mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
   
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "mosaicing", dstpath, "\n"))
   mosaic_rasters(
@@ -189,8 +189,6 @@ resample <- function(input, output, res){
   gdalwarp(
     srcfile = input,
     dstfile = output,
-    s_srs = crsarg,
-    t_srs = crsarg,
     r  = "average",
     tr = c(res, res),
     of = "GTiff",

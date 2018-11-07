@@ -61,8 +61,8 @@ rsaga.d0 <- function(dem, radiusD){
   rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
     DEM       = dem,
     ELEVATION = elev,
-    SIZE      = radiusD)
-    )
+    SIZE      = radiusD
+    ))
   }
 
 rsaga.d1 <- function(dem, slopeD, aspect, radiusD){
@@ -73,8 +73,8 @@ rsaga.d1 <- function(dem, slopeD, aspect, radiusD){
     DEM    = dem,
     SLOPE  = slopeD,
     ASPECT = aspect,
-    SIZE   = radiusD)
-    )
+    SIZE   = radiusD
+    ))
   }
 
 rsaga.d2 <- function(dem, cupro, cucon, radiusD){
@@ -85,8 +85,8 @@ rsaga.d2 <- function(dem, cupro, cucon, radiusD){
     DEM   = dem,
     PROFC = cupro,
     PLANC = cucon,
-    SIZE  = radiusD)
-    )
+    SIZE  = radiusD
+    ))
   }
 
 rsaga.d3 <- function(dem, cumin, cumax, radiusD){
@@ -97,8 +97,8 @@ rsaga.d3 <- function(dem, cumin, cumax, radiusD){
     DEM   = dem,
     MINIC = cumin,
     MAXIC = cumax,
-    SIZE  = radiusD)
-    )
+    SIZE  = radiusD
+    ))
   }
 
 

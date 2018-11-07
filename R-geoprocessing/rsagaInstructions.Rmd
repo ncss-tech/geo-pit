@@ -50,6 +50,7 @@ radiusV <- round(1000 / 30 / 2 - 1, 0)
 
 
 # construct data frame of 10-meter geodata
+
 g10_tif <- {
   expand.grid(source = "lidar",
               res    = "10m",

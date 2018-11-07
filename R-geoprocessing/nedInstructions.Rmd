@@ -141,7 +141,7 @@ idx <- idx[grepl(paste0(sso_ned_sub$FILE_ID, collapse = "|"), idx) & grepl("_13$
 
 sso_ned_grid <- file.path(idx, "w001001.adf")
 
-batch_mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999)
+mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999)
 ```
 
 
