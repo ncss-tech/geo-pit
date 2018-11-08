@@ -5,9 +5,10 @@ gdal_tif2sdat <- function(x, copy){
   gdal_translate(
     src_dataset = x,
     dst_dataset = copy, 
-    of      = "SAGA",  
-    stats   = TRUE,
-    verbose = TRUE
+    of        = "SAGA",  
+    stats     = TRUE,
+    verbose   = TRUE,
+    overwrite = TRUE
     )
   }
 
