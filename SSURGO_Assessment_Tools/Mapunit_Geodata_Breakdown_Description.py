@@ -179,7 +179,7 @@ def setScratchWorkspace():
                 varValueList = (envVariables[var].lower()).split(os.sep)          # ['C:', 'Users', 'adolfo.diaz', 'AppData', 'Local']
                 scratchWSList = (scratchWK.lower()).split(os.sep)                 # [u'C:', u'Users', u'adolfo.diaz', u'Documents', u'ArcGIS', u'Default.gdb', u'']
 
-                # remove any blanks items from lists
+                # remove any NULL items from above lists.
                 if '' in varValueList: varValueList.remove('')
                 if '' in scratchWSList: scratchWSList.remove('')
 
