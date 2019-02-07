@@ -28,6 +28,9 @@
 
 ##SELECT mukey, mupolygongeo.STAsText() FROM mupolygon WHERE mukey IN (2525720, 2525769)
 
+## ===================================================================================
+class MyError(Exception):
+    pass
 
 ## ==============================================================================================================================
 def AddMsgAndPrint(msg, severity=0):
@@ -394,7 +397,8 @@ def createOutputFC():
 
         # Create empty polygon featureclass with coordinate system that matches AOI.
         arcpy.CreateFeatureclass_management(env.scratchGDB, os.path.basename(nasisProjectFC), "POLYGON", "", "DISABLED", "DISABLED", outputCS)
-        arcpy.AddField_management(nasisProjectFC,"mukey", "TEXT", "", "", "30")   # for outputShp
+        arcpy.AddField_management(nasisProjectFC,"mukey", "TEXT", "", "", "30")
+        arcpy.AddField_management(nasisProjectFC,"mupolygonkey", "TEXT", "", "", "30")   # for outputShp
 
         if not arcpy.Exists(nasisProjectFC):
             AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " TEMP Layer",2)
@@ -408,38 +412,47 @@ def createOutputFC():
 
 
 ## ==============================================================================================================================
-def geometryRequestByMUKEY(nasisMUKEYs,sortedByCount=True):
+def geometryRequestByMUKEY(dictOfKEYs):
 
 
     try:
+        AddMsgAndPrint("\n\tRequesting Soil Geometry from SDA")
 
-        # Only send 5 MUKEYs at a time to SDA
-        if not sortedByCount:
-           nasisMUKEYs = [nasisMUKEYs[x:x+5] for x in xrange(0, len(nasisMUKEYs), 5)]
+        if not str(type(dictOfKEYs)).find('dict') > -1:
+           dictOfMUKEYs = groupMUKEYsByVertexCount(dictOfKEYs)
+           if not dictOfKEYs: return False
 
-        AddMsgAndPrint("\tRequesting Geometry Info from SDA")
-        sdaURL = r"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
+        sampleKey = re.sub(r'[0-9]+', '', dictOfKEYs.items()[0][0])
+        if not sampleKey in ('MUKEY','MUPOLYGONKEY'):
+           AddMsgAndPrint("\t\tInput MUKEYs are incorrectly formatted",2)
+           return False
 
-        numOfRequests = len(nasisMUKEYs)
+        numOfRequests = len(dictOfKEYs)
         currentRequest = 0
 
-        for mukeyList in nasisMUKEYs:
+        for request in dictOfKEYs.items():
+            requestType = re.sub(r'[0-9]+', '', request[0])  # MUKEY or MUPOLYGONKEY
+            requestList = request[1]                         # list of mukeys or mupolygonkeys
 
-            AddMsgAndPrint("\tMUKEYs Requested: " + str(mukeyList))
+            listOfKeys = str(requestList).replace("[","").replace("]","").replace("'","")
 
-            currentRequest+=1
-            startTime = tic()
-            mukeys = str(mukeyList).replace("[","").replace("]","").replace("'","")
+            if requestType == 'MUKEY':
+                # query geometry by list of MUKEYs
+                getGeometryQuery = """SELECT mukey, MuPolygonKey, mupolygongeo.STAsText()
+                                        FROM mupolygon
+                                        WHERE mukey IN (""" + listOfKeys + """)"""
+            else:
+                # query geometry by list of mupolygonkeys
+                getGeometryQuery = """SELECT mukey, MuPolygonKey, mupolygongeo.STAsText()
+                                      FROM mupolygon
+                                      WHERE MuPolygonKey IN (""" + listOfKeys + """)"""
 
-            sdaQuery = """SELECT mukey, mupolygongeo.STAsText()
-                          FROM mupolygon
-                          WHERE mukey IN (""" + mukeys + """)"""
-
+            # Post.rest request parameters in dict format
             dRequest = dict()
             dRequest["format"] = "JSON"
-            dRequest["query"] = sdaQuery
+            dRequest["query"] = getGeometryQuery
 
-            # Create SDM connection to service using HTTP
+            # Convert to JSON formatted string
             jData = json.dumps(dRequest)
 
             try:
@@ -451,55 +464,41 @@ def geometryRequestByMUKEY(nasisMUKEYs,sortedByCount=True):
                 jsonString = resp.read()
                 resp.close()
 
-                data = json.loads(jsonString) # dictionary containing 1 key with a list of lists
+                # dictionary containing 1 key with a list of lists
+                data = json.loads(jsonString)
 
             except:
-                AddMsgAndPrint("\n\tFailed ----------------- ")
-                AddMsgAndPrint(str(mukeys))
-                continue
-                #errorMsg()
+                errorMsg()
 
             if not "Table" in data:
-               AddMsgAndPrint("\tNo data returned for MUKEYs: " + str(mukeyList),2)
+               AddMsgAndPrint("\t\tNo data returned for " + requestType + ": " + str(requestList),2)
                continue
 
             # Convert the dictionary to a list of lists. Service returns everything as string.
-            # 1 record will contain 2 items: MUKEY and list of coordinates that make up that polygon
+            # 1 record will contain 2 items: KEY and list of coordinates that make up that polygon
             # i.e. [u'357347', u'POLYGON ((-96.57 45.68, -96.57 45.68, -96.57 45.68, -96.57 45.68))']
             dataList = data["Table"]
-            del mukeys,sdaQuery,dRequest,jData,jsonString, resp, req
+            del listOfKeys,getGeometryQuery,dRequest,jData,jsonString,resp,req
 
-            AddMsgAndPrint("\n\tSDA Geometry request: " + toc(startTime) + " Reqest: " + str(currentRequest) + " of " + str(numOfRequests))
+            #AddMsgAndPrint("\n\tSDA Geometry request: " + toc(startTime) + " Reqest: " + str(currentRequest) + " of " + str(numOfRequests))
 
             # Only two fields are used initially, the geometry and MUKEY
-            outputFields = ["MUKEY","SHAPE@WKT"]
+            fields = ["mukey","mupolygonkey","SHAPE@WKT"]
 
             startTime = tic()
-            with arcpy.da.InsertCursor(nasisProjectFC, outputFields) as cur:
+            with arcpy.da.InsertCursor(nasisProjectFC, fields) as cur:
 
                 for rec in dataList:
-                    #PrintMsg("\trec: " + str(rec), 1)
                     mukey = rec[0]
-                    wktPoly = rec[1]
-
-                    if mukey is None:
-                        AddMsgAndPrint("\nFound nodata polygon in soils layer", 1)
-                        continue
+                    mupolygonkey = rec[1]
+                    wktPoly = rec[2]
 
                     if not mukey is None and not mukey == '':
-                        cur.insertRow((mukey,wktPoly))
+                        cur.insertRow((mukey,mupolygonkey,wktPoly))
+            del cur
 
-            AddMsgAndPrint("\tInsert Geometry Time: " + toc(startTime))
-
-##                        # immediately create polygon from WKT
-##                        newPolygon = arcpy.FromWKT(wktPoly, inputCS)
-##                        rec = [newPolygon, mukey]
-##                        cur.insertRow(rec)
-##                        polyCnt += 1
-##                        #arcpy.SetProgressorLabel("Imported polygon " +  str(polyCnt))
-##
-##                        #if showStatus:
-##                        arcpy.SetProgressorPosition()
+            currentRequest+=1
+            return True
 
     except:
         errorMsg()
@@ -508,7 +507,8 @@ def geometryRequestByMUKEY(nasisMUKEYs,sortedByCount=True):
 ## ==============================================================================================================================
 def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
     """ This function takes in a list of MUKEYS and groups them based on maximum POLYGON or VERTICE thresholds so that SDA
-        geometry requests are efficient and successful.  POLYGON Threshold is set to 9,999 records which is the default with
+        geometry requests are efficient and successful.  Second parameter to this function is optional.  User has the choice
+        of grouping MUKEYs by VERTICE or POLYGON.  POLYGON Threshold is set to 9,999 records which is the default with
         SDA (I haven't seen this to be a limitation).  VERTICE Threshold is set to 811,000
         (determined by MUKEY: 2903473 - OH161 - FY19)
 
@@ -520,11 +520,15 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
 
         A dictionary containing lists of either MUKEYs or MUPOLYGONKEYs are returned.  Keys beginning with MUKEY* will have a list
         of MUKEYs as their item.  Keys beginning with MUPOLYGONKEY* will have a list of mupolygonkeys as their item.
-        i.e. {'MUKEY0': ['408342'], 'MUPOLYGONKEY0': ['228419267','228421430','217139720','228419274','217125974','217139721']}"""
+        i.e. {'MUKEY0': ['408342'], 'MUPOLYGONKEY0': ['228419267','228421430','217139720','228419274','217125974','217139721']}
+        The number of items in the dictionary translates into the number of SDA requests that will be submitted.  Geometry will
+        either be requested by MUKEY or MUPOLYGONKEY"""
 
     try:
+        AddMsgAndPrint("\tGrouping MUKEYs together based vertices")
+
         if not len(listOfMUKEYs):
-           AddMsgAndPrint("\tEmpty list of MUKEYs was passed",2)
+           AddMsgAndPrint("\t\tEmpty list of MUKEYs was passed",2)
            return False
 
         if feature == "POLYGON":
@@ -534,7 +538,7 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
            countThreshold = 811000  # Max number Vertices per subList
            countFeatureID = 2
         else:
-           AddMsgAndPrint("\n\t parseMUKEYsByCount ERROR -- Invalid feature type passed",2)
+           AddMsgAndPrint("\n\t\tInvalid feature type parameter passed",2)
            return False
 
         # Dictionary containng list of MUKEY subset lists that will be used to
@@ -555,38 +559,42 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
         getPolygonCountQuery = """SELECT COUNT(*) FROM mupolygon WHERE mukey = """ + mukey
 
         getVerticeCountQuery = """SELECT mukey, SUM(mupolygongeo.STNumPoints()) AS vertex_count
-                               FROM mupolygon
-                               WHERE mukey = """ + mukey + """GROUP BY mukey"""
+                                  FROM mupolygon
+                                  WHERE mukey = """ + mukey + """GROUP BY mukey"""
 
         getPolyAndVerticeCountQuery = """SELECT mukey, COUNT(*) AS polycount, SUM(mupolygongeo.STNumPoints()) AS vertex_count
-                                      FROM mupolygon WHERE mukey IN (""" + mukey + """)
-                                      GROUP BY mukey
-                                      ORDER BY vertex_count ASC"""
+                                         FROM mupolygon WHERE mukey IN (""" + mukey + """)
+                                         GROUP BY mukey
+                                         ORDER BY vertex_count ASC"""
 
+        # Post.rest request parameters in dict format
         dRequest = dict()
         dRequest["format"] = "JSON"
         dRequest["query"] = getPolyAndVerticeCountQuery
 
-        # Create SDM connection to service using HTTP
+        # Convert to JSON formatted string
         jData = json.dumps(dRequest)
 
         try:
             # Send request to SDA Tabular service
-            req = urllib2.Request(sdaURL, jData)
-            resp = urllib2.urlopen(req)  # A failure here will probably throw an HTTP exception
+            req = urllib2.Request(sdaURL, jData)  # Create SDM connection to service using HTTP
+            resp = urllib2.urlopen(req)           # A failure here will probably throw an HTTP exception
             responseStatus = resp.getcode()
             responseMsg = resp.msg
             jsonString = resp.read()
             resp.close()
 
-            data = json.loads(jsonString) # dictionary containing 1 key with a list of lists
+            # dictionary containing 1 key with a list of lists
+            data = json.loads(jsonString)
 
         except:
             errorMsg()
             return False
 
+        # This would only happen if the mukeys didn't exist
         if not "Table" in data:
-           AddMsgAndPrint("\tNo data returned for MUKEY: " + str(mukeyList),2)
+           AddMsgAndPrint("\n\t\tNo data returned for MUKEY: " + str(mukeyList),2)
+           return False
 
         del getPolyAndVerticeCountQuery,dRequest,jData,req,resp,jsonString
 
@@ -598,7 +606,7 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
 
         # MUKEY that have no polygons associated
         mukeysReturned = [item[0] for item in data['Table']]
-        mukeyNoPolygon =  list(set(mukeysReturned) - set(listOfMUKEYs))
+        mukeyNoPolygon = [item for item in listOfMUKEYs if item not in mukeysReturned]
 
         """ -------------------------------------- Sort MUKEYs by Polygon or Vertice Counts -------------------------------"""
         # sort the mukeyDict based on polygon or vertice count; converts the dictionary into a tuple
@@ -645,33 +653,35 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
         # There are mukeys that exceed vertice threshold.  Evaluate vertice count
         # by polygon instead of mukey.
         if len(mukeysExceedThreshold):
-            AddMsgAndPrint("\tThere are " + str(len(mukeysExceedThreshold)) + " MUKEYs that exceed the vertice limit.  Retrieving subset of polygons")
+            AddMsgAndPrint("\t\tThere are " + str(len(mukeysExceedThreshold)) + " MUKEYs that exceed the SDA JSON limit.  Retrieving list MU Polygon Keys.")
             mupolygonkeyGroupList = groupMupolygonkeyByVertexCount(mukeysExceedThreshold)
 
-            if len(mupolygonkeyGroupList):
+            if mupolygonkeyGroupList:
                 iCount = 0
                 for polykeyList in mupolygonkeyGroupList:
                     mukeySubsetsDict['MUPOLYGONKEY' + str(iCount)] = polykeyList
                     iCount+=1
+            else:
+                 AddMsgAndPrint("\t\t\tNo geometry will be available for MUKEYs: " + str(mukeysExceedThreshold),2)
 
         # Make sure all MUKEYs were accounted; Number of valid MUKEYs processed and MUKEYs with
         # no polygons and excessive vertices should be the same as the # of MUKEYs submitted
         if not len(listOfMUKEYs) == validMukeys + len(mukeyNoPolygon) + len(mukeysExceedThreshold):
-            AddMsgAndPrint("\tThere is a discrepancy with the MUKEYs bein grouped by vertice count:",2)
-            AddMsgAndPrint("\t\tOriginal Number of MUKEYs: " + str(len(listOfMUKEYs)),2)
-            AddMsgAndPrint("\t\tProcessed Number of MUKEYs: " + str(validMukeys),2)
-            AddMsgAndPrint("\t\tNumber of MUKEYs with no polygons: " + str(len(mukeyNoPolygon)),2)
-            AddMsgAndPrint("\t\tNumber of MUKEYs with excessive vertices: " + str(len(mukeysExceedThreshold)),2)
+            AddMsgAndPrint("\t\tThere is a discrepancy with the MUKEYs bein grouped by vertice count:",2)
+            AddMsgAndPrint("\t\t\tOriginal Number of MUKEYs: " + str(len(listOfMUKEYs)),2)
+            AddMsgAndPrint("\t\t\tProcessed Number of MUKEYs: " + str(validMukeys),2)
+            AddMsgAndPrint("\t\t\tNumber of MUKEYs with no polygons: " + str(len(mukeyNoPolygon)),2)
+            AddMsgAndPrint("\t\t\tNumber of MUKEYs with excessive vertices: " + str(len(mukeysExceedThreshold)),2)
 
         if len(mukeyNoPolygon):
-            AddMsgAndPrint("\tThe following " + str(len(mukeyNoPolygon)) + " MUKEYs have no geometry data available:",1)
-            AddMsgAndPrint("\t\t" + str(mukeyNoPolygon),1)
+            AddMsgAndPrint("\t\tThe following " + str(len(mukeyNoPolygon)) + " MUKEYs have no geometry data available:",1)
+            AddMsgAndPrint("\t\t\t" + str(mukeyNoPolygon),1)
 
         if not len(mukeySubsetsDict):
-            AddMsgAndPrint("\t\tGrouping MUKEYS by " + feature + " Failed.  Empty Final List",2)
+            AddMsgAndPrint("\n\t\tGrouping MUKEYS by " + feature + " Failed.  Empty Final List",2)
             return False
 
-        AddMsgAndPrint("\tTotal " + feature + " Count: " + (splitThousands(totalPolys) if countFeatureID == 0 else splitThousands(totalVertices)))
+        #AddMsgAndPrint("\tTotal " + feature + " Count: " + (splitThousands(totalPolys) if countFeatureID == 0 else splitThousands(totalVertices)))
 
         return mukeySubsetsDict
 
@@ -695,7 +705,7 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
 
     try:
         if not len(listOfMUKEYs):
-           AddMsgAndPrint("\tEmpty list of MUKEYs was passed",2)
+           AddMsgAndPrint("\t\t\tEmpty list of MUKEYs was passed",2)
            return False
 
         # Vertice Limit before there is a SDA JSON limitation
@@ -752,8 +762,9 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
             errorMsg()
             return False
 
+        # This would only happen if the mukeys didn't exist
         if not "Table" in data:
-           AddMsgAndPrint("\tNo polygon information returned for MUKEY: " + str(mukeyList),2)
+           AddMsgAndPrint("\t\t\tNo Polygon information returned for MUKEYs: " + str(mukey),2)
            return False
 
         totalPolyKeys = len(data['Table'])
@@ -798,22 +809,22 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
 
         # There are polygons that individually exceed the 811,000 limit; Nothing we can do but skip it.
         if len(exceedVerticeLimit):
-            AddMsgAndPrint("\t\tVertice limitation is exceeded by the following " + str(len(exceedVerticeLimit)) + " polygon(s):",1)
+            AddMsgAndPrint("\t\t\tVertice limitation is exceeded by the following " + str(len(exceedVerticeLimit)) + " polygon(s):",1)
             for polykey in exceedVerticeLimit:
                 mukey = str([item[0] for item in data['Table'] if item[2] == polykey][0]).replace(' ','')
                 vertexCount = splitThousands([item[1] for item in data['Table'] if item[2] == polykey][0])
-                AddMsgAndPrint("\t\t\tMUKEY: " + mukey + " -- MUPOLYGONKEY: " + str(polykey) + " -- Vertice Count: " + vertexCount,1)
+                AddMsgAndPrint("\t\t\t\tMUKEY: " + mukey + " -- MUPOLYGONKEY: " + str(polykey) + " -- Vertice Count: " + vertexCount,1)
                 del mukey,vertexCount
 
         # Make sure all polykeys were accounted; Number of valid polykeys processed and
         # polykeys with exceeded vertices should be the same as the # of polykeys
         if not totalPolyKeys == validPolyKeys + len(exceedVerticeLimit):
-            AddMsgAndPrint("\t\tThere is a discrepancy with the number of polygons for MUKEY: " + str(mukey),2)
-            AddMsgAndPrint("\t\t\tOriginal Number of Polygons: " + str(totalPolyKeys),2)
-            AddMsgAndPrint("\t\t\tProcessed Number of Polygons: " + str(validPolyKeys),2)
+            AddMsgAndPrint("\t\t\tThere is a discrepancy with the number of polygons for MUKEY: " + str(mukey),2)
+            AddMsgAndPrint("\t\t\t\tOriginal Number of Polygons: " + str(totalPolyKeys),2)
+            AddMsgAndPrint("\t\t\t\tProcessed Number of Polygons: " + str(validPolyKeys),2)
 
         if not len(polygonSubsetList):
-            AddMsgAndPrint("\t\tSorting MUPOLYGONKEYS by Vertice count Failed.  Empty Final List",2)
+            AddMsgAndPrint("\n\t\t\tSorting MUPOLYGONKEYS by Vertice count Failed.  Empty Final List",2)
             return False
 
         return polygonSubsetList
@@ -849,22 +860,24 @@ try:
         selectedProjects = ['MLRA 102 - Fergus Falls Till Plain Formdale Catena Study, Re-correlation and Investigations']
 
         for project in selectedProjects:
+            startTime = tic()
 
-##            # get a list of MUKEYs for NASIS project
-##            nasisMUKEYs = getNasisMukeys(prjMapunit_URL, project)
+            # get a list of MUKEYs for NASIS project
+            nasisProjectMUKEYs = getNasisMukeys(prjMapunit_URL, project)
 
-            # create feature class
+            # create feature class for NASIS project
             nasisProjectFC = createOutputFC()
             if not nasisProjectFC: continue
 
-            mukeys = ['3114927','2903473','408342']
-             = groupMUKEYsByVertexCount(mukeys,feature="VERTICE")
+            #nasisProjectMUKEYs = ['3114927','2903473','408342']
+            groupedKeys = groupMUKEYsByVertexCount(nasisProjectMUKEYs,feature="VERTICE")
+            print "\n\n";exit()
 
-            if not geometryRequestByMUKEY(nasisMUKEYsSorted):
+            if not geometryRequestByMUKEY(groupedKeys):
                AddMsgAndPrint("WTF",2)
 
-                #someDict = geometryRequestByMUKEY(nasisMUKEYs)
-                #AddMsgAndPrint(str(nasisMUKEYs),1)
+            AddMsgAndPrint("End time: " + toc(startTime))
+
 
         AddMsgAndPrint("\n",0)
 
