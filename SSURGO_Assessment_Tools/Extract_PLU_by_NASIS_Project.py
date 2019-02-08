@@ -1,12 +1,11 @@
 #-------------------------------------------------------------------------------
-# Name:        Create Extent Layer from NASIS Project
+# Name:        Report Conservation Practices by NASIS Project
 # Purpose:
 #
 # Author:      adolfo.diaz
 #
-# Created:     19/03/2014
-# Copyright:   (c) adolfo.diaz 2014
-# Licence:     <your licence>
+# Created:     2/8/2019
+# Copyright:   (c) adolfo.diaz 2019
 
 ##return geometry as WKT
 ##SELECT mukey, mupolygongeo.STAsText() AS wktgeom
@@ -27,10 +26,6 @@
 ##SELECT mukey, mupolygongeo.STAsText() FROM mupolygon WHERE mukey IN (mukeylist)
 
 ##SELECT mukey, mupolygongeo.STAsText() FROM mupolygon WHERE mukey IN (2525720, 2525769)
-
-## ===================================================================================
-class MyError(Exception):
-    pass
 
 ## ==============================================================================================================================
 def AddMsgAndPrint(msg, severity=0):
@@ -249,27 +244,6 @@ def setScratchWorkspace():
             return False
 
 ## ==============================================================================================================================
-def GetWorkspace(ssurgoInput):
-# Return the workspace of the input
-    """ Maybe get rid of this or add it to the main body """
-
-    try:
-        desc = arcpy.Describe(ssurgoInput)
-        thePath = os.path.dirname(desc.CatalogPath)
-
-        desc = arcpy.Describe(thePath)
-
-        # if path to ssurgoInput is a FD grab the GDB path
-        if desc.dataType.upper() == "FEATUREDATASET":
-            thePath = os.path.dirname(thePath)
-
-        env.workspace = thePath
-        return thePath
-
-    except:
-        errorMsg()
-
-## ==============================================================================================================================
 def tic():
     """ Returns the current time """
 
@@ -308,19 +282,19 @@ def splitThousands(someNumber):
         return someNumber
 
 ## ==============================================================================================================================
-def getNasisMukeys(prjMapunit_URL, theProject):
-    # Create a list of NASIS MUKEY values (keys) & project names (values)
-    # Sometimes having problem getting first mapunit (ex. Adda in IN071)
+def getNasisMukeys(theProject):
+    """ This function will create a list of NASIS MUKEYs for a specific NASIS project that is passed in.  The URL returns
+        a report that is pipe delimitted with 2 values: project name and mukey.
+
+        Return list of NASIS MUKEYs otherwise return False"""
 
     try:
         nasisMUKEYs = []  # List of MUKEYs pertaining to the project and parsed from the NASIS report
 
-        # Strictly for formatting.
-        if len(selectedProjects) > 1:
-            AddMsgAndPrint("\n" + 100 * '*',0)
-            AddMsgAndPrint("Retrieving MUKEYs for '" + theProject + "' from NASIS", 0)
-        else:
-            AddMsgAndPrint("\nRetrieving MUKEYs for '" + theProject + "' from NASIS", 0)
+        AddMsgAndPrint("\tRetrieving MUKEYs from NASIS", 0)
+
+        # URL To the NASIS Report: Web-Projectmapunits.  Show MUKEYs associated with a specific NASIS project
+        prjMapunit_URL = r"https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB-Projectmapunits"
 
         # replace spaces in the search string with '%20' which is the hexadecimal for a space
         prjMapunit_URL = prjMapunit_URL + '&p1='  + theProject.replace(" ","%20") # + "*"
@@ -355,20 +329,10 @@ def getNasisMukeys(prjMapunit_URL, theProject):
 
         # if no project record was found from NASIS return an empty list otherwise notify user; Cou
         if len(nasisMUKEYs) == 0:
-            AddMsgAndPrint("\tNo matching projects found in NASIS", 2)
+            AddMsgAndPrint("\tNo Mapunits found for this NASIS project", 2)
             return False
         else:
-            AddMsgAndPrint(" \tIdentified " + splitThousands(len(nasisMUKEYs)) + " mapunits associated with this NASIS project", 0)
-
-        """ ------------------Insert code to check missing MUKEYs from SDA ----------------------------------------"""
-##        #All MUKEYS are missing from ssurgoInput Layer; Warn user and return False
-##        if len(mukeyMissing) == len(nasisMUKEYs):
-##            AddMsgAndPrint(" \tAll MUKEYs from this project are missing from your SSURGO MUPOLYGON layer",2)
-##
-##        # More than one MUKEY is missing from ssurgoInput Layer; Simply warn the user
-##        if len(mukeyMissing) > 0:
-##            AddMsgAndPrint( "\n\t The following " + str(len(mukeyMissing)) + " MUKEYS are missing from the SSURGO MUPOLYGON layer:", 1)
-##            AddMsgAndPrint("\t\t" + str(mukeyMissing),1)
+            AddMsgAndPrint("\tIdentified " + splitThousands(len(nasisMUKEYs)) + " mapunits associated with this NASIS project", 0)
 
         del prjMapunit_URL, theReport, bValidRecord
         return nasisMUKEYs
@@ -383,10 +347,12 @@ def getNasisMukeys(prjMapunit_URL, theProject):
 
 ## ==============================================================================================================================
 def createOutputFC():
-    # Input theAOI is the original first parameter (usually CLU feature layer)
-    #
-    # Given the path for the new output featureclass, create it as polygon and add required fields
-    # Later it will be populated using a cursor.
+    """ This function will creat an empty polygon feature class within the scratch FGDB.  The feature class will be in WGS84
+        and will have have 2 fields created: mukey and mupolygonkey.  The feature class name will have a prefix of
+        'nasisProject.' This feature class is used by the 'requestGeometryByMUKEY' function to write the polygons associated with a NASIS
+        project.
+
+        Return the new feature class  including the path.  Return False if error ocurred."""
 
     try:
 
@@ -401,25 +367,39 @@ def createOutputFC():
         arcpy.AddField_management(nasisProjectFC,"mupolygonkey", "TEXT", "", "", "30")   # for outputShp
 
         if not arcpy.Exists(nasisProjectFC):
-            AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " TEMP Layer",2)
+            AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " Feature Class",2)
             return False
 
         return nasisProjectFC
 
     except:
         errorMsg()
+        AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " Feature Class",2)
         return False
 
-
 ## ==============================================================================================================================
-def geometryRequestByMUKEY(dictOfKEYs):
+def createGeometryFromKeys(dictOfKEYs):
+    """ This function will request soil geometry from Soil Data Access and write it to a feature class or shapefile.  The
+         function takes in a list of SSURGO MUKEYs or a dictionary of grouped MUKEYs created from the 'groupMUKEYsByCount'
+         function.  If a list is passed than the list will be passed over to the groupMUKEYsByCount function to restructured
+         to ensure the mukeys are grouped together based on the maximum vertice limit.
 
+         The dictionary will contain lists of either MUKEYs or MUPOLYGONKEYs.  Keys beginning with MUKEY* will have a list
+         of MUKEYs as their item.  Keys beginning with MUPOLYGONKEY* will have a list of mupolygonkeys as their item.
+         i.e. {'MUKEY0': ['408342'], 'MUPOLYGONKEY0': ['228419267','228421430','217139720','228419274','217125974','217139721']}
+         The number of items in the dictionary translates into the number of SDA requests that will be submitted.  Geometry will
+         either be requested by MUKEY or MUPOLYGONKEY, which are 2 different queries determined by the function.
+
+         Geometry will be written to a feature class or shapefile along with MUKEY and MUPOLYGONKEY.  MUPOLYGONKEY represents
+         the unique polygon ID in SQL Server.
+
+         Return True if no errors are encountered; otherwise return False"""
 
     try:
-        AddMsgAndPrint("\n\tRequesting Soil Geometry from SDA")
+        AddMsgAndPrint("\tRequesting Soil Geometry from SDA")
 
         if not str(type(dictOfKEYs)).find('dict') > -1:
-           dictOfMUKEYs = groupMUKEYsByVertexCount(dictOfKEYs)
+           dictOfMUKEYs = groupMUKEYsByCount(dictOfKEYs)
            if not dictOfKEYs: return False
 
         sampleKey = re.sub(r'[0-9]+', '', dictOfKEYs.items()[0][0])
@@ -467,6 +447,17 @@ def geometryRequestByMUKEY(dictOfKEYs):
                 # dictionary containing 1 key with a list of lists
                 data = json.loads(jsonString)
 
+            except urllib2.HTTPError, e:
+                if int(e.code) >= 500:
+                   AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+                   #AddMsgAndPrint("t\t" + str(request))
+                elif int(e.code) >= 400:
+                   AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+                   AddMsgAndPrint("\t\t" + getGeometryQuery)
+                else:
+                   AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
+                continue
+
             except:
                 errorMsg()
 
@@ -505,7 +496,7 @@ def geometryRequestByMUKEY(dictOfKEYs):
         return False
 
 ## ==============================================================================================================================
-def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
+def groupMUKEYsByCount(listOfMUKEYs,feature="VERTICE"):
     """ This function takes in a list of MUKEYS and groups them based on maximum POLYGON or VERTICE thresholds so that SDA
         geometry requests are efficient and successful.  Second parameter to this function is optional.  User has the choice
         of grouping MUKEYs by VERTICE or POLYGON.  POLYGON Threshold is set to 9,999 records which is the default with
@@ -518,16 +509,18 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
         that exceed the vertice threshold will fail.  Individual MUKEYs that exceed the vertice threshold will be broken into
         groups of associated polygons whose vertice count is below the threshold.
 
-        A dictionary containing lists of either MUKEYs or MUPOLYGONKEYs are returned.  Keys beginning with MUKEY* will have a list
+        A dictionary containing lists of either MUKEYs or MUPOLYGONKEYs will be returned.  Keys beginning with MUKEY* will have a list
         of MUKEYs as their item.  Keys beginning with MUPOLYGONKEY* will have a list of mupolygonkeys as their item.
         i.e. {'MUKEY0': ['408342'], 'MUPOLYGONKEY0': ['228419267','228421430','217139720','228419274','217125974','217139721']}
         The number of items in the dictionary translates into the number of SDA requests that will be submitted.  Geometry will
-        either be requested by MUKEY or MUPOLYGONKEY"""
+        either be requested by MUKEY or MUPOLYGONKEY
+
+        Return False if errors are encountered."""
 
     try:
-        AddMsgAndPrint("\tGrouping MUKEYs together based vertices")
+        AddMsgAndPrint("\tGrouping MUKEYs together by " + feature.lower() + " thresholds")
 
-        if not len(listOfMUKEYs):
+        if not len(listOfMUKEYs) > 0:
            AddMsgAndPrint("\t\tEmpty list of MUKEYs was passed",2)
            return False
 
@@ -556,13 +549,13 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
         mukey = str(listOfMUKEYs).replace("[","").replace("]","").replace("'","")
 
         """ ---------------------------------------------- Get Polygon and Vertice Counts from SDA -------------------------"""
-        getPolygonCountQuery = """SELECT COUNT(*) FROM mupolygon WHERE mukey = """ + mukey
+        getPolygonCountByMukey = """SELECT COUNT(*) FROM mupolygon WHERE mukey = """ + mukey
 
-        getVerticeCountQuery = """SELECT mukey, SUM(mupolygongeo.STNumPoints()) AS vertex_count
+        getVerticeCountByMukey = """SELECT mukey, SUM(mupolygongeo.STNumPoints()) AS vertex_count
                                   FROM mupolygon
                                   WHERE mukey = """ + mukey + """GROUP BY mukey"""
 
-        getPolyAndVerticeCountQuery = """SELECT mukey, COUNT(*) AS polycount, SUM(mupolygongeo.STNumPoints()) AS vertex_count
+        getPolyAndVerticeCountByMUKEY = """SELECT mukey, COUNT(*) AS polycount, SUM(mupolygongeo.STNumPoints()) AS vertex_count
                                          FROM mupolygon WHERE mukey IN (""" + mukey + """)
                                          GROUP BY mukey
                                          ORDER BY vertex_count ASC"""
@@ -570,7 +563,7 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
         # Post.rest request parameters in dict format
         dRequest = dict()
         dRequest["format"] = "JSON"
-        dRequest["query"] = getPolyAndVerticeCountQuery
+        dRequest["query"] = getPolyAndVerticeCountByMUKEY
 
         # Convert to JSON formatted string
         jData = json.dumps(dRequest)
@@ -587,6 +580,17 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
             # dictionary containing 1 key with a list of lists
             data = json.loads(jsonString)
 
+        except urllib2.HTTPError, e:
+            if int(e.code) >= 500:
+               AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+               #AddMsgAndPrint("t\t" + str(request))
+            elif int(e.code) >= 400:
+               AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+               AddMsgAndPrint("\t\t" + getPolyAndVerticeCountByMUKEY)
+            else:
+               AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
+            return False
+
         except:
             errorMsg()
             return False
@@ -596,7 +600,7 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
            AddMsgAndPrint("\n\t\tNo data returned for MUKEY: " + str(mukeyList),2)
            return False
 
-        del getPolyAndVerticeCountQuery,dRequest,jData,req,resp,jsonString
+        del getPolyAndVerticeCountByMUKEY,dRequest,jData,req,resp,jsonString
 
         # Tally up the counts
         mukeyPolyCount = sum([int(item[1]) for item in data['Table']])
@@ -674,13 +678,14 @@ def groupMUKEYsByVertexCount(listOfMUKEYs,feature="VERTICE"):
             AddMsgAndPrint("\t\t\tNumber of MUKEYs with excessive vertices: " + str(len(mukeysExceedThreshold)),2)
 
         if len(mukeyNoPolygon):
-            AddMsgAndPrint("\t\tThe following " + str(len(mukeyNoPolygon)) + " MUKEYs have no geometry data available:",1)
+            AddMsgAndPrint("\t\tThe following " + str(len(mukeyNoPolygon)) + " MUKEY(s) have no geometry data available:",1)
             AddMsgAndPrint("\t\t\t" + str(mukeyNoPolygon),1)
 
         if not len(mukeySubsetsDict):
             AddMsgAndPrint("\n\t\tGrouping MUKEYS by " + feature + " Failed.  Empty Final List",2)
             return False
 
+        AddMsgAndPrint("\tTotal Polygons asociated with mapunits: " + splitThousands(totalPolys))
         #AddMsgAndPrint("\tTotal " + feature + " Count: " + (splitThousands(totalPolys) if countFeatureID == 0 else splitThousands(totalVertices)))
 
         return mukeySubsetsDict
@@ -695,7 +700,7 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
         811,000 vertices so that SDA geometry requests are efficient and successful.  VERTICE Threshold is set to 811,000
         (determined by MUKEY: 2903473 - OH161 - FY19)
 
-        This function can be called independently OR by the groupMUKEYsByVertexCount function. MUKEY, MUPOLYGONKEY and Vertice
+        This function can be called independently OR by the groupMUKEYsByCount function. MUKEY, MUPOLYGONKEY and Vertice
         count are collected from SDA and stored in a dictionary.  The MUPOLYGONKEYs are then sorted ascendingly by vertice count
         and then grouped into lists that don't exceed the vertice threshold.  MUPOLYGONKEYs are the unique polygon identifier
         assigned by SQL Server.  It is the equivalent of OID or FID.
@@ -757,6 +762,17 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
             resp.close()
 
             data = json.loads(jsonString) # dictionary containing 1 key with a list of lists
+
+        except urllib2.HTTPError, e:
+            if int(e.code) >= 500:
+               AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+               #AddMsgAndPrint("t\t" + str(request))
+            elif int(e.code) >= 400:
+               AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+               AddMsgAndPrint("\t\t" + getVerticeCountByMuPolygonKey)
+            else:
+               AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
+            return False
 
         except:
             errorMsg()
@@ -847,37 +863,40 @@ try:
         outputFolder = arcpy.GetParameterAsText(2)
 
         # define and set the scratch workspace
-        #scratchWS = setScratchWorkspace()
-        scratchWS = r'D:\Temp\scratch.gdb'
+##        scratchWS = r'D:\Temp\scratch.gdb'
+        scratchWS = setScratchWorkspace()
         arcpy.env.scratchWorkspace = scratchWS
-
-        # Hardcode NASIS-LIMS Report Webservice
-        # Runs SDJR Status Report: Returns projects with similar name
-        prjMapunit_URL = r"https://nasis.sc.egov.usda.gov/NasisReportsWebSite/limsreport.aspx?report_name=WEB-Projectmapunits"
 
         sdaURL = r"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
 
-        selectedProjects = ['MLRA 102 - Fergus Falls Till Plain Formdale Catena Study, Re-correlation and Investigations']
+        #selectedProjects = ['MLRA 102 - Fergus Falls Till Plain Formdale Catena Study, Re-correlation and Investigations']
 
+        """ Iterate through user selected NASIS Projects to report Conservation practice names"""
         for project in selectedProjects:
             startTime = tic()
+            AddMsgAndPrint("\n" + 110 * '*',0)
+            AddMsgAndPrint("Processing: " + project)
 
-            # get a list of MUKEYs for NASIS project
-            nasisProjectMUKEYs = getNasisMukeys(prjMapunit_URL, project)
+            """----------- get a list of MUKEYs associated to this NASIS project ----------"""
+            nasisProjectMUKEYs = getNasisMukeys(project)
+            if not len(nasisProjectMUKEYs):
+               continue
 
-            # create feature class for NASIS project
+            """----------- create empty polygon feature class for NASIS project -----------"""
             nasisProjectFC = createOutputFC()
-            if not nasisProjectFC: continue
+            if not nasisProjectFC:
+               AddMsgAndPrint("\tFailed to create a scratch feature class for: " + project + " SKIPPING This Project!",2)
+               continue
 
+            """-------------------- group MUKEYs by vertice threshold ----------------------"""
             #nasisProjectMUKEYs = ['3114927','2903473','408342']
-            groupedKeys = groupMUKEYsByVertexCount(nasisProjectMUKEYs,feature="VERTICE")
-            print "\n\n";exit()
+            groupedKeys = groupMUKEYsByCount(nasisProjectMUKEYs,feature="VERTICE")
 
-            if not geometryRequestByMUKEY(groupedKeys):
-               AddMsgAndPrint("WTF",2)
+            """---------------------------- Create geometry from MUKEYs --------------------"""
+            if not createGeometryFromKeys(groupedKeys):
+               AddMsgAndPrint("\nError Creating geometry",2)
 
-            AddMsgAndPrint("End time: " + toc(startTime))
-
+            AddMsgAndPrint("\n\tProcessing Time: " + toc(startTime))
 
         AddMsgAndPrint("\n",0)
 
