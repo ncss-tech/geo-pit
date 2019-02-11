@@ -719,25 +719,6 @@ ORDER BY mukey"""
 ## ===================================================================================
 def geometryRequestTest(nasisMUKEYs):
 
-##return geometry as WKT
-##SELECT mukey, mupolygongeo.STAsText() AS wktgeom
-##FROM mupolygon
-##WHERE mukey = 2525746
-
-##This will return the polygon count
-## SELECT COUNT(*)
-##FROM mupolygon
-##WHERE mukey = 2525746
-
-##Vertice count. Faster than using the python tool with gSSURGO!
-##SELECT mukey, SUM(mupolygongeo.STNumPoints()) AS vertex_count
-##FROM mupolygon
-##WHERE mukey = 2525746
-##GROUP BY mukey
-
-##SELECT mukey, mupolygongeo.STAsText() FROM mupolygon WHERE mukey IN (mukeylist)
-
-##SELECT mukey, mupolygongeo.STAsText() FROM mupolygon WHERE mukey IN (2525720, 2525769)
 
     try:
 
@@ -983,11 +964,28 @@ def parseMUKEYsByCount(listOfMUKEYs,feature="POLYGON"):
         errorMsg()
 
 ## ===================================================================================
-def getSDAgeometryInfoByMUKEY(listOfMUKEYs):
+def reportSDAgeometryInfoByMUKEY(listOfMUKEYs):
+    """ This function will report MUKEY geometry info from soil data access from a list of MUKEYs.
+        It was designed to determine what the geometry request limitation would be from SDA.
+        The original thought was that there was a polygon record limit of 9,999 records but
+        it turns out that the limit is related to a 32MB file size limit that is more than likely
+        imposed by NRCS.  There is no limit on JSON request.  The function will print a report similar
+        to:
+
+        MUKEY            Polygon Count            Vertice Count            Geometry?            JSON Length            Request Time
+        -----            -------------            -------------            ---------            -----------            ------------
+        2903473          489                      811,826                  Yes                  31,982,735             1 minute(s): 10 second(s)
+        1715499          2,159                    827,960                  No                   0                      5 second(s)
+        346259           50                       8,900                    Yes                  354,117                2 second(s)
+        522              0                        0                        No                   0                      1 second(s)
+        2738636          1,198                    854,076                  No                   0                      5 second(s)
+
+        Geometry? = Geometry request by MUKEY was successful, Yes or NO.
+        JSON Length = Numbero of characters associated with request."""
 
     try:
 
-        #listOfMUKEYs = ['2798206', '357379', '352266', '2423033', '435584', '1544928', '2423048', '2423047', '2423040', '401349', '1544918', '357409', '1544929', '2945671', '357386', '3026396', '2799151', '1544938', '357367', '341552', '352201', '357467', '357363', '341617', '434781', '357444', '357411', '401348', '357355', '357248', '2945753', '2945752', '397266', '357352', '2945675', '2945663', '2423049', '428543', '357397', '2423067', '357218', '357359', '434786', '401361', '352221', '398067', '3026449', '357393', '434828', '357390', '1544931', '397581', '2946029', '357383', '401408', '430313', '434803', '399238', '1544932', '399262', '398076', '434820', '430278', '396108', '2945770', '430274', '428189', '2423041', '397280', '396102', '357347', '357247', '357252', '357203', '352160', '398075', '2799966', '2423063', '3026409', '357463', '397472', '398055', '398028', '396093', '357418', '435970', '428320', '401326', '430356', '397488', '401387', '357466', '2945665', '357385', '418188', '396076', '397288', '398735', '357200', '398070', '356959', '430260', '397498', '428542', '428329', '2423036', '2945741', '399227', '2945662', '430549', '430317', '1544930', '397579', '396105', '435605', '357246', '352280', '428322', '418134', '396059']
+        # ----------------Sample list of MUKEYS from FY2019 SSURGO used for testing.
         #listOfMUKEYs = ['398029', '428143', '399230', '2945666', '435652', '435966', '357022', '397576', '430262', '398021', '430335', '357018']
         #listOfMUKEYs = ['397580', '399212', '397554', '435967', '428311', '398030', '428530', '398031', '2945667', '396087', '397506', '435969', '401318', '356953', '398066', '399218', '428339', '398074', '396062']
         #listOfMUKEYs = ['397315', '397276', '428128', '401319']
@@ -1033,12 +1031,16 @@ def getSDAgeometryInfoByMUKEY(listOfMUKEYs):
                 if not mukey in mukeyFailed:
                    mukeyFailed[mukey] = int(e.code)
 
-##                if str(e.code) == 500:
-##                   AddMsgAndPrint(mukey + " --------- Exceeds the 825,000 vertice limit",1)
-##                elif int(e.code) >= 400:
-##                   AddMsgAndPrint("\tError Code: " + str(e.code),2)
-##                else:
-##                   AddMsgAndPrint('HTTPError = ' + str(e.code))
+                if int(e.code) >= 500:
+                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+                   #AddMsgAndPrint("t\t" + str(request))
+                   pass
+                elif int(e.code) >= 400:
+                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+                   #AddMsgAndPrint("\t\t" + getGeometryQuery)
+                   pass
+                else:
+                   AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
 
                 return ['',endTime if TIME else '','0']
 
@@ -1056,14 +1058,8 @@ def getSDAgeometryInfoByMUKEY(listOfMUKEYs):
 
             polygonCountQuery = """SELECT COUNT(*) FROM mupolygon WHERE mukey = """ + mukey
 
-            verticeCountQuery = """SELECT mukey, SUM(mupolygongeo.STNumPoints()) AS vertex_count
-                                   FROM mupolygon
-                                   WHERE mukey = """ + mukey +
-                                   """GROUP BY mukey"""
-
             polyAndVerticeCountQuery = """SELECT COUNT(*) AS polycount, SUM(mupolygongeo.STNumPoints()) AS vertex_count
-                                          FROM mupolygon WHERE mukey = """ + mukey +
-                                          """ GROUP BY mukey"""
+                                          FROM mupolygon WHERE mukey = """ + mukey + """ GROUP BY mukey"""
 
             sdaGeometryQuery = """SELECT mukey, mupolygongeo.STAsText()
                                   FROM mupolygon
@@ -1100,8 +1096,13 @@ def getSDAgeometryInfoByMUKEY(listOfMUKEYs):
 
             del data,mukeyPolyCount,mukeyVerticeCount,data2
 
-        AddMsgAndPrint(toc(clockStarts))
-        print mukeyFailed
+        AddMsgAndPrint("Total Time: " + toc(clockStarts))
+
+        # Report MUKEYs that failed and their HTTP Error
+        if len(mukeyFailed) > 0:
+           AddMsgAndPrint("\nThe following " + str(len(mukeyFailed)) + " mapunits had HTTP errors",2)
+           for item in mukeyFailed.iteritems():
+               AddMsgAndPrint("MUKEY " + item[0] + " - HTTP Error: " + str(item[1]))
 
     except:
         errorMsg()
@@ -1140,7 +1141,7 @@ try:
         for project in selectedProjects:
 
             listOfMUKEYs = ['2903473','1715499','346259','522','2738636','3114927','397315', '397276', '428128', '401319','2798206', '357379', '352266','2920731']
-            list1 = getSDAgeometryInfoByMUKEY(listOfMUKEYs)
+            reportSDAgeometryInfoByMUKEY(listOfMUKEYs)
             exit()
 
 ##            testList = [['346928']]
@@ -1156,8 +1157,6 @@ try:
 
             # get a list of MUKEYs for NASIS project
             nasisMUKEYs = getNasisMukeys(prjMapunit_URL, project)
-
-
 
             nasisProjectFC = createOutputFC()
             if not nasisProjectFC: continue

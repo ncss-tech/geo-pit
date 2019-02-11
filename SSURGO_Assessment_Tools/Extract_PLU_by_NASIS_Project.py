@@ -377,6 +377,150 @@ def createOutputFC():
         AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " Feature Class",2)
         return False
 
+## ===================================================================================
+def reportSDAgeometryInfoByMUKEY(listOfMUKEYs):
+    """ This function will report MUKEY geometry info from soil data access from a list of MUKEYs.
+        It was designed to determine what the geometry request limitation would be from SDA.
+        The original thought was that there was a polygon record limit of 9,999 records but
+        it turns out that the limit is related to a 32MB file size limit that is more than likely
+        imposed by NRCS.  There is no limit on JSON request.  The function will print a report similar
+        to:
+
+        MUKEY            Polygon Count            Vertice Count            Geometry?            JSON Length            Request Time
+        -----            -------------            -------------            ---------            -----------            ------------
+        2903473          489                      811,826                  Yes                  31,982,735             1 minute(s): 10 second(s)
+        1715499          2,159                    827,960                  No                   0                      5 second(s)
+        346259           50                       8,900                    Yes                  354,117                2 second(s)
+        522              0                        0                        No                   0                      1 second(s)
+        2738636          1,198                    854,076                  No                   0                      5 second(s)
+
+        Geometry? = Geometry request by MUKEY was successful, Yes or NO.
+        JSON Length = Numbero of characters associated with request."""
+
+    try:
+
+        # ----------------Sample list of MUKEYS from FY2019 SSURGO used for testing.
+        #listOfMUKEYs = ['398029', '428143', '399230', '2945666', '435652', '435966', '357022', '397576', '430262', '398021', '430335', '357018']
+        #listOfMUKEYs = ['397580', '399212', '397554', '435967', '428311', '398030', '428530', '398031', '2945667', '396087', '397506', '435969', '401318', '356953', '398066', '399218', '428339', '398074', '396062']
+        #listOfMUKEYs = ['397315', '397276', '428128', '401319']
+        #listOfMUKEYs = ['2903473','1715499','346259']
+
+        # Dictionary of MUKEYs and number of polygons associated with that MUKEY
+        # {'1544915': 337,'1544918': 7,'1544928': 4,'1544929': 8}
+        mukeyDict = dict()
+
+        totalPolys = 0
+        totalVertices = 0
+
+        mukeyFailed = dict()
+        clockStarts = tic()
+
+        ## ===================================================================================
+        def submitSDAquery(query,TIME=False,JSONlength=False):
+
+            dRequest = dict()
+            dRequest["format"] = "JSON"
+            dRequest["query"] = query
+
+            # Create SDM connection to service using HTTP
+            jData = json.dumps(dRequest)
+
+            try:
+                # Send request to SDA Tabular service
+                startTime = tic()
+                req = urllib2.Request(sdaURL, jData)
+                resp = urllib2.urlopen(req)  # A failure here will probably throw an HTTP exception
+                responseStatus = resp.getcode()
+                responseMsg = resp.msg
+                jsonString = resp.read()
+                resp.close()
+                endTime = toc(startTime)
+
+                data = json.loads(jsonString) # dictionary containing 1 key with a list of lists
+                return [data,endTime if TIME else '',splitThousands(len(jsonString)) if JSONlength else '']
+
+            except urllib2.HTTPError, e:
+                endTime = toc(startTime)
+
+                if not mukey in mukeyFailed:
+                   mukeyFailed[mukey] = int(e.code)
+
+                if int(e.code) >= 500:
+                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+                   #AddMsgAndPrint("t\t" + str(request))
+                   pass
+                elif int(e.code) >= 400:
+                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+                   #AddMsgAndPrint("\t\t" + getGeometryQuery)
+                   pass
+                else:
+                   AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
+
+                return ['',endTime if TIME else '','0']
+
+            except:
+                endTime = toc(startTime)
+                errorMsg()
+                return ['',endTime if TIME else '','0']
+        ## ===================================================================================
+
+        header = "MUKEY" + (" " * 12) + "Polygon Count" + (" " * 12) + "Vertice Count" + (" " * 12) + "Geometry?" + (" " * 12) + "JSON Length" + (" " * 12) + "Request Time"
+        AddMsgAndPrint(header,0)
+        AddMsgAndPrint("-" * 5 + " " * 12 + "-" * 13 + " " * 12 + "-" * 13 + " " * 12 + "-" * 9 +  " " * 12 + "-" * 11 + " " * 12 + "-" * 12,0)
+
+        for mukey in listOfMUKEYs:
+
+            polygonCountQuery = """SELECT COUNT(*) FROM mupolygon WHERE mukey = """ + mukey
+
+            polyAndVerticeCountQuery = """SELECT COUNT(*) AS polycount, SUM(mupolygongeo.STNumPoints()) AS vertex_count
+                                          FROM mupolygon WHERE mukey = """ + mukey + """ GROUP BY mukey"""
+
+            sdaGeometryQuery = """SELECT mukey, mupolygongeo.STAsText()
+                                  FROM mupolygon
+                                  WHERE mukey IN (""" + mukey + """)"""
+
+            # get Polygon and Vertice Count
+            data = submitSDAquery(polyAndVerticeCountQuery,TIME=True,JSONlength=False)
+
+            # No polygon or vertice count available; bad MUKEY?
+            if not "Table" in data[0]:
+               AddMsgAndPrint(mukey + (" " * (17 - len(mukey))) + "0" + (" " * 24) + "0" + (" " * 24) + "No" + (" " * 19) + "0" + (" " * 22) + data[1],0)
+               continue
+
+            mukeyPolyCount = int(data[0]['Table'][0][0])
+            mukeyVerticeCount = int(data[0]['Table'][0][1])
+            totalPolys += mukeyPolyCount
+            totalVertices += mukeyVerticeCount
+
+            # get geometry from SDA
+            data2 = submitSDAquery(sdaGeometryQuery,TIME=True,JSONlength=True)
+
+            # No polygon geometry was returned
+            if not "Table" in data2[0]:
+               geometry = "No"
+            else:
+               geometry = "Yes"
+
+            jsonLength = data2[2]
+            responseTime = data2[1]
+
+            AddMsgAndPrint(mukey + (" " * (17 - len(mukey))) + splitThousands(mukeyPolyCount) + (" " * (25 - len(splitThousands(mukeyPolyCount)))) + splitThousands(mukeyVerticeCount) +
+                       (" " * (25 - len(splitThousands(mukeyVerticeCount)))) + geometry + (" " * (21 - len(geometry))) + jsonLength +
+                        (" " * (23 - len(jsonLength))) + responseTime,0)
+
+            del data,mukeyPolyCount,mukeyVerticeCount,data2
+
+        AddMsgAndPrint("Total Time: " + toc(clockStarts))
+
+        # Report MUKEYs that failed and their HTTP Error
+        if len(mukeyFailed) > 0:
+           AddMsgAndPrint("\nThe following " + str(len(mukeyFailed)) + " mapunits had HTTP errors",2)
+           for item in mukeyFailed.iteritems():
+               AddMsgAndPrint("MUKEY " + item[0] + " - HTTP Error: " + str(item[1]))
+
+    except:
+        errorMsg()
+
 ## ==============================================================================================================================
 def createGeometryFromKeys(dictOfKEYs):
     """ This function will request soil geometry from Soil Data Access and write it to a feature class or shapefile.  The
