@@ -11,7 +11,7 @@ import os
 arcpy.env.overwriteOutput = True
 
 #Input MUPOLGYON
-inFC = arcpy.GetParameterAsText (0) #Input soil polygons, Feature Layer or Raster Cataglo Layer or Mosaic Layer, Required
+inFC = arcpy.GetParameterAsText (0) #Input soil polygons
 #Input File Geodatabase
 out_FGB = arcpy.GetParameterAsText (1)#Output Folder, Workspace, Required
 
