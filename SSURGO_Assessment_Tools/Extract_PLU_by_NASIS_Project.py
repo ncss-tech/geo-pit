@@ -56,6 +56,13 @@ def errorMsg():
         tb = sys.exc_info()[2]
         tbinfo = traceback.format_tb(tb)[0]
         theMsg = tbinfo + " \n" + str(sys.exc_type)+ ": " + str(sys.exc_value)
+
+        if theMsg.find("sys.exit") > -1:
+            AddMsgAndPrint("\n\n")
+            pass
+        else:
+            AddMsgAndPrint(theMsg,2)
+
         AddMsgAndPrint(theMsg, 2)
 
     except:
@@ -346,35 +353,52 @@ def getNasisMukeys(theProject):
         return False
 
 ## ==============================================================================================================================
-def createOutputFC():
+def createOutputFC(dictOfFields,preFix="Temp",shape="POLYGON"):
     """ This function will creat an empty polygon feature class within the scratch FGDB.  The feature class will be in WGS84
         and will have have 2 fields created: mukey and mupolygonkey.  The feature class name will have a prefix of
         'nasisProject.' This feature class is used by the 'requestGeometryByMUKEY' function to write the polygons associated with a NASIS
         project.
 
+        fieldDict ={field:(fieldType,fieldLength,alias)
+        fieldDict = {"mukey":("TEXT",30,"Mapunit Key"),"mupolygonkey":("TEXT","",30)}
+
         Return the new feature class  including the path.  Return False if error ocurred."""
 
     try:
-
         epsgWGS84 = 4326 # EPSG code for: GCS-WGS-1984
         outputCS = arcpy.SpatialReference(epsgWGS84)
 
-        nasisProjectFC = arcpy.CreateScratchName("nasisProject", workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
+        newFC = arcpy.CreateScratchName(preFix, workspace=arcpy.env.scratchGDB,data_type="FeatureClass")
 
         # Create empty polygon featureclass with coordinate system that matches AOI.
-        arcpy.CreateFeatureclass_management(env.scratchGDB, os.path.basename(nasisProjectFC), "POLYGON", "", "DISABLED", "DISABLED", outputCS)
-        arcpy.AddField_management(nasisProjectFC,"mukey", "TEXT", "", "", "30")
-        arcpy.AddField_management(nasisProjectFC,"mupolygonkey", "TEXT", "", "", "30")   # for outputShp
+        arcpy.CreateFeatureclass_management(env.scratchGDB, os.path.basename(newFC), shape, "", "DISABLED", "DISABLED", outputCS)
 
-        if not arcpy.Exists(nasisProjectFC):
-            AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " Feature Class",2)
+        for field,params in dictOfFields.iteritems():
+            try:
+                fldLength = params[1]
+                fldAlias = params[2]
+            except:
+                fldLength = 0
+                pass
+
+            arcpy.AddField_management(newFC,field,params[0],"#","#",fldLength,fldAlias)
+
+##            if len(params[1]) > 0:
+##                expression = "\"" + params[1] + "\""
+##                arcpy.CalculateField_management(helYesNo,field,expression,"VB")
+
+##        arcpy.AddField_management(nasisProjectFC,"mukey", "TEXT", "", "", "30")
+##        arcpy.AddField_management(nasisProjectFC,"mupolygonkey", "TEXT", "", "", "30")   # for outputShp
+
+        if not arcpy.Exists(newFC):
+            AddMsgAndPrint("\tFailed to create scratch " + newFC + " Feature Class",2)
             return False
 
-        return nasisProjectFC
+        return newFC
 
     except:
         errorMsg()
-        AddMsgAndPrint("\tFailed to create " + nasisProjectFC + " Feature Class",2)
+        AddMsgAndPrint("\tFailed to create scratch " + newFC + " Feature Class",2)
         return False
 
 ## ===================================================================================
@@ -446,12 +470,12 @@ def reportSDAgeometryInfoByMUKEY(listOfMUKEYs):
                    mukeyFailed[mukey] = int(e.code)
 
                 if int(e.code) >= 500:
-                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
-                   #AddMsgAndPrint("t\t" + str(request))
+                   AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+                   AddMsgAndPrint("t\t" + str(request))
                    pass
                 elif int(e.code) >= 400:
-                   #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
-                   #AddMsgAndPrint("\t\t" + getGeometryQuery)
+                   AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+                   AddMsgAndPrint("\t\t" + getGeometryQuery)
                    pass
                 else:
                    AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
@@ -992,57 +1016,377 @@ def groupMupolygonkeyByVertexCount(listOfMUKEYs):
     except:
         errorMsg()
 
+## ===================================================================================
+def submitFSquery(url,paramaters):
+
+# This is returned by url
+# {u'error': {u'code': 498, u'details': [], u'message': u'Invalid Token'}}
+
+    try:
+        req = urllib2.Request(url,paramaters)
+        resp = urllib2.urlopen(req)  # A failure here will probably throw an HTTP exception
+        responseStatus = resp.getcode()
+        responseMsg = resp.msg
+        jsonString = resp.read()
+
+        # dictionary containing 1 key with a list of lists
+        return json.loads(jsonString)
+
+    except urllib2.HTTPError, e:
+
+        if int(e.code) >= 500:
+           #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Server side error. Probably exceed JSON imposed limit",2)
+           #AddMsgAndPrint("t\t" + str(request))
+           pass
+        elif int(e.code) >= 400:
+           #AddMsgAndPrint("\n\t\tHTTP ERROR: " + str(e.code) + " ----- Client side error. Check the following SDA Query for errors:",2)
+           #AddMsgAndPrint("\t\t" + getGeometryQuery)
+           pass
+        else:
+           AddMsgAndPrint('HTTP ERROR = ' + str(e.code),2)
+
+## ===================================================================================
+def getPlanLandUnitsByGeometry(fc):
+
+    try:
+        AddMsgAndPrint("\tQuerying GeoPortal for Planned Land Units")
+
+        """ -------------------------------------- get Feature Service Info -------------------------------"""
+        # URL for Feature Service Metadata (Service Definition) - Dictionary of ;
+        pluURL = """https://geoportal.sc.egov.usda.gov/arcgis/rest/services/Hosted/WI_Plan_Land_Units_TEST_copyAllData/FeatureServer/1?"""
+
+        # Used for admin or feature service info
+        params = urllib.urlencode({'f': 'json','token': tokenInfo['token']})
+
+        # request info about the feature service
+        metadata = submitFSquery(pluURL,params)
+
+        # Get the Max record count the fs can return
+        if not 'maxRecordCount' in metadata:
+           AddMsgAndPrint('\t\tCould not determine FS maximum record count: Setting default to 1,000 records',1)
+           maxRecordCount = 1000
+        else:
+           maxRecordCount = metadata['maxRecordCount']
+
+        # fields associated with feature service
+        fsFields = metadata['fields']   # {u'domain': None, u'name': u'land_unit_id', u'nullable': True, u'editable': True, u'alias': u'LAND_UNIT_ID', u'length': 38, u'type': u'esriFieldTypeString'}
+        fieldDict = dict()
+
+        # lookup list for fields that are in DATE field; Date values need to be converted
+        # from Unix Epoch format to mm/dd/yyyy format in order to populate a table
+        dateFields = list()
+
+        # Collect field info to pass to new fc
+        for fieldInfo in fsFields:
+
+            # skip the OID field
+            if fieldInfo['type'] == 'esriFieldTypeOID':
+               continue
+
+            # cross-reference portal attribute description with ArcGIS attribute description
+            fldTypeDict = {'esriFieldTypeString':'TEXT','esriFieldTypeDouble':'DOUBLE','esriFieldTypeSingle':'FLOAT',
+                           'esriFieldTypeInteger':'LONG','esriFieldTypeSmallInteger':'SHORT','esriFieldTypeDate':'DATE',
+                           'esriFieldTypeGUID':'GUID','esriFieldTypeGlobalID':'GUID'}
+
+            fldType = fldTypeDict[fieldInfo['type']]
+            fldAlias = fieldInfo['alias']
+            fldName = fieldInfo['name']
+
+            if fldType == 'TEXT':
+               fldLength = fieldInfo['length']
+            elif fldType == 'DATE':
+                 dateFields.append(fldName)
+            else:
+               fldLength = ""
+
+            fieldDict[fldName] = (fldType,fldLength,fldAlias)
+
+        """ ----------------------------------- request PLU Geometry for envelope -----------------------------------"""
+        # Create envelope from fc; this was introduced b/c the extent can be
+        # incorrect from the incoming fc due to editing. Extent is in JSON
+        outEnvelope = "in_memory" + os.sep + os.path.basename(arcpy.CreateScratchName("envelope",data_type="FeatureClass",workspace=scratchWS))
+        arcpy.MinimumBoundingGeometry_management(fc,outEnvelope,"ENVELOPE", "NONE")
+        desc = arcpy.Describe(outEnvelope)
+        extent = desc.extent.JSON
+        arcpy.Delete_management(outEnvelope)
+
+        pluURL = """https://geoportal.sc.egov.usda.gov/arcgis/rest/services/Hosted/WI_Plan_Land_Units_TEST_copyAllData/FeatureServer/1/query?"""
+
+        # Get Object IDs of features within bounding box; No Geometry returned.
+        params = urllib.urlencode({'f': 'json','geometry':extent,'returnGeometry':'false','returnIdsOnly':'true','token': tokenInfo['token']})
+
+        # Get Record count of bounding box; No Geometry returned.
+##        params = urllib.urlencode({'f': 'json', 'geometryType': 'esriGeometryEnvelope','geometry':extent,
+##        'spatialRel': 'esriSpatialRelIntersects','returnCountOnly':'true','returnGeometry':'false','token': tokenInfo['token']})
+
+        # Send request to feature service
+        objectIDs = submitFSquery(pluURL,params)
+
+        if not 'objectIds' in objectIDs:
+           AddMsgAndPrint('\t\tCould not determine PLU polygon count from project extent',2)
+
+        listOfObjectIDs = objectIDs['objectIds']   # Number of OIDs returned
+        OIDfld = objectIDs['objectIdFieldName']    # Object ID field name
+
+        # Bail if there is no overlap
+        if not len(listOfObjectIDs):
+           AddMsgAndPrint("\t\tThere are no PLUs that overlap this AOI",1)
+           return False,False
+
+        # Slice Object IDs into lists not exceeding the feature service maxRecordCount.
+        # This may or may not be needed but it doesn't hurt and I avoid a seperate query
+        oidSubsetLists = [listOfObjectIDs[i:i+maxRecordCount] for i in range(0, len(listOfObjectIDs), maxRecordCount)]
+
+        """ ----------------------------------- write PLU Geometry for envelope ----------------------------------- """
+        pluPolyFC = createOutputFC(fieldDict,"pluPolyFC")
+        landUnitIDs = list()  # list containing lists of Land Unit IDs
+
+        for subsetList in oidSubsetLists:
+            oids = str(subsetList).replace("[","").replace("]","")
+            landUnitIDsubList = list()  # sublist of land Unit IDs
+
+            # Get geometry by OID
+            params = urllib.urlencode({'f': 'json','returnGeometry':'true','objectIds': oids,'token': tokenInfo['token']})
+
+            # Send request to feature service
+            geometry = submitFSquery(pluURL,params)
+
+            # Isolate the fields that were inserted into new fc
+            fields = fieldDict.keys()
+            fields.append("SHAPE@JSON")
+
+            # Insert Geometry
+            with arcpy.da.InsertCursor(pluPolyFC, fields) as cur:
+
+                # Iterenate through records returned from FS
+                for rec in geometry['features']:
+                    values = list()    # list of attributes
+
+                    polygon = unicode(json.dumps(rec['geometry']))   # u'geometry': {u'rings': [[[-89.407702228, 43.334059191999984], [-89.40769642800001, 43.33560779300001]}
+                    attributes = rec['attributes']                   # u'attributes': {u'land_unit_id': u'73F53BC1-E3F8-4747-B51F-E598EE445E47'}}
+
+                    for fld in fields:
+                        if fld == "SHAPE@JSON":
+                            continue
+                        elif fld == "land_unit_id":
+                            landUnitIDsubList.append(attributes[fld])
+                            values.append(attributes[fld])
+
+                        # DATE values need to be converted from Unix Epoch format
+                        # to dd/mm/yyyy format so that it can be inserted into fc.
+                        elif fieldDict[fld][0] == 'DATE':
+                            dateVal = attributes[fld]
+                            if not dateVal in (None,'null','','Null'):
+                                epochFormat = float(attributes[fld])                                    # 1609459200000
+
+                                # Convert to seconds from milliseconds and reformat
+                                localFormat = time.strftime('%m/%d/%Y',time.gmtime(epochFormat/1000))   # 01/01/2021
+                                values.append(localFormat)
+                            else:
+                                values.append(None)
+                        else:
+                            values.append(attributes[fld])
+
+                    # geometry goes at the the end
+                    values.append(polygon)
+                    cur.insertRow(values)
+
+            landUnitIDs.append(landUnitIDsubList)
+            del landUnitIDsubList,geometry,cur
+
+        return pluPolyFC,landUnitIDs
+
+        # Login error
+        # {"error":{"code":499,"message":"Token Required","details":[]}}
+
+        # Token geoportal site
+        # https://geoportal.sc.egov.usda.gov/portal/sharing/rest/generateToken
+
+        #arcpy.SignInToPortal(arcpy.GetActivePortalURL(), 'username', 'password')
+
+    except:
+        errorMsg()
+        return False,False
+
+# ===================================================================================
+def getPracticePointsByID(listOfPLUIDs):
+
+    try:
+
+        AddMsgAndPrint("\tQuerying GeoPortal for Practice Points")
+
+        pluPntURL = """https://geoportal.sc.egov.usda.gov/arcgis/rest/services/Hosted/WI_Practice_Points_TEST_copyAllData/FeatureServer/1?"""
+
+        # Used for admin or feature service info
+        params = urllib.urlencode({'f': 'json','token': tokenInfo['token']})
+
+        # request info about the feature service
+        metadata = submitFSquery(pluPntURL,params)
+
+        # fields associated with feature service
+        fsFields = metadata['fields']   # {u'domain': None, u'name': u'land_unit_id', u'nullable': True, u'editable': True, u'alias': u'LAND_UNIT_ID', u'length': 38, u'type': u'esriFieldTypeString'}
+        fieldDict = dict()
+
+        # Collect field info to pass to new fc
+        for fieldInfo in fsFields:
+
+            # skip the OID field
+            if fieldInfo['type'] == 'esriFieldTypeOID':
+               continue
+
+            # cross-reference portal attribute description with ArcGIS attribute description
+            fldTypeDict = {'esriFieldTypeString':'TEXT','esriFieldTypeDouble':'DOUBLE','esriFieldTypeSingle':'FLOAT',
+                           'esriFieldTypeInteger':'LONG','esriFieldTypeSmallInteger':'SHORT','esriFieldTypeDate':'DATE',
+                           'esriFieldTypeGUID':'GUID','esriFieldTypeGlobalID':'GUID'}
+
+            fldType = fldTypeDict[fieldInfo['type']]
+            fldAlias = fieldInfo['alias']
+            fldName = fieldInfo['name']
+
+            if fldType == 'TEXT':
+               fldLength = fieldInfo['length']
+            else:
+               fldLength = ""
+
+            fieldDict[fldName] = (fldType,fldLength,fldAlias)
+
+        pluPntFC = createOutputFC(fieldDict,"pluPntFC","POINT")
+
+        pluPntURL = """https://geoportal.sc.egov.usda.gov/arcgis/rest/services/Hosted/WI_Practice_Points_TEST_copyAllData/FeatureServer/1/query?"""
+
+        for pluIDList in listOfPLUIDs:
+            # SQL statement isolating list of land unit IDs;
+            # LAND_UNIT_ID IN ('EE5F293F-0F1E-4598-9FAE-B606D3DFD626', 'F9A11F75-DEE2-4174-8C78-1EEEE4A9DCE9')
+            whereClause = 'LAND_UNIT_ID IN ' + str(pluIDList).replace("[","(").replace("]",")").replace("u","")
+
+            # Get geometry by land unit ID
+            params = urllib.urlencode({'f': 'json','returnGeometry':'true','where': whereClause,'outFields':'*','token': tokenInfo['token']})
+
+             # Send request to feature service
+            geometry = submitFSquery(pluPntURL,params)
+
+            # Isolate the fields that were inserted into new fc
+            fields = fieldDict.keys()
+            fields.append("SHAPE@XY")
+
+            # Insert Geometry
+            with arcpy.da.InsertCursor(pluPntFC, fields) as cur:
+
+                 # Iterenate through records returned from FS
+                for rec in geometry['features']:
+                    values = list()    # list of attributes
+
+                    xyPoint = (rec['geometry']['x'],rec['geometry']['y'])     # u'geometry': {u'y': 43.317420449999986, u'x': -89.49036579300002}
+                    attributes = rec['attributes']                            # u'attributes': {u'land_unit_id': u'73F53BC1-E3F8-4747-B51F-E598EE445E47'}}
+
+                    # collect list of attributes
+                    for fld in fields:
+                        if fld == "SHAPE@XY":
+                            continue
+
+                        # DATE values need to be converted from Unix Epoch format
+                        # to dd/mm/yyyy format so that it can be inserted into fc.
+                        elif fieldDict[fld][0] == 'DATE':
+                            dateVal = attributes[fld]
+                            if not dateVal in (None,'null','','Null'):
+                                epochFormat = float(attributes[fld])                                    # 1609459200000
+
+                                # Convert to seconds from milliseconds and reformat
+                                localFormat = time.strftime('%m/%d/%Y',time.gmtime(epochFormat/1000))   # 01/01/2021
+                                values.append(localFormat)
+                            else:
+                                 values.append(None)
+                        else:
+                            values.append(attributes[fld])
+
+                    # geometry goes at the the end
+                    values.append(xyPoint)
+                    cur.insertRow(values)
+            del cur
+        return pluPntFC
+
+    except:
+        errorMsg()
+        return False
+
+
 ## ====================================== Main Body ==================================
 # Import modules
 import sys, string, os, locale, traceback, operator
 import urllib, urllib2, re, time, json
 import arcgisscripting, arcpy
 from arcpy import env
+from datetime import datetime
 
 try:
     if __name__ == '__main__':
 
-        searchString = arcpy.GetParameterAsText(0)         # search string for NASIS project names
-        selectedProjects = arcpy.GetParameter(1)           # selected project names in a list
-        outputFolder = arcpy.GetParameterAsText(2)
+       startTime = tic()
 
-        # define and set the scratch workspace
-##        scratchWS = r'D:\Temp\scratch.gdb'
-        scratchWS = setScratchWorkspace()
-        arcpy.env.scratchWorkspace = scratchWS
+       # -------------------Need to add code to make sure user is logged into portal.
+       # Returns token information when signed in to ArcGIS.com or a local portal
+       # Token info will also be added to URL when querying feature service.
+       # Add this to validate code as well Returns token information when signed in to ArcGIS.com or a local portal
+       tokenInfo = arcpy.GetSigninToken()
 
-        sdaURL = r"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
+       searchString = arcpy.GetParameterAsText(0)         # search string for NASIS project names
+       selectedProjects = arcpy.GetParameter(1)           # selected project names in a list
+       outputFolder = arcpy.GetParameterAsText(2)
 
-        #selectedProjects = ['MLRA 102 - Fergus Falls Till Plain Formdale Catena Study, Re-correlation and Investigations']
+       # define and set the scratch workspace
+       scratchWS = r'M:\IDEA\scratch.gdb'
+#      scratchWS = setScratchWorkspace()
+       arcpy.env.scratchWorkspace = scratchWS
 
-        """ Iterate through user selected NASIS Projects to report Conservation practice names"""
-        for project in selectedProjects:
-            startTime = tic()
-            AddMsgAndPrint("\n" + 110 * '*',0)
-            AddMsgAndPrint("Processing: " + project)
+       sdaURL = r"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
 
-            """----------- get a list of MUKEYs associated to this NASIS project ----------"""
-            nasisProjectMUKEYs = getNasisMukeys(project)
-            if not len(nasisProjectMUKEYs):
-               continue
+       selectedProjects = ['MLRA 102 - Fergus Falls Till Plain Formdale Catena Study, Re-correlation and Investigations']
+       selectedProjects= [r'M:\IDEA\WI_PLU_test.gdb\test2']#,r'M:\IDEA\WI_PLU_test.gdb\test']
 
-            """----------- create empty polygon feature class for NASIS project -----------"""
-            nasisProjectFC = createOutputFC()
-            if not nasisProjectFC:
-               AddMsgAndPrint("\tFailed to create a scratch feature class for: " + project + " SKIPPING This Project!",2)
-               continue
+       """ Iterate through user selected NASIS Projects to report Conservation practice names"""
+       for project in selectedProjects:
+##           startTime = tic()
+##           AddMsgAndPrint("\n" + 110 * '*',0)
+##           AddMsgAndPrint("Processing: " + project)
+##
+##           """----------- get a list of MUKEYs associated to this NASIS project ----------"""
+##           nasisProjectMUKEYs = getNasisMukeys(project)
+##           if not len(nasisProjectMUKEYs):
+##              continue
+##
+##           """-------------- create empty polygon feature class for NASIS project ---------------"""
+##           fieldDict = {"mukey":("TEXT",30,"Mapunit Key"),"mupolygonkey":("TEXT",30,"Mapunit Poly Key")}
+##           nasisProjectFC = createOutputFC(fieldDict,"nasisProject")
+##           if not nasisProjectFC:
+##               AddMsgAndPrint("\tFailed to create a scratch feature class for: " + project + " SKIPPING This Project!",2)
+##               continue
+##
+##           """----------------------- group MUKEYs by vertice threshold --------------------------"""
+##           #nasisProjectMUKEYs = ['3114927','2903473','408342']
+##           groupedKeys = groupMUKEYsByCount(nasisProjectMUKEYs,feature="VERTICE")
+##
+##           """---------------------------- Create geometry from MUKEYs ---------------------------"""
+##           if not createGeometryFromKeys(groupedKeys):
+##              AddMsgAndPrint("\nError Creating geometry",2)
+##              continue
 
-            """-------------------- group MUKEYs by vertice threshold ----------------------"""
-            #nasisProjectMUKEYs = ['3114927','2903473','408342']
-            groupedKeys = groupMUKEYsByCount(nasisProjectMUKEYs,feature="VERTICE")
+           """---------------------------- Get PLU Data from GeoPortal --------------------"""
+           pluPolys,pluIDs = getPlanLandUnitsByGeometry(project)
+           if not pluPolys:
+              AddMsgAndPrint("\nError Acquiring PLU Data from GeoPortal",2)
+              continue
 
-            """---------------------------- Create geometry from MUKEYs --------------------"""
-            if not createGeometryFromKeys(groupedKeys):
-               AddMsgAndPrint("\nError Creating geometry",2)
+           """---------------------------- Get Practice Point Data from GeoPortal --------------------"""
+           ##pluIDs = [['78A0ED6B-DD1C-4CE5-9299-E14FD11EFF10', '11BA6371-CE4D-481B-82BC-D1240C3180DB', '6224D83F-98DE-40B8-B59F-C92A840E8A7B'],['D572AF7E-80ED-4F35-BE22-A9838D17B643','34812EF8-5C7E-4F24-B4A6-52F95A7BFDA9']]
+           #pluIDs = [['11BA6371-CE4D-481B-82BC-D1240C3180DB']]
+           pluPntFC = getPracticePointsByID(pluIDs)
+           if not pluPntFC:
+              AddMsgAndPrint("\nError Acquiring Practice Points Data from GeoPortal",2)
+              continue
 
-            AddMsgAndPrint("\n\tProcessing Time: " + toc(startTime))
+           AddMsgAndPrint("\n\tProcessing Time: " + toc(startTime))
 
-        AddMsgAndPrint("\n",0)
+       AddMsgAndPrint("\n",0)
 
 except:
     errorMsg()
