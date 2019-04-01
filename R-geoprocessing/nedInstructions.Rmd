@@ -87,7 +87,7 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 
 ```{r}
 # create list of ned tiles by intersecting mlrassoarea boundaries with latlong tiles
-ned_dsn <- "M:/geodata/elevation/ned/ned_13arcsec_g.shp"
+ned_dsn <- "D:/geodata/elevation/ned/ned_13arcsec_g.shp"
 sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
 
 sso_ned <- make_ned_df(ned_dsn, sso_dsn, 11, crsarg)
@@ -101,6 +101,18 @@ split(., .$FILE_ID) ->.;
 lapply(., function(x) {
   download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
 })
+
+
+# download CONUS
+ned_idx   <- read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
+ned_conus <- subset(ned_idx, UL_LON > -125 & UL_LON < -64 & UL_LAT < 49 & UL_LAT > 21)
+ned_conus$id <- 1:nrow(ned_conus)
+
+split(ned_conus, ned_conus$FILE_ID) ->.;
+lapply(., function(x) {
+  cat("getting", x$id, x$FILE_ID, "\n")
+  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/grid")
+  })
 
 
 # unzip
