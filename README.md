@@ -23,6 +23,9 @@ Help files can be found in the Wiki tab.
 <li><a href="https://github.com/ncss-tech/geo-pit/wiki/How-to-Make-ESRI-Desktop-ArcMap-Faster">How to Make ESRI Desktop ArcMap Faster</a></li>
 </ul>
 <ul>
+<li><a href="https://github.com/ncss-tech/geo-pit/wiki/How-to-Make-ESRI-Desktop-ArcMap-Faster-~-Windows-10">How to Make ESRI Desktop ArcMap Faster ~ Windows 10</a></li>
+</ul>
+<ul>
 <li><a href="https://github.com/ncss-tech/geo-pit/wiki/NED-geoprocessing-instructons">NED Geoprocessing Instructions</a></li>
 </ul>
 <ul>
