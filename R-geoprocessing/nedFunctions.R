@@ -112,13 +112,13 @@ mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
     overwrite = TRUE,
     verbose = T
     )
-  gdaladdo(
-    filename = dstpath,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )
+  # gdaladdo(
+  #   filename = dstpath,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )
   gdalinfo(
     datasetname = dstpath,
     stats = TRUE,
@@ -165,13 +165,13 @@ warp <- function(input, output, reference, resto, r, s_srs, t_srs, datatype, nod
     overwrite = TRUE,
     verbose = TRUE
     )
-  gdaladdo(
-    filename = output,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )
+  # gdaladdo(
+  #   filename = output,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )
   gdalinfo(
     datasetname = output,
     stats = TRUE

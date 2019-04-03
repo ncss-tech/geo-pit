@@ -30,14 +30,15 @@ The primary workhorse of these batch functions is GDAL (Geospatial Data Abstract
 Once you begin this sequence of commands will last several days. However it is not terribly memory intensize, so you should be able to work on other projects while it is running. The first thing that needs to be done, is loading the necessary R libraries. If they're not already installed you will have to do this the first time (e.g. "install.packages("gdalUtils", dependencies=TRUE)").
 
 ```{r install and load packages}
-source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
 
 library(gdalUtils)
 library(rgdal)
 library(raster)
 library(sf)
 library(FedData)
+
 ```
 
 Next the proper GDAL path has to be set. The first location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
@@ -104,21 +105,59 @@ lapply(., function(x) {
 
 
 # download CONUS
-ned_idx   <- read_sf(dsn = ned_dsn, layer = "ned_13arcsec_g")
-ned_conus <- subset(ned_idx, UL_LON > -125 & UL_LON < -64 & UL_LAT < 49 & UL_LAT > 21)
+ned_idx   <- read_sf(dsn = "D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
+ned_conus <- subset(ned_idx, UL_LON > -126 & UL_LON < -64 & UL_LAT < 51 & UL_LAT > 21)
+ned_conus <- with(ned_conus, ned_conus[order(FILE_ID), ])
 ned_conus$id <- 1:nrow(ned_conus)
 
-split(ned_conus, ned_conus$FILE_ID) ->.;
+idx <- !ned_conus$FILE_ID %in% lf$tiles
+ned_conus[idx, ] ->.;
+split(., .$FILE_ID) ->.;
 lapply(., function(x) {
   cat("getting", x$id, x$FILE_ID, "\n")
-  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/grid")
+  FedData::download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/ArcGrid")
   })
 
 
 # unzip
-lf <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
+path <- "D:/geodata/elevation/ned/tiles/ArcGrid/1"
+lf <- data.frame(
+  path     = path,
+  zipfiles = list.files(
+    path = path,
+    pattern = ".zip$"
+    ),
+  tiles = NA,
+  stringsAsFactors = FALSE
+  )
+lf <- within(lf, {
+  idx         = grepl("USGS", zipfiles)
+  tiles[!idx] = gsub(".zip", "", zipfiles[!idx])
+  tiles[idx]  = substr(zipfiles[idx], 12, 18)
+  
+  n           = nchar(tiles)
+  tiles       = substr(tiles, n - 6, n)
+  id          = 1:length(tiles)
+  
+  n           = NULL
+  idx         = NULL
+  })
+lf <- lf[order(lf$id), ]
 # idx <- grepl(paste0(test$FILE_ID, collapse = "|"), lf) & grepl(".zip", lf)
-lapply(lf[idx], function(x) unzip(zipfile = x, exdir = "M:/geodata/elevation/ned/tiles/ArcGrid/13"))
+lf <- subset(lf, ! file.exists(paste0(path, "/grd", tiles, "_1")))
+split(lf, lf$tiles) ->.;
+lapply(., function(x) {
+  cat("unzipping", x$id, x$tiles, "\n")
+  unzip(zipfile = paste0(x$path, "/", x$zipfiles), 
+        exdir   = x$path,
+        files   = paste0("grd", x$tiles, "_1/", c("w001001.adf", "w001001x.adf", "dblbnd.adf", "hdr.adf", "prj.adf", "sta.adf"))
+        )
+  })
+
+# for some reason the following files did not unzip n33w101, n41w76, n25w82
+from <- paste0(lf$path, "/grd", lf$tiles, "_1")
+to <- paste0(lf$path, "/")
+file.copy(from = from, to = to)
 
 ```
 
@@ -154,6 +193,16 @@ idx <- idx[grepl(paste0(sso_ned_sub$FILE_ID, collapse = "|"), idx) & grepl("_13$
 sso_ned_grid <- file.path(idx, "w001001.adf")
 
 mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999)
+
+
+# CONUS
+ned_conus <- list.files(
+  path    = "C:/geodata/elevation/ned/tiles/ArcGrid/1",
+  pattern = "_1$",
+  full.names = TRUE
+  )
+mosaic(paste0(ned_conus, "/w001001.adf"), "C:/geodata/elevation/ned/ned_1ac_conus.tif", "Float32", c("BIGTIFF=YES"), -99999)
+
 ```
 
 
@@ -163,6 +212,18 @@ For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is 
 
 ```{r}
 warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+
+
+# CONUS
+warp("C:/geodata/elevation/ned/ned_1ac_conus.tif", 
+     "C:/geodata/elevation/ned/ned_30m_conus.tif", 
+     "D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
+     30, "bilinear", 
+     CRSargs(CRS("+init=epsg:4326")), 
+     CRSargs(CRS("+init=epsg:5070")), 
+     "Float32", -99999,
+     c("BIGTIFF=YES")
+     )
 
 
 vars <- c("folder", "var_res", "file_path")
@@ -196,6 +257,10 @@ split(., .$folder) ->.;
 lapply(., function(x) {
   dem(x$file_path, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
   })
+
+
+# CONUS
+dem("C:/geodata/elevation/ned/ned_30m_conus.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
 ```
 
