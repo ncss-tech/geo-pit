@@ -87,35 +87,50 @@ gd <- {
 To start you need to download the 10-meter NED tiles from the USGS. Because the USGS manages these tiles using an ftp server it's easy for R download them one at a time with the following function. For whatever reason the downloading fuction doesn't work from RStudio, when the Global Option "Use Internet Explorer library/proxy for HTTP" is selected under Packages. Either uncheck or run from the vanilla R console. Beware hiccups with your internet connection may terminate the downloading process.
 
 ```{r}
-# create list of ned tiles by intersecting mlrassoarea boundaries with latlong tiles
-ned_dsn <- "D:/geodata/elevation/ned/ned_13arcsec_g.shp"
-sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
+# create list of ned tiles
 
-sso_ned <- make_ned_df(ned_dsn, sso_dsn, 11, crsarg)
-idx <- !duplicated(sso_ned$FILE_ID)
-sso_ned_nodups <- sso_ned[idx, ]
-sso_ned_nodups <- sso_ned_nodups[order(sso_ned_nodups$FILE_ID), ]
+tiles <- read_sf("M:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY18.gdb", layer = "SAPOLYGON") %>%
+  st_transform("+init=epsg:4326")
 
-# download files via FedData package
-sso_ned_nodups[10:nrow(sso_ned_nodups), ] ->.;
+idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
+r11 <- tiles[idx, ]
+plot(r11[1])
+
+files <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip$")
+
+
+# download 10-meter Region 11
+
+idx <- ! r11$FILE_ID %in% gsub(".zip", "", files)
+r11[idx, ] ->.;
 split(., .$FILE_ID) ->.;
 lapply(., function(x) {
+  cat("downloading", x$FILE_ID, as.character(Sys.time()), "\n")
   download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
 })
 
 
-# download CONUS
-ned_idx   <- read_sf(dsn = "D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
-ned_conus <- subset(ned_idx, UL_LON > -126 & UL_LON < -64 & UL_LAT < 51 & UL_LAT > 21)
-ned_conus <- with(ned_conus, ned_conus[order(FILE_ID), ])
-ned_conus$id <- 1:nrow(ned_conus)
+# download 30-meter CONUS
 
-idx <- !ned_conus$FILE_ID %in% lf$tiles
-ned_conus[idx, ] ->.;
+tiles <- read_sf("M:/geodata/elevation/ned/ned_1arcsec_g.shp", layer = "ned_1arcsec_g")
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON") %>%
+  st_transform("+init=epsg:4326")
+# usa <- st_as_sf(maptools::map2SpatialPolygons(maps::map("usa"), IDs = 1:10))
+# st_crs(usa) <- "+init=epsg:4326"
+
+idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
+conus <- tiles[idx, ]
+plot(conus[1])
+
+files <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip$")
+
+idx <- !conus$FILE_ID %in% lf$tiles
+conus[idx, ] ->.;
 split(., .$FILE_ID) ->.;
 lapply(., function(x) {
   cat("getting", x$id, x$FILE_ID, "\n")
-  FedData::download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/ArcGrid")
+  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/ArcGrid")
   })
 
 
