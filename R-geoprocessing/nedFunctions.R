@@ -60,15 +60,15 @@ batch_unzip <- function(zipfile, files, dir_out){
 # Beware, using the cutline option shifts the raster, this can rectified using the -tap option, and shifting the output using raster shift() or gdal_translate -prjwin
 # In order to correct for the half cell shift due to the GTIFF library its necessary to set --config GTIFF_POINT_GEO_IGNORE = TRUE preceding the other gdwarp arguements
 
-crop <- function(input, output, folder, sso_dsn, crsarg) {
+crop <- function(input, output, sso_dsn, crsarg) {
   
-  sso_pol <- read_sf(dsn = sso_dsn, layer = "MLRA_Soil_Survey_Areas_Dec2015")
-  sso_pol <- st_transform(sso_pol, crs = crsarg)
-  sso_pol <- subset(sso_pol, NEW_SSAID == folder)
+  # sso_pol <- read_sf(dsn = sso_dsn, layer = "SAPOLYGON")
+  # sso_pol <- st_transform(sso_pol, crs = crsarg)
+  # sso_pol <- subset(sso_pol, NEW_SSAID == folder)
   
   cat("cropping", output, format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
   
-  bb <- st_bbox(sso_pol)
+  bb <- st_bbox(sso_dsn)
   gdal_translate(
     src_dataset = input,
     dst_dataset = output,
@@ -79,19 +79,19 @@ crop <- function(input, output, folder, sso_dsn, crsarg) {
     overwrite = TRUE,
     verbose = TRUE
     )
-  gdaladdo(
-    filename = output,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )
-  gdalinfo(
-    datasetname = output, 
-    stats = TRUE,
-    hist = TRUE,
-    raw_output = FALSE
-    )
+  # gdaladdo(
+  #   filename = output,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )
+  # gdalinfo(
+  #   datasetname = output, 
+  #   stats = TRUE,
+  #   hist = TRUE,
+  #   raw_output = FALSE
+  #   )
   }
 
 
@@ -150,6 +150,7 @@ warp <- function(input, output, reference, resto, r, s_srs, t_srs, datatype, nod
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"warping", input,"\n"))
   
   te <- c(bbox(raster(reference)))
+  
   gdalwarp(
     srcfile = input,
     dstfile = output,
@@ -162,6 +163,7 @@ warp <- function(input, output, reference, resto, r, s_srs, t_srs, datatype, nod
     ot = datatype,
     co = co,
     dstnodata = nodata,
+    multi = TRUE,
     overwrite = TRUE,
     verbose = TRUE
     )
@@ -202,7 +204,8 @@ resample <- function(input, output, res){
     r = "nearest",
     levels = c(2, 4, 8, 16),
     clean  = TRUE,
-    ro     = TRUE
+    ro     = TRUE,
+    co     = "COMPRESS_OVERVIEW DEFLATE"
     )
   gdalinfo(
     datasetname = output,
@@ -231,14 +234,14 @@ dem <- function(input, co){
     of = "GTiff",
     co = co,
     verbose = TRUE
-    )    
-  gdaladdo(
-    filename = hillshade,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )    
+    )
+  # gdaladdo(
+  #   filename = hillshade,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )    
   gdalinfo(
     datasetname = hillshade,
     stats = TRUE
@@ -264,13 +267,13 @@ dem <- function(input, co){
     )
   file.remove(slope_temp)
   
-  gdaladdo(
-    filename = slope,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )    
+  # gdaladdo(
+  #   filename = slope,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )    
   gdalinfo(
     datasetname = slope,
     stats = TRUE,
@@ -294,13 +297,13 @@ dem <- function(input, co){
     )
   file.remove(aspect_temp)
     
-  gdaladdo(
-    filename = aspect,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean = TRUE,
-    ro = TRUE
-    )    
+  # gdaladdo(
+  #   filename = aspect,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean = TRUE,
+  #   ro = TRUE
+  #   )    
   gdalinfo(
     datasetname = aspect,
     stats = TRUE,

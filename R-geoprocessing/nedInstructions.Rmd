@@ -90,7 +90,7 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 # create list of ned tiles
 
 tiles <- read_sf("M:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY18.gdb", layer = "SAPOLYGON") %>%
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
   st_transform("+init=epsg:4326")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
@@ -104,7 +104,7 @@ files <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip
 
 idx <- ! r11$FILE_ID %in% gsub(".zip", "", files)
 r11[idx, ] ->.;
-split(., .$FILE_ID) ->.;
+split(r112, r112$FILE_ID) ->.;
 lapply(., function(x) {
   cat("downloading", x$FILE_ID, as.character(Sys.time()), "\n")
   download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
@@ -135,37 +135,34 @@ lapply(., function(x) {
 
 
 # unzip
-path <- "D:/geodata/elevation/ned/tiles/ArcGrid/1"
+path <- "M:/geodata/elevation/ned/tiles/ArcGrid/13"
 lf <- data.frame(
   path     = path,
-  zipfiles = list.files(
-    path = path,
-    pattern = ".zip$"
-    ),
+  zipfiles = list.files(path = path, pattern = ".zip$"),
   tiles = NA,
   stringsAsFactors = FALSE
   )
 lf <- within(lf, {
   idx         = grepl("USGS", zipfiles)
   tiles[!idx] = gsub(".zip", "", zipfiles[!idx])
-  tiles[idx]  = substr(zipfiles[idx], 12, 18)
+  tiles[idx]  = substr(zipfiles[idx], 12, 19)
   
   n           = nchar(tiles)
   tiles       = substr(tiles, n - 6, n)
-  id          = 1:length(tiles)
   
   n           = NULL
   idx         = NULL
   })
 lf <- lf[order(lf$id), ]
-# idx <- grepl(paste0(test$FILE_ID, collapse = "|"), lf) & grepl(".zip", lf)
-lf <- subset(lf, ! file.exists(paste0(path, "/grd", tiles, "_1")))
+lf$id <- 1:nrow(tiles)
+lf2 <- lf[lf$tiles %in% r11$FILE_ID, ]
+
 split(lf, lf$tiles) ->.;
 lapply(., function(x) {
   cat("unzipping", x$id, x$tiles, "\n")
   unzip(zipfile = paste0(x$path, "/", x$zipfiles), 
         exdir   = x$path,
-        files   = paste0("grd", x$tiles, "_1/", c("w001001.adf", "w001001x.adf", "dblbnd.adf", "hdr.adf", "prj.adf", "sta.adf"))
+        files   = paste0("grd", x$tiles, "_13/", c("w001001.adf", "w001001x.adf", "dblbnd.adf", "hdr.adf", "prj.adf", "sta.adf"))
         )
   })
 
@@ -191,6 +188,22 @@ split(., .$file_path) ->.;
 lapply(., function(x) {
   crop(nlcd, x$file_path, x$folder, sso_dsn, crsarg)
   })
+
+# Region 11
+tiles5 <- read_sf("M:/geodata/elevation/ned/tiles5_overlapping.shp", layer = "tiles5_overlapping")
+
+idx <- unlist(lapply(st_intersects(tiles5, st_transform(r11, "+init=epsg:5070")), any))
+tiles <- tiles5[idx, ]
+plot(tiles[1])
+
+split(tiles, tiles$idx) ->.;
+lapply(., function(x) {
+  crop("M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
+       paste0("M:/geodata/project_data/11REGION/nlcd30m_11R_lulc_", x$idx, ".tif"),
+       x,
+       "+init=epsg:5070"
+       )})
+
 ```
 
 
@@ -210,13 +223,24 @@ sso_ned_grid <- file.path(idx, "w001001.adf")
 mosaic(sso_ned_grid, gd_sub$file_path, "Float32", c("BIGTIFF=YES"), -99999)
 
 
+# Region 11
+ned_r11 <- list.files(
+  path    = "C:/geodata/elevation/ned/tiles/ArcGrid/13",
+  pattern = "_13$",
+  full.names = TRUE
+  )
+n <- nchar(ned_r11)
+idx <- substr(ned_r11, n - 9, n - 3) %in% r11$FILE_ID
+mosaic(paste0(ned_r11[idx], "/w001001.adf"), "C:/geodata/elevation/ned/ned_13as_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
+
+
 # CONUS
 ned_conus <- list.files(
   path    = "C:/geodata/elevation/ned/tiles/ArcGrid/1",
   pattern = "_1$",
   full.names = TRUE
   )
-mosaic(paste0(ned_conus, "/w001001.adf"), "C:/geodata/elevation/ned/ned_1ac_conus.tif", "Float32", c("BIGTIFF=YES"), -99999)
+mosaic(paste0(ned_conus, "/w001001.adf"), "C:/geodata/elevation/ned/ned_1as_conus.tif", "Float32", c("BIGTIFF=YES"), -99999)
 
 ```
 
@@ -229,8 +253,57 @@ For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is 
 warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
 
 
+# Region 11
+# For some reason warping the ned_1as_r11.tif takes forever. Therefore I cut it up prior warping.
+lulc <- list.files(
+  "M:/geodata/project_data/11REGION",
+  recursive = TRUE,
+  pattern = "lulc_n..w....tif$"
+  )
+lulc <- data.frame(
+  lulc, 
+  tile = unlist(sapply(lulc, function(x) strsplit(x, "_|\\.")[[1]][4])),
+  stringsAsFactors = FALSE
+  )
+
+# warp
+split(lulc, lulc$tile) ->.;
+lapply(., function(x) {
+  cat("warping", x$tile, as.character(Sys.time()), "\n")
+  warp("C:/geodata/elevation/ned/ned_13as_r11.tif",
+       paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$tile, ".tif"), 
+       paste0("M:/geodata/project_data/11REGION/nlcd30m_11R_lulc_", x$tile, ".tif"), 
+       10, "bilinear", 
+       CRSargs(CRS("+init=epsg:4326")), 
+       CRSargs(CRS("+init=epsg:5070")), 
+       "Float32", -99999,
+       c("BIGTIFF=YES")
+       )
+  })
+
+mosaic(paste0("C:/geodata/elevation/ned/ned_10m_r11_", lulc$tile, ".tif"), "C:/geodata/elevation/ned/ned_10m_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
+
+
+# crop
+split(tiles[2:nrow(tiles), ], tiles$idx[2:nrow(tiles)]) ->.;
+lapply(., function(x) {
+  crop("C:/geodata/elevation/ned/ned_10m_r11.tif",
+       paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"),
+       x,
+       "+init=epsg:5070"
+       )})
+
+split(tiles, tiles$idx) ->.;
+lapply(., function(x) {
+  resample(paste0("C:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
+           paste0("C:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"), 
+           30
+           )
+  })
+
+
 # CONUS
-warp("C:/geodata/elevation/ned/ned_1ac_conus.tif", 
+warp("C:/geodata/elevation/ned/ned_1as_conus.tif", 
      "C:/geodata/elevation/ned/ned_30m_conus.tif", 
      "D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
      30, "bilinear", 
@@ -273,6 +346,9 @@ lapply(., function(x) {
   dem(x$file_path, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
   })
 
+
+# Region 11
+dem("C:/geodata/elevation/ned/ned_10m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
 # CONUS
 dem("C:/geodata/elevation/ned/ned_30m_conus.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
