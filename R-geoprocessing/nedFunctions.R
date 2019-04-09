@@ -199,14 +199,14 @@ resample <- function(input, output, res){
     overwrite = TRUE,
     verbose   = TRUE
     )
-  gdaladdo(
-    filename = output,
-    r = "nearest",
-    levels = c(2, 4, 8, 16),
-    clean  = TRUE,
-    ro     = TRUE,
-    co     = "COMPRESS_OVERVIEW DEFLATE"
-    )
+  # gdaladdo(
+  #   filename = output,
+  #   r = "nearest",
+  #   levels = c(2, 4, 8, 16),
+  #   clean  = TRUE,
+  #   ro     = TRUE,
+  #   # co     = "COMPRESS_OVERVIEW DEFLATE"
+  #   )
   gdalinfo(
     datasetname = output,
     stats = TRUE

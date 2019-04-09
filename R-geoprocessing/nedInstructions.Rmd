@@ -30,8 +30,8 @@ The primary workhorse of these batch functions is GDAL (Geospatial Data Abstract
 Once you begin this sequence of commands will last several days. However it is not terribly memory intensize, so you should be able to work on other projects while it is running. The first thing that needs to be done, is loading the necessary R libraries. If they're not already installed you will have to do this the first time (e.g. "install.packages("gdalUtils", dependencies=TRUE)").
 
 ```{r install and load packages}
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/gdalUtilsFunctions.R")
 
 library(gdalUtils)
 library(rgdal)
@@ -44,7 +44,7 @@ library(FedData)
 Next the proper GDAL path has to be set. The first location is the default path on my work computer, the second my personal computer. If this isn't set gdalUtils will do a brute force search of your computer, which usually finds GDAL 1.7 instead of the GDAL 10.1. The new version has additional features, which many these batch functions use.
 
 ```{r set gdal path}
-gdal_setInstallation(search_path="C:/Program Files/QGIS 3.2/bin")
+gdal_setInstallation(search_path="C:/Program Files/QGIS 3.4/bin")
 ```
 
 Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
@@ -89,8 +89,8 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 ```{r}
 # create list of ned tiles
 
-tiles <- read_sf("M:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
+tiles <- read_sf("D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
   st_transform("+init=epsg:4326")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
@@ -113,9 +113,8 @@ lapply(., function(x) {
 
 # download 30-meter CONUS
 
-tiles <- read_sf("M:/geodata/elevation/ned/ned_1arcsec_g.shp", layer = "ned_1arcsec_g")
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON") %>%
-  st_transform("+init=epsg:4326")
+tiles <- read_sf("D:/geodata/elevation/ned/tiles_3_overlap.shp", layer = "tiles_3_overlap")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON")
 # usa <- st_as_sf(maptools::map2SpatialPolygons(maps::map("usa"), IDs = 1:10))
 # st_crs(usa) <- "+init=epsg:4326"
 
@@ -190,7 +189,7 @@ lapply(., function(x) {
   })
 
 # Region 11
-tiles5 <- read_sf("M:/geodata/elevation/ned/tiles5_overlapping.shp", layer = "tiles5_overlapping")
+tiles5 <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
 
 idx <- unlist(lapply(st_intersects(tiles5, st_transform(r11, "+init=epsg:5070")), any))
 tiles <- tiles5[idx, ]
@@ -198,8 +197,8 @@ plot(tiles[1])
 
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
-       paste0("M:/geodata/project_data/11REGION/nlcd30m_11R_lulc_", x$idx, ".tif"),
+  crop("D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
+       paste0("D:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
@@ -256,7 +255,7 @@ warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("
 # Region 11
 # For some reason warping the ned_1as_r11.tif takes forever. Therefore I cut it up prior warping.
 lulc <- list.files(
-  "M:/geodata/project_data/11REGION",
+  "D:/geodata/land_use_land_cover",
   recursive = TRUE,
   pattern = "lulc_n..w....tif$"
   )
@@ -267,7 +266,7 @@ lulc <- data.frame(
   )
 
 # warp
-split(lulc, lulc$tile) ->.;
+split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
   cat("warping", x$tile, as.character(Sys.time()), "\n")
   warp("C:/geodata/elevation/ned/ned_13as_r11.tif",
@@ -285,18 +284,20 @@ mosaic(paste0("C:/geodata/elevation/ned/ned_10m_r11_", lulc$tile, ".tif"), "C:/g
 
 
 # crop
-split(tiles[2:nrow(tiles), ], tiles$idx[2:nrow(tiles)]) ->.;
+split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("C:/geodata/elevation/ned/ned_10m_r11.tif",
-       paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"),
+  crop("D:/geodata/elevation/ned/ned_10m_r11.tif",
+       paste0("D:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
 
+
+# resample
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  resample(paste0("C:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
-           paste0("C:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"), 
+  resample(paste0("D:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
+           paste0("D:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"), 
            30
            )
   })
