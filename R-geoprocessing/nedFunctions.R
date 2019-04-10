@@ -184,7 +184,7 @@ warp <- function(input, output, reference, resto, r, s_srs, t_srs, datatype, nod
 #################################################################
 ### Warp 10m to 30m using -r average
 #################################################################
-resample <- function(input, output, res){
+resample <- function(input, output, ref, res){
   
   cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"warping", input, "\n")
   
@@ -192,6 +192,7 @@ resample <- function(input, output, res){
     srcfile = input,
     dstfile = output,
     r  = "average",
+    te = c(bbox(raster(ref))),
     tr = c(res, res),
     of = "GTiff",
     ot = "Float32",

@@ -140,17 +140,25 @@ for(i in seq(states)){
 # Hydrography
 # Download NHD by State
 # The FileGDB are to big to be read into R, so they need to be converted using ogr2ogr with gdalUtils. However these FileGDB first need to be upgrade to ArcGIS 10.0. The ESRI File Geodatabase driver doesn't work with 
-setwd("M:/geodata/hydrography/")
-states <- c("CA", "NV", "AZ", "AR", "IA", "IL", "IN", "KS", "KY", "MI", "MN", "MO", "NE", "OH", "OK", "SD", 
-            "WI")
-version <- c("v220", "v220", "v220", "v220", "v210", "v220", "v220", "V210", "v210", "v210", "v220", "v220", "v220", "v220", "v210", "v220", "v210")
-zipname <- paste0("NHDH_", states, "_931", version, ".zip")
-url <- paste0("ftp://nhdftp.usgs.gov/DataSets/Staged/States/FileGDB/HighResolution/", zipname)
-dest <- paste0(getwd(), "/", zipname)
+setwd("D:/geodata/hydrography/")
 
-for(i in seq(1:3)){
-  download.file(url=url[i], destfile=dest[i])
-}
+states <- c("California", "Nevada", "Arizona", "Arkansas", "Iowa", "Illinois", "Indiana", "Kansas", "Kentucky", "Michigan", "Minnesota", "Missouri", "Nebraska", "Ohio", "Oklahoma", "South_Dakota", "Wisconsin")
+
+url <- "http://prd-tnm.s3-website-us-west-2.amazonaws.com/?prefix=StagedProducts/Hydrography/NHD/State/HighResolution/GDB/"
+
+zipname <- paste0("NHD_H_", states, "_State_GDB.zip")
+
+df <- data.frame(
+  url = paste0("https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHD/State/HighResolution/GDB/NHD_H_", states, "_State_GDB.zip"),
+  dest = paste0(getwd(), "/", zipname),
+  stringsAsFactors = FALSE
+  )
+
+split(df, df$url) ->.;
+lapply(., function(x) {
+  download.file(url = x$url, destfile = x$dest)
+  })
+
 
 for(i in seq(states)){
   unzip(zipfile = dest[i])

@@ -15,12 +15,13 @@ To begin, the necessary libaries must be loaded, as well as the custom batch fun
 
 ```{r, eval = FALSE}
 
+library(sf)
 library(gdalUtils)
 library(RSAGA)
 
-source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-source("C:/workspace2/github/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
 
 ```
 
@@ -50,20 +51,26 @@ radiusV <- round(1000 / 30 / 2 - 1, 0)
 
 
 # construct data frame of 10-meter geodata
+sapolygon <- read_sf("C:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
+tiles     <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+
+idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
+tiles <- tiles[idx, ]
+
 
 g10_tif <- {
-  expand.grid(source = "lidar",
+  expand.grid(source = "ned",
               res    = "10m",
               var    = c("", "slopeR", "slope", "slopeD", "aspect", "cupro", "cucon", "cutan", "cumax", "cumin", "slp", "slpslp"),
-              office = c(mlraoffice, mlrassoarea),
+              office = "r11",
+              tile   = tiles$idx,
               format  = "tif",
               stringsAsFactors = FALSE
               ) ->.;
   # build file paths
   within(., {
-    fp = file.path("D:/geodata/project_data",
-                   paste0("R", office),
-                   paste0(source, res, "_", office, 
+    fp = file.path("D:/geodata/elevation/ned",
+                   paste0(source, "_", res, "_", office, "_", tile, 
                           ifelse(var != "", 
                                  paste0("_", var, 1 + 2 * radiusD), 
                                  ""
@@ -75,21 +82,10 @@ g10_tif <- {
   }
 
 # setup sdat and sgrd data frames
-g10_sdat <- {
-  split(g10_tif, g10_tif$fp) ->.;
-  lapply(., function(x) { data.frame(
-    x[- ncol(x)],
-    fp = gsub(paste0("R", x$office),
-              paste0("R", x$office, "/sdat"),
-              x$fp
-              )
-    )}) ->.;
-  do.call("rbind", .) ->.;
-  .$fp <- gsub(".tif", ".sdat", .$fp)
-  .$format <- "sdat"
-  row.names(.) <- 1:nrow(.)
-  .
-  }
+g10_sdat <- within(g10_tif, {
+  format = "sdat"
+  fp = gsub("\\.tif", ".sdat", fp)
+  })
 
 g10_sgrd <- within(g10_sdat, {
   format = "sgrd"
@@ -103,11 +99,11 @@ g10$var_format <- paste0(g10$var, "_", g10$format)
 
 # convert the data frame to wide format
 g10 <- reshape(g10,
-       direction = "wide",
-       idvar = "office",
-       timevar = "var_format",
-       v.names = "fp"
-       )
+               direction = "wide", 
+               idvar = "tile",
+               timevar = "var_format",
+               v.names = "fp"
+               )
 names(g10) <- gsub("fp.", "", names(g10))
 
 
@@ -128,8 +124,8 @@ g30 <- within(g30, {
 ## Convert GTiff to SAGA
 ```{r, eval=FALSE}
 
-subset(g10, office == "11-JUE") ->.;
-split(., .$office) ->.;
+# subset(g10, office == "n30w095") ->.;
+split(g10, g10$tile) ->.;
 lapply(., function(x) {
   gdal_tif2sdat(x$elev_tif, x$elev_sdat)
   })
@@ -137,8 +133,8 @@ lapply(., function(x) {
 resample(input = g10$elev_tif[2], output = g30$elev_tif[2], res = 30)
 dem(g30$elev_tif[2], c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
-subset(g30, office == "11-JUE") ->.;
-split(., .$office) ->.;
+# subset(g30, office == "n30w095") ->.;
+split(g30, g30$tile) ->.;
 lapply(., function(x) {
   gdal_tif2sdat(x$elev_tif, x$elev_sdat)
   })
@@ -185,11 +181,15 @@ subset(g10, office == "11-JUE") ->.;
 gdal_stack(x = c(.$cupro_tif, .$cutan_tif, .$slope_tif), fname = .$slpslp_tif, "Int16", -32768)
 
 
-subset(g30, office == "11-JUE") ->.;
-rsaga.mrvbf(.$elev_sgrd, .$mrvbf_sgrd, .$mrrtf_sgrd)
+# compute mrvbf and mrrtf
+# subset(g30, tile == "n30w095") ->.;
+split(g30, g30$tile) ->.;
+lapply(., function(x) {
+  rsaga.mrvbf(x$elev_sgrd, x$mrvbf_sgrd, x$mrrtf_sgrd)
+  })
 
-subset(g30, office == "11-JUE") ->.;
-split(., .$office) ->.;
+# subset(g30, office == "11-JUE") ->.;
+split(g30, g30$tile) ->.;
 lapply(., function(x) {
   gdal_sdat2tif(x$mrvbf_sdat, x$mrvbf_tif,  "Int16", -32768)
   gdal_sdat2tif(x$mrrtf_sdat, x$mrrtf_tif, "Int16", -32768)
