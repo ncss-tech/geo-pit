@@ -47,7 +47,7 @@ Next the proper GDAL path has to be set. The first location is the default path 
 gdal_setInstallation(search_path="C:/Program Files/QGIS 3.2/bin")
 ```
 
-Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
+Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "M:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
 
 ```{r}
 # Set parameters
@@ -89,8 +89,8 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 ```{r}
 # create list of ned tiles
 
-tiles <- read_sf("D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
-sapolygon <- read_sf("D:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
+tiles <- read_sf("M:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
   st_transform("+init=epsg:4326")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
@@ -113,8 +113,8 @@ lapply(., function(x) {
 
 # download 30-meter CONUS
 
-tiles <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
-sapolygon <- read_sf("D:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON")
+tiles <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON")
 # usa <- st_as_sf(maptools::map2SpatialPolygons(maps::map("usa"), IDs = 1:10))
 # st_crs(usa) <- "+init=epsg:4326"
 
@@ -129,7 +129,7 @@ conus[idx, ] ->.;
 split(., .$FILE_ID) ->.;
 lapply(., function(x) {
   cat("getting", x$id, x$FILE_ID, "\n")
-  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/ArcGrid")
+  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
   })
 
 
@@ -189,7 +189,7 @@ lapply(., function(x) {
   })
 
 # Region 11
-tiles5 <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+tiles5 <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
 
 idx <- unlist(lapply(st_intersects(tiles5, st_transform(r11, "+init=epsg:5070")), any))
 tiles <- tiles5[idx, ]
@@ -197,8 +197,8 @@ plot(tiles[1])
 
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
-       paste0("D:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
+  crop("M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
+       paste0("M:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
@@ -254,16 +254,12 @@ warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("
 
 # Region 11
 # For some reason warping the ned_1as_r11.tif takes forever. Therefore I cut it up prior warping.
-lulc <- list.files(
-  "D:/geodata/land_use_land_cover",
-  recursive = TRUE,
-  pattern = "lulc_n..w....tif$"
-  )
-lulc <- data.frame(
-  lulc, 
-  tile = unlist(sapply(lulc, function(x) strsplit(x, "_|\\.")[[1]][4])),
-  stringsAsFactors = FALSE
-  )
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
+tiles     <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+
+idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
+tiles <- tiles[idx, ]
+
 
 
 # warp
@@ -287,8 +283,8 @@ mosaic(paste0("C:/geodata/elevation/ned/ned_10m_r11_", lulc$tile, ".tif"), "C:/g
 # crop
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("D:/geodata/elevation/ned/ned_30m_conus.tif",
-       paste0("D:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
+  crop("M:/geodata/elevation/ned/ned_30m_conus.tif",
+       paste0("M:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
@@ -297,22 +293,22 @@ lapply(., function(x) {
 # # resample
 # split(tiles, tiles$idx) ->.;
 # lapply(., function(x) {
-#   resample(paste0("D:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
-#            paste0("D:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
-#            paste0("D:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
+#   resample(paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
+#            paste0("M:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
+#            paste0("M:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
 #            30
 #            )
 #   })
 
 # R11 mosaic 30-meter
-mosaic(paste0("D:/geodata/elevation/ned/ned_30m_r11_", tiles$idx, ".tif"), "D:/geodata/elevation/ned/ned_30m_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
+mosaic(paste0("M:/geodata/elevation/ned/ned_30m_r11_", tiles$idx, ".tif"), "M:/geodata/elevation/ned/ned_30m_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
 
 
 
 # CONUS
 warp("C:/geodata/elevation/ned/ned_1as_conus.tif", 
      "C:/geodata/elevation/ned/ned_30m_conus.tif", 
-     "D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
+     "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
      30, "bilinear", 
      CRSargs(CRS("+init=epsg:4326")), 
      CRSargs(CRS("+init=epsg:5070")), 
@@ -357,7 +353,7 @@ lapply(., function(x) {
 # Region 11
 dem("C:/geodata/elevation/ned/ned_10m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
-dem("D:/geodata/elevation/ned/ned_30m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
+dem("M:/geodata/elevation/ned/ned_30m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
 
 # CONUS

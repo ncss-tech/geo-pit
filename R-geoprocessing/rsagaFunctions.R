@@ -54,7 +54,7 @@ rsaga_fill_thr <- function(grid){
 }
 
 # Local morphometry
-rsaga.d0 <- function(dem, radiusD){
+rsaga.d0 <- function(dem, elev, radiusD){
   
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", dem,"\n"))
   

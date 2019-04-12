@@ -51,8 +51,8 @@ radiusV <- round(1000 / 30 / 2 - 1, 0)
 
 
 # construct data frame of 10-meter geodata
-sapolygon <- read_sf("C:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
-tiles     <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
+tiles     <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
 tiles <- tiles[idx, ]
@@ -69,7 +69,7 @@ g10_tif <- {
               ) ->.;
   # build file paths
   within(., {
-    fp = file.path("D:/geodata/elevation/ned",
+    fp = file.path("M:/geodata/elevation/ned",
                    paste0(source, "_", res, "_", office, "_", tile, 
                           ifelse(var != "", 
                                  paste0("_", var, 1 + 2 * radiusD), 
@@ -120,6 +120,7 @@ g30 <- within(g30, {
   })
 
 ```
+
 
 ## Convert GTiff to SAGA
 ```{r, eval=FALSE}
@@ -181,6 +182,26 @@ subset(g10, office == "11-JUE") ->.;
 gdal_stack(x = c(.$cupro_tif, .$cutan_tif, .$slope_tif), fname = .$slpslp_tif, "Int16", -32768)
 
 
+# 30-meter derivatives
+split(g30, g30$tile) ->.;
+lapply(., function(x) {
+  # rsaga.d0(x$elev_sgrd, gsub(".sgrd", "5.sgrd", x$elev_sgrd), 5)
+  # rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, 2)
+  rsaga.d2(x$elev_sgrd, x$cupro_sgrd,  x$cucon_sgrd, 2)
+  rsaga.d3(x$elev_sgrd, x$cumin_sgrd,  x$cumax_sgrd, 2)
+
+  # Convert radians to percent, degrees = radians*180/pi, 180/pi = 57.29578 
+  # rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slope_sgrd, "tan(a  *(1 / 57.29578)) * 100")
+  
+  # Rescale curvatures so they can be exported as UInt16 to save file size
+  rsaga.grid.calculus(x$cupro_sgrd, x$cupro_sgrd,  x$cupro_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cucon_sgrd, x$cucon_sgrd,  x$cucon_sgrd, "-10000 * a")
+  rsaga.grid.calculus(x$cumin_sgrd, x$cumin_sgrd,  x$cumin_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cumax_sgrd, x$cumax_sgrd,  x$cumax_sgrd,  "10000 * a")
+  rsaga.grid.calculus(x$cucon_sgrd, x$slopeD_sgrd, x$cutan_sgrd, "a * sin(b / 57.29578)")
+  })
+
+  
 # compute mrvbf and mrrtf
 # subset(g30, tile == "n30w095") ->.;
 split(g30, g30$tile) ->.;
@@ -188,12 +209,33 @@ lapply(., function(x) {
   rsaga.mrvbf(x$elev_sgrd, x$mrvbf_sgrd, x$mrrtf_sgrd)
   })
 
-# subset(g30, office == "11-JUE") ->.;
-split(g30, g30$tile) ->.;
-lapply(., function(x) {
-  gdal_sdat2tif(x$mrvbf_sdat, x$mrvbf_tif,  "Int16", -32768)
-  gdal_sdat2tif(x$mrrtf_sdat, x$mrrtf_tif, "Int16", -32768)
-  })
+# mosaic
+r <- lapply(g30$mrvbf_sdat, raster)
+
+
+raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r[[9]], r[[10]], r[[11]], 
+       filename = "M:/geodata/elevation/ned/ned_30m_r11_mrvbf_min.tif", 
+       fun = min,
+       NAflag = -99999, 
+       options = c("BIGTIFF=YES", "TILED=YES", "COMPRESS=DEFLATE"), 
+       datatype = "FLT4S",
+       progress = "text",
+       overwrite = TRUE
+       )
+
+r <- lapply(g30$mrrtf_sdat, raster::raster)
+
+raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r[[9]], r[[10]], r[[11]], 
+       filename = "M:/geodata/elevation/ned/ned_30m_r11_mrrtf.tif", 
+       fun = min,
+       NAflag = -99999, 
+       options = c("BIGTIFF=YES", "TILED=YES", "COMPRESS=DEFLATE"), 
+       datatype = "FLT4S",
+       progress = "text",
+       overwrite = TRUE
+       )
+
+
 
 ```
 
@@ -201,11 +243,16 @@ lapply(., function(x) {
 ## Create a hydrologically correct DEM
 ```{r, eval = FALSE}
 # Create a regional mosaic
-elev.sdat <- paste0(g30$elev, ".sdat")
-batch_mosaic(list(elev.sdat), "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif", nodata = -99999, datatype = "Float32", co = c("BIGTIFF=NO"))
+mosaic(gsub(".sdat", "5.sdat", g30$elev_sdat),
+       "M:/geodata/elevation/ned/ned_30m_r11_elev5.tif", 
+       nodata = -99999, 
+       co = c("BIGTIFF=YES"), 
+       datatype = "Float32"
+       )
 
 
 # Create a copy of elev5 to mask---------------------------------------------------------
+
 gdal_translate(
   src_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif",
   dst_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",

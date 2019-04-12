@@ -140,9 +140,11 @@ for(i in seq(states)){
 # Hydrography
 # Download NHD by State
 # The FileGDB are to big to be read into R, so they need to be converted using ogr2ogr with gdalUtils. However these FileGDB first need to be upgrade to ArcGIS 10.0. The ESRI File Geodatabase driver doesn't work with 
-setwd("D:/geodata/hydrography/")
+setwd("M:/geodata/hydrography/")
 
-states <- c("California", "Nevada", "Arizona", "Arkansas", "Iowa", "Illinois", "Indiana", "Kansas", "Kentucky", "Michigan", "Minnesota", "Missouri", "Nebraska", "Ohio", "Oklahoma", "South_Dakota", "Wisconsin")
+data(state)
+states <- gsub(" ", "_", state.name)
+states <- states[c(6:12, 19:21, 26, 29:33, 37:40, 42, 44, 45:47, 50)]
 
 url <- "http://prd-tnm.s3-website-us-west-2.amazonaws.com/?prefix=StagedProducts/Hydrography/NHD/State/HighResolution/GDB/"
 

@@ -1,13 +1,11 @@
 # Examine standard deviation with cor plots
 
 # INITIATE GRASS SESSION
-library(spgrass6)
+library(rgrass7)
 initGRASS(
-  gisBase="C:/Program Files/QGIS Chugiak/apps/grass/grass-6.4.3/bin",
-  location="C:/grassdata/region11",
-  mapset="PERMANENT",
-  override=TRUE,
-  use_g.dirseps.exe=TRUE)
+  gisBase  = "C:/Program Files/QGIS 3.2/apps/grass/grass-7.4.1/bin",
+  home = tempdir()
+  )
 
 window.list<-c(3,5,7,9,15,21,27)
 dem<-"samb27m_ug"

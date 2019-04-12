@@ -108,6 +108,7 @@ mosaic <- function(mosaiclist, dstpath, datatype, co, nodata){
     of = "GTiff",
     ot = datatype,
     co = co,
+    r  = "max",
     vrtnodata = nodata,
     overwrite = TRUE,
     verbose = T
