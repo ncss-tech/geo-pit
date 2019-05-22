@@ -17,7 +17,7 @@ This repository contains spatial functions for soil survey.
 Help files can be found in the Wiki tab.
 
 <ul>
-<li><a href="https://github.com/ncss-tech/geo-pit/wiki/Collector-and-Survey123-Apps">Collector and Survey123 Apps</a></li>
+<li><a href="https://github.com/ncss-tech/geo-pit/wiki/Collector-and-Survey123-App-Tips">Collector and Survey123 App Tips</a></li>
 </ul>
 <ul>
 <li><a href="https://github.com/ncss-tech/geo-pit/wiki/How-to-Make-ESRI-Desktop-ArcMap-Faster">How to Make ESRI Desktop ArcMap Faster</a></li>
