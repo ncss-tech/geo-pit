@@ -91,7 +91,7 @@ rsaga.d2 <- function(dem, cupro, cucon, radiusD){
 
 rsaga.d3 <- function(dem, cumin, cumax, radiusD){
   
-  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 2nd derivatives from", dem,"\n")
+  cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating 3nd derivatives from", dem,"\n")
   
   rsaga.geoprocessor("ta_morphometry", 23,  env = myenv, list(
     DEM   = dem,
@@ -114,13 +114,13 @@ rsaga.grid.calculus <- function(a_list, b_list, output_list, formula){
   }
 
 
-rsaga.residual <- function(x, radius){
+rsaga_residual <- function(x, relief, radius){
   for (i in seq(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", relief[i],"\n"))
-    rsaga.geoprocessor("geostatistics_grid", 1,  env=myenv, list(
-      GRID=x[i],
-      PERCENT=relief[i],
-      RADIUS=radius))
+    rsaga.geoprocessor("statistics_grid", 1,  env = myenv, list(
+      GRID    = x[i],
+      PERCENT = relief[i],
+      RADIUS  = radius))
   }
 }
 
@@ -138,26 +138,26 @@ rsaga.mrvbf <- function(dem, valleys, summits){
 
 
 # Radius of variance, 1000m seems to be the best radius threshold, after than the rovar starts taking on weird shapes 
-rsaga.rov <- function(dem, radius){
+rsaga_rov <- function(dem, rov, radius){
   for (i in seq(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating rov for", dem[i],"\n"))
-    rsaga.geoprocessor("geostatistics_grid", 3,  env=myenv, list(
-      INPUT=dem[i],
-      RESULT=rov[i],
-      RADIUS=radius))
+    rsaga.geoprocessor("statistics_grid", 3,  env = myenv, list(
+      INPUT  = dem[i],
+      RESULT = rov[i],
+      RADIUS = radius))
   }
 }
 
 
 # Catchment area, height, and wetness index
-rsaga_ca <- function(dem, caarea, caheight, method){
+rsaga_ca <- function(dem, caarea, method){
   for (i in seq_along(dem)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating catchment derivatives for", dem[i],"\n"))
-    rsaga.geoprocessor("ta_hydrology", 0, env=myenv, list(
+    rsaga.geoprocessor("ta_hydrology", 0, env = myenv, list(
       ELEVATION = dem[i],
-      CAREA = caarea[i],
-      CHEIGHT = caheight[i],
-      Method = method)
+      FLOW = caarea[i],
+      # CHEIGHT = caheight[i],
+      METHOD = method)
       )
   }
 }
@@ -200,7 +200,7 @@ rsaga_channels <- function(dem, channels, caarea, threshold){
   }
 }
 
-rsaga_ofd <- function(x, streams){
+rsaga_ofd <- function(x, streams, z2stream){
   for (i in seq_along(x)){
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating", z2stream[i],"\n"))
     rsaga.geoprocessor("ta_channels", 4, env=myenv, list(
@@ -222,15 +222,25 @@ rsaga.geoprocessor("ta_hydrology", 15, list(
   SB  = "test10.sgrd")
   )
 
+
 # Relative slope position
-rsaga.geoprocessor("ta_morphometry", 14, env=myenv, list(
-  DEM=paste(dem,"_filled.sgrd",sep=""),
-  HO=zho,
-  HU=zhu,
-  NH=znorm,
-  SH=zstd,
-  MS=zmidslope)
-  )
+rsaga_zheight <- function(dem) {
+  
+  cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"calculating relative heights", dem,"\n"))
+  
+  vars = c("zho", "zhu", "znorm", "zstd", "zmidslope")
+  dem0 = paste0(gsub(".sgrd", "", dem), "_", vars, ".sgrd")
+  
+  rsaga.geoprocessor("ta_morphometry", 14, env = myenv, list(
+    DEM = dem,
+    HO  = dem0[1],
+    HU  = dem0[2],
+    NH  = dem0[3],
+    SH  = dem0[4],
+    MS  = dem0[5]
+    ))
+}
+
 
 # Channel network
 rsaga.geoprocessor(lib="ta_channels", module=0, param=list(
@@ -446,17 +456,17 @@ rsaga.grid.calculus=function(grid.list,name.list,formula){
 rsaga_reclassify <- function(x, x2, old, new, na, soperator){
   for (i in seq_along(x)) {
     cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"reclassifying", x[i],"\n"))
-    rsaga.geoprocessor("grid_tools", 15, env=myenv, list(
-      INPUT=x[i],
-      RESULT=x2[i],
-      METHOD="0",
+    rsaga.geoprocessor("grid_tools", 15, env = myenv, list(
+      INPUT     = x[i],
+      RESULT    = x2[i],
+      METHOD    ="0",
       SOPERATOR = soperator,
-      OLD=old,
-      NEW=new,
+      OLD       = old,
+      NEW       = new,
       NODATAOPT = TRUE,
-      NODATA = na,
-      OTHEROPT = TRUE,
-      OTHERS = na)
+      NODATA    = na,
+      OTHEROPT  = TRUE,
+      OTHERS    = na)
       )
   }
 }

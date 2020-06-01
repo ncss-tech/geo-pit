@@ -30,12 +30,12 @@ The primary workhorse of these batch functions is GDAL (Geospatial Data Abstract
 Once you begin this sequence of commands will last several days. However it is not terribly memory intensize, so you should be able to work on other projects while it is running. The first thing that needs to be done, is loading the necessary R libraries. If they're not already installed you will have to do this the first time (e.g. "install.packages("gdalUtils", dependencies=TRUE)").
 
 ```{r install and load packages}
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/gdalUtilsFunctions.R")
 
 library(gdalUtils)
 library(rgdal)
-library(raster)
+library(terra)
 library(sf)
 library(FedData)
 
@@ -47,11 +47,11 @@ Next the proper GDAL path has to be set. The first location is the default path 
 gdal_setInstallation(search_path="C:/Program Files/QGIS 3.2/bin")
 ```
 
-Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "M:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
+Next numerous parameters need to be set which get used later by many of the functions or commands. Modify these file paths and lists as necessary. For example, I organized my files by "D:/geodata/project_data/11ATL"", so 11 will have to replace by 10 or 2 for your respective mlraoffices.
 
 ```{r}
 # Set parameters
-mlrassoarea <- paste0("11-", c("ATL", "AUR", "MAN", "CLI", "FIN", "GAL", "IND", "JUE", "SPR", "UNI", "WAV"))
+mlrassoarea <- paste0("11-", c("ATL", "AUR", "MAN", "CLI", "FIN", "GAL", "IND", "JUE", "SPR", "UNI", "WAV", "LOHR"))
 mlraoffice <- c("11")
 crsarg <- "+init=epsg:5070"
 
@@ -71,7 +71,7 @@ gd <- {
     ) ->.;
   within(., {
     var_res   = paste0(variable, resolution)
-    file_path = paste0("M:/geodata/project_data/R", folder, paste0("/", variable, resolution, "_", folder))
+    file_path = paste0("D:/geodata/project_data/R", folder, paste0("/", variable, resolution, "_", folder))
     file_path = ifelse(grepl("nlcd", file_path), 
                         paste0(file_path, "_lulc2011.tif"),
                         paste0(file_path, ".tif")
@@ -89,32 +89,32 @@ To start you need to download the 10-meter NED tiles from the USGS. Because the 
 ```{r}
 # create list of ned tiles
 
-tiles <- read_sf("M:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>%
+# download 10-meter Region 11
+
+tiles <- read_sf("D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON") %>%
   st_transform("+init=epsg:4326")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
 r11 <- tiles[idx, ]
 plot(r11[1])
 
-files <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip$")
-
-
-# download 10-meter Region 11
+files <- list.files("D:/geodata/elevation/ned/tiles/ArcGrid/19", pattern = ".zip$")
 
 idx <- ! r11$FILE_ID %in% gsub(".zip", "", files)
 r11[idx, ] ->.;
-split(r112, r112$FILE_ID) ->.;
+split(r11, r11$FILE_ID) ->.;
 lapply(., function(x) {
   cat("downloading", x$FILE_ID, as.character(Sys.time()), "\n")
-  download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
+  download_ned_tile("13", x$UL_LAT, abs(x$UL_LON), "D:/geodata/elevation/ned/tiles/ArcGrid")
 })
 
 
 # download 30-meter CONUS
 
-tiles <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON")
+tiles <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON") %>%
+  st_transform(st_crs(tiles))
 # usa <- st_as_sf(maptools::map2SpatialPolygons(maps::map("usa"), IDs = 1:10))
 # st_crs(usa) <- "+init=epsg:4326"
 
@@ -122,19 +122,19 @@ idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
 conus <- tiles[idx, ]
 plot(conus[1])
 
-files <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip$")
+files <- list.files("D:/geodata/elevation/ned/tiles/ArcGrid/13", pattern = ".zip$")
 
-idx <- !conus$FILE_ID %in% lf$tiles
-conus[idx, ] ->.;
-split(., .$FILE_ID) ->.;
+idx <- !conus$idx %in% lf$tiles
+conus ->.; #[idx, ] ->.;
+split(., .$idx) ->.;
 lapply(., function(x) {
-  cat("getting", x$id, x$FILE_ID, "\n")
-  download_ned_tile("1", x$UL_LAT, abs(x$UL_LON), "M:/geodata/elevation/ned/tiles/ArcGrid")
+  cat("getting", x$idx, "\n")
+  download_ned_tile("1", x$y, abs(x$x), "D:/geodata/elevation/ned/tiles/ArcGrid")
   })
 
 
 # unzip
-path <- "M:/geodata/elevation/ned/tiles/ArcGrid/13"
+path <- "D:/geodata/elevation/ned/tiles/ArcGrid/1"
 lf <- data.frame(
   path     = path,
   zipfiles = list.files(path = path, pattern = ".zip$"),
@@ -144,7 +144,7 @@ lf <- data.frame(
 lf <- within(lf, {
   idx         = grepl("USGS", zipfiles)
   tiles[!idx] = gsub(".zip", "", zipfiles[!idx])
-  tiles[idx]  = substr(zipfiles[idx], 12, 19)
+  tiles[idx]  = substr(zipfiles[idx], 12, 18)
   
   n           = nchar(tiles)
   tiles       = substr(tiles, n - 6, n)
@@ -152,16 +152,16 @@ lf <- within(lf, {
   n           = NULL
   idx         = NULL
   })
-lf <- lf[order(lf$id), ]
+lf <- lf[order(lf$idx), ]
 lf$id <- 1:nrow(tiles)
-lf2 <- lf[lf$tiles %in% r11$FILE_ID, ]
+# lf2 <- lf[lf$tiles %in% r11$FILE_ID, ]
 
 split(lf, lf$tiles) ->.;
 lapply(., function(x) {
   cat("unzipping", x$id, x$tiles, "\n")
   unzip(zipfile = paste0(x$path, "/", x$zipfiles), 
         exdir   = x$path,
-        files   = paste0("grd", x$tiles, "_13/", c("w001001.adf", "w001001x.adf", "dblbnd.adf", "hdr.adf", "prj.adf", "sta.adf"))
+        files   = paste0("grd", x$tiles, "_1/", c("w001001.adf", "w001001x.adf", "dblbnd.adf", "hdr.adf", "prj.adf", "sta.adf"))
         )
   })
 
@@ -178,18 +178,18 @@ file.copy(from = from, to = to)
 The NLCD layer is used as a standard coordinate reference system from which to warp the NED mosaics too, and for subseting by MLRA office.
 
 ```{r}
-nlcd <- "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
-sso_dsn <- "M:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp"
+nlcd <- "D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img"
+# sso_dsn <- read_sf(dsn = "D:/geodata/soils/MLRA_Soil_Survey_Areas_Dec2015.shp", layer = "MLRA_Soil_Survey_Areas_Dec2015")
 sso_nlcd <-  subset(gd, variable == "nlcd")
 
-subset(gd, folder == "11-JUE" & variable == "nlcd") ->.;
+# subset(gd, folder == "11-LOHR" & variable == "nlcd") ->.;
 split(., .$file_path) ->.;
 lapply(., function(x) {
-  crop(nlcd, x$file_path, x$folder, sso_dsn, crsarg)
+  crop(input = nlcd, output = x$file_path, sso_dsn = r11 %>% st_transform("+init=epsg:5070"), crsarg = crsarg)
   })
 
 # Region 11
-tiles5 <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+tiles5 <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
 
 idx <- unlist(lapply(st_intersects(tiles5, st_transform(r11, "+init=epsg:5070")), any))
 tiles <- tiles5[idx, ]
@@ -197,8 +197,8 @@ plot(tiles[1])
 
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
-       paste0("M:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
+  crop("D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img",
+       paste0("D:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
@@ -212,9 +212,11 @@ Beware building the pyramids takes a long time.
 
 ```{r}
 
-gd_sub <- subset(gd, variable == "ned" & resolution == "09d" & folder == "11-JUE")
-sso_ned_sub <- subset(sso_ned, mlrassoarea == "11-JUE")
-idx <- list.files("M:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
+sso <- "11-LOHR"
+# gd_sub <- subset(gd, variable == "ned" & resolution == "09d" & folder == "11-LOHR")
+sso_ned <- subset(gd, variable == "ned" & resolution == "09d" & folder == sso)
+sso_ned_sub <- subset(sso_ned, mlrassoarea == sso)
+idx <- list.files("D:/geodata/elevation/ned/tiles/ArcGrid/13", full.names = TRUE)
 idx <- idx[grepl(paste0(sso_ned_sub$FILE_ID, collapse = "|"), idx) & grepl("_13$", idx)]
 
 sso_ned_grid <- file.path(idx, "w001001.adf")
@@ -235,11 +237,15 @@ mosaic(paste0(ned_r11[idx], "/w001001.adf"), "C:/geodata/elevation/ned/ned_13as_
 
 # CONUS
 ned_conus <- list.files(
-  path    = "C:/geodata/elevation/ned/tiles/ArcGrid/1",
+  path    = "D:/geodata/elevation/ned/tiles/ArcGrid/1",
   pattern = "_1$",
   full.names = TRUE
   )
-mosaic(paste0(ned_conus, "/w001001.adf"), "C:/geodata/elevation/ned/ned_1as_conus.tif", "Float32", c("BIGTIFF=YES"), -99999)
+# ned_conus <- lapply(ned_conus, function(x) filename = rast(paste0(x, "/w001001.adf")))
+# ned_conus$filename <- "D:/geodata/elevation/ned/ned_1d_conus.tif"
+# m  <- do.call(merge, ned_conus)
+
+mosaic(paste0(ned_conus, "/w001001.adf"), "D:/geodata/elevation/ned/ned_1as_conus.tif", "Float32", c("BIGTIFF=YES"), -99999)
 
 ```
 
@@ -249,13 +255,13 @@ mosaic(paste0(ned_conus, "/w001001.adf"), "C:/geodata/elevation/ned/ned_1as_conu
 For warping from EPSG:4326 to EPSG:5070, I've used bilinear resampling which is my personal preference for some of the reasons discussed by Frank Warmerdam (http://courses.neteler.org/gdal-raster-data-tips-and-tricks/). For upscaling or aggregating the 10-meter to 30-meter DEM I use average resampling. Consequentially this makes the most sense and has been the approach used in several studies (Smith et al, 2006; Roecker and Thompson, 2010). Because DEM are later used for terrain analysis they are left uncompressed and untiled, which results in file sizes of approximately 10GB.
 
 ```{r}
-warp(mo$ned09d.tif, mo$ned10m.tif, mo$nlcd30m.tif, 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
+warp("D:/geodata/project_data/R11-LOHR/ned09d_11-LOHR.tif", "D:/geodata/project_data/R11-LOHR/ned10m_11-LOHR.tif", "D:/geodata/project_data/R11-LOHR/nlcd30m_11-LOHR_lulc2011.tif", 10, "bilinear", CRSargs(CRS("+init=epsg:4326")), crsarg, "Float32", -99999, c("BIGTIFF=YES"))
 
 
 # Region 11
 # For some reason warping the ned_1as_r11.tif takes forever. Therefore I cut it up prior warping.
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
-tiles     <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
+tiles     <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
 tiles <- tiles[idx, ]
@@ -267,8 +273,8 @@ split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
   cat("warping", x$tile, as.character(Sys.time()), "\n")
   warp("C:/geodata/elevation/ned/ned_13as_r11.tif",
-       paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$tile, ".tif"), 
-       paste0("M:/geodata/project_data/11REGION/nlcd30m_11R_lulc_", x$tile, ".tif"), 
+       paste0("D:/geodata/elevation/ned/ned_10m_r11_", x$tile, ".tif"), 
+       paste0("D:/geodata/project_data/11REGION/nlcd30m_11R_lulc_", x$tile, ".tif"), 
        10, "bilinear", 
        CRSargs(CRS("+init=epsg:4326")), 
        CRSargs(CRS("+init=epsg:5070")), 
@@ -283,8 +289,8 @@ mosaic(paste0("C:/geodata/elevation/ned/ned_10m_r11_", lulc$tile, ".tif"), "C:/g
 # crop
 split(tiles, tiles$idx) ->.;
 lapply(., function(x) {
-  crop("M:/geodata/elevation/ned/ned_30m_conus.tif",
-       paste0("M:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
+  crop("D:/geodata/elevation/ned/ned_30m_conus.tif",
+       paste0("D:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
        x,
        "+init=epsg:5070"
        )})
@@ -293,22 +299,22 @@ lapply(., function(x) {
 # # resample
 # split(tiles, tiles$idx) ->.;
 # lapply(., function(x) {
-#   resample(paste0("M:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
-#            paste0("M:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
-#            paste0("M:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
+#   resample(paste0("D:/geodata/elevation/ned/ned_10m_r11_", x$idx, ".tif"), 
+#            paste0("D:/geodata/elevation/ned/ned_30m_r11_", x$idx, ".tif"),
+#            paste0("D:/geodata/land_use_land_cover/nlcd30m_r11_lulc_", x$idx, ".tif"),
 #            30
 #            )
 #   })
 
 # R11 mosaic 30-meter
-mosaic(paste0("M:/geodata/elevation/ned/ned_30m_r11_", tiles$idx, ".tif"), "M:/geodata/elevation/ned/ned_30m_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
+mosaic(paste0("D:/geodata/elevation/ned/ned_30m_r11_", tiles$idx, ".tif"), "D:/geodata/elevation/ned/ned_30m_r11.tif", "Float32", c("BIGTIFF=YES"), -99999)
 
 
 
 # CONUS
 warp("C:/geodata/elevation/ned/ned_1as_conus.tif", 
      "C:/geodata/elevation/ned/ned_30m_conus.tif", 
-     "M:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
+     "D:/geodata/land_use_land_cover/nlcd_2011_landcover_2011_edition_2014_03_31.img", 
      30, "bilinear", 
      CRSargs(CRS("+init=epsg:4326")), 
      CRSargs(CRS("+init=epsg:5070")), 
@@ -333,7 +339,11 @@ lapply(., function(x) {
 })
 
 
-resample(mo$ned10m.tif, 30)
+resample("D:/geodata/project_data/R11-LOHR/ned10m_11-LOHR.tif",
+         "D:/geodata/project_data/R11-LOHR/ned30m_11-LOHR.tif",
+         "D:/geodata/project_data/R11-LOHR/nlcd30m_11-LOHR_lulc2011.tif",
+         30
+         )
 ```
 
 
@@ -343,7 +353,7 @@ GDALs DEM tools use Horn'n (1981) algorithms as the default, as does ArcInfo and
 
 ```{r}
 
-subset(gd, folder == "11-JUE" & var_res == "ned10m") ->.;
+subset(gd, folder == "11-LOHR" & var_res == "ned10m") ->.;
 split(., .$folder) ->.;
 lapply(., function(x) {
   dem(x$file_path, c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
@@ -353,7 +363,7 @@ lapply(., function(x) {
 # Region 11
 dem("C:/geodata/elevation/ned/ned_10m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
-dem("M:/geodata/elevation/ned/ned_30m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
+dem("D:/geodata/elevation/ned/ned_30m_r11.tif", c("TILED=YES", "COMPRESS=DEFLATE", "BIGTIFF=YES"))
 
 
 # CONUS

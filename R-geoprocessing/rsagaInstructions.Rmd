@@ -19,9 +19,9 @@ library(sf)
 library(gdalUtils)
 library(RSAGA)
 
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/nedFunctions.R")
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/gdalUtilsFunctions.R")
-source("C:/workspace2/github/ncss-tech/geo-pit/trunk/R-geoprocessing/rsagaFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/nedFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/gdalUtilsFunctions.R")
+source("C:/workspace2/github/ncss-tech/geo-pit/R-geoprocessing/rsagaFunctions.R")
 
 ```
 
@@ -41,38 +41,44 @@ Next numerous parameters need to be set which get used later by many of the func
 ```{r, eval = FALSE}
 
 # Set parameters
-mlrassoarea <- "11-JUE"
+mlrassoarea <- "11-LOHR"
 # mlrassoarea <- paste0("11-", c("ATL", "AUR", "MAN", "CLI", "FIN", "GAL", "IND", "JUE", "SPR", "UNI", "WAV"))
 mlraoffice <- c("11")
 crsarg <- "+init=epsg:5070"
 
-radiusD <- 2
+radiusD <- c(2, 4, 6)
 radiusV <- round(1000 / 30 / 2 - 1, 0)
 
 
 # construct data frame of 10-meter geodata
-sapolygon <- read_sf("M:/geodata/soils/SSURGO_R11_FY19.gdb", layer = "SAPOLYGON") %>% st_transform("+init=epsg:5070")
-tiles     <- read_sf("M:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+sapolygon <- read_sf("D:/geodata/soils/SSURGO_CONUS_FY19.gdb", layer = "SAPOLYGON", query = "SELECT * FROM MUPOLYGON WHERE AREASYMBOL = 'VA165'", precision = 0.1) %>%
+  st_transform("+init=epsg:5070")
+# tiles     <- read_sf("D:/geodata/elevation/ned/tiles_3_overlapping.shp", layer = "tiles_3_overlapping")
+tiles <- read_sf("D:/geodata/elevation/ned/ned_13arcsec_g.shp", layer = "ned_13arcsec_g") %>%
+  st_transform("+init=epsg:5070")
 
 idx <- unlist(lapply(st_intersects(tiles, sapolygon), any))
 tiles <- tiles[idx, ]
 
 
 g10_tif <- {
-  expand.grid(source = "ned",
-              res    = "10m",
-              var    = c("", "slopeR", "slope", "slopeD", "aspect", "cupro", "cucon", "cutan", "cumax", "cumin", "slp", "slpslp"),
-              office = "r11",
-              tile   = tiles$idx,
-              format  = "tif",
-              stringsAsFactors = FALSE
-              ) ->.;
+  expand.grid(
+    source = "ned",
+    res    = "10m",
+    var    = c("", "slopeR", "slope", "slopeD", "aspect", "cupro", "cucon", "cutan", "cumax", "cumin", "slp", "slpslp", "relief"),
+    radius = 1 + 2 * radiusD,
+    office = "VA165",
+    tile   = mlrassoarea,
+    format = "tif",
+    stringsAsFactors = FALSE
+    ) ->.;
   # build file paths
   within(., {
-    fp = file.path("M:/geodata/elevation/ned",
-                   paste0(source, "_", res, "_", office, "_", tile, 
+    fp = file.path("D:/geodata/project_data/R11-LOHR/sdat",
+                   # "D:/geodata/elevation/ned",
+                   paste0(source, "", res, "_", office, # "_", tile, 
                           ifelse(var != "", 
-                                 paste0("_", var, 1 + 2 * radiusD), 
+                                 paste0("_", var, radius), 
                                  ""
                                  ),
                           ".tif")
@@ -100,7 +106,7 @@ g10$var_format <- paste0(g10$var, "_", g10$format)
 # convert the data frame to wide format
 g10 <- reshape(g10,
                direction = "wide", 
-               idvar = "tile",
+               idvar = c("tile", "radius"),
                timevar = "var_format",
                v.names = "fp"
                )
@@ -111,18 +117,41 @@ names(g10) <- gsub("fp.", "", names(g10))
 g30 <- g10
 g30[1:ncol(g30)] <- lapply(g30, function(x) sub("10m", "30m", x))
 g30 <- within(g30, {
-  mrvbf_tif  = sub("\\.tif",  "_mrvbf.tif",  elev_tif)
-  mrvbf_sdat = sub("\\.sdat", "_mrvbf.sdat", elev_sdat)
-  mrvbf_sgrd = sub("\\.sgrd", "_mrvbf.sgrd", elev_sgrd)
-  mrrtf_tif  = sub("\\.tif",  "_mrrtf.tif",  elev_tif)
-  mrrtf_sdat = sub("\\.sdat", "_mrrtf.sdat", elev_sdat)
-  mrrtf_sgrd = sub("\\.sgrd", "_mrrtf.sgrd", elev_sgrd)
+  mrvbf_tif   = sub("\\.tif",  "_mrvbf.tif",   elev_tif)
+  mrvbf_sdat  = sub("\\.sdat", "_mrvbf.sdat",  elev_sdat)
+  mrvbf_sgrd  = sub("\\.sgrd", "_mrvbf.sgrd",  elev_sgrd)
+  mrrtf_tif   = sub("\\.tif",  "_mrrtf.tif",   elev_tif)
+  mrrtf_sdat  = sub("\\.sdat", "_mrrtf.sdat",  elev_sdat)
+  mrrtf_sgrd  = sub("\\.sgrd", "_mrrtf.sgrd",  elev_sgrd)
+  rov_sgrd    = sub("\\.sgrd", "_rov.sgrd",    elev_sgrd)
+  
+  filled_sgrd        = sub("\\.sgrd", "5_filled.sgrd", elev_sgrd)
+  carea_sgrd         = sub("\\.sgrd", "_carea.sgrd", elev_sgrd)
+  caheight_sgrd      = sub("\\.sgrd", "_caheight.sgrd", elev_sgrd)
+  wetness_sgrd       = sub("\\.sgrd", "_wetness.sgrd", elev_sgrd)
+  wetness_sdat       = sub("\\.sgrd", "_wetness.sdat", elev_sgrd)
+  wetness_tif       = sub("\\.sgrd", "_wetness.tif", elev_sgrd)
+  carea_mdinf_sgrd   = sub("\\.sgrd", "_carea_mdinf.sgrd", elev_sgrd)
+  wetness_mdinf_sgrd = sub("\\.sgrd", "_wetness_mdinf.sgrd", elev_sgrd)
+  strahler_sgrd      = sub("\\.sgrd", "_strahler.sgrd", elev_sgrd)
+  channels_sgrd      = sub("\\.sgrd", "_channels.sgrd", elev_sgrd)
+  z2stream_sgrd      = sub("\\.sgrd", "_z2stream.sgrd", elev_sgrd)
+  z2stream_sdat      = sub("\\.sgrd", "_z2stream.sdat", elev_sgrd)
+  z2stream_tif      = sub("\\.sgrd", "_z2stream.tif", elev_sgrd)
+  znorm_sgrd      = sub("\\.sgrd", "5_filled_znorm.sgrd", elev_sgrd)
+  znorm_sdat      = sub("\\.sgrd", "5_filled_znorm.sdat", elev_sgrd)
+  znorm_tif      = sub("\\.sgrd", "5_filled_znorm.tif", elev_sgrd)
+  zhu_sgrd      = sub("\\.sgrd", "5_filled_zhu.sgrd", elev_sgrd)
+  zhu_sdat      = sub("\\.sgrd", "5_filled_zhu.sdat", elev_sgrd)
+  zhu_tif      = sub("\\.sgrd", "5_filled_zhu.tif", elev_sgrd)
+
   })
 
 ```
 
 
 ## Convert GTiff to SAGA
+
 ```{r, eval=FALSE}
 
 # subset(g10, office == "n30w095") ->.;
@@ -143,16 +172,20 @@ lapply(., function(x) {
 ```
 
 
+
 ## Calculate local derivatives
 
 ```{r, eval = FALSE}
 
-subset(g10, office == "11-JUE") ->.;
-split(., .$office) ->.;
+subset(g10, g10$radius %in% c(9, 13)) ->.;
+split(., .$radius) ->.;
 lapply(., function(x) {
-  rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, 2)
-  rsaga.d2(x$elev_sgrd, x$cupro_sgrd,  x$cucon_sgrd, 2)
-  rsaga.d3(x$elev_sgrd, x$cumin_sgrd,  x$cumax_sgrd, 2)
+  
+  rad <- (x$radius - 1) / 2
+  
+  rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, rad)
+  rsaga.d2(x$elev_sgrd, x$cupro_sgrd,  x$cucon_sgrd, rad)
+  # rsaga.d3(x$elev_sgrd, x$cumin_sgrd,  x$cumax_sgrd, rad)
   
   # Convert radians to percent, degrees = radians*180/pi, 180/pi = 57.29578 
   rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slope_sgrd, "tan(a  *(1 / 57.29578)) * 100")
@@ -160,38 +193,42 @@ lapply(., function(x) {
   # Rescale curvatures so they can be exported as UInt16 to save file size
   rsaga.grid.calculus(x$cupro_sgrd, x$cupro_sgrd,  x$cupro_sgrd,  "10000 * a")
   rsaga.grid.calculus(x$cucon_sgrd, x$cucon_sgrd,  x$cucon_sgrd, "-10000 * a")
-  rsaga.grid.calculus(x$cumin_sgrd, x$cumin_sgrd,  x$cumin_sgrd,  "10000 * a")
-  rsaga.grid.calculus(x$cumax_sgrd, x$cumax_sgrd,  x$cumax_sgrd,  "10000 * a")
+  # rsaga.grid.calculus(x$cumin_sgrd, x$cumin_sgrd,  x$cumin_sgrd,  "10000 * a")
+  # rsaga.grid.calculus(x$cumax_sgrd, x$cumax_sgrd,  x$cumax_sgrd,  "10000 * a")
   rsaga.grid.calculus(x$cucon_sgrd, x$slopeD_sgrd, x$cutan_sgrd, "a * sin(b / 57.29578)")
   })
 
+# percentiles
+rsaga_residual(g10$elev_sgrd, g10$relief_sgrd, rad)
 
 
 # Write SAGA to GTiff
 
-subset(g10, office == "11-JUE") ->.;
+subset(g10, office == "11-LOHR") ->.;
 split(., .$office) ->.;
 lapply(., function(x) {
-  gdal_sdat2tif(x$slope_sdat,  x$slope_tif,  "Int16", -32768)
-  gdal_sdat2tif(x$aspect_sdat, x$aspect_tif, "Int16", -32768)
-  gdal_sdat2tif(x$cupro_sdat,  x$cupro_tif,  "Int16", -32768)
-  gdal_sdat2tif(x$cutan_sdat,  x$cutan_tif,  "Int16", -32768)
+  # gdal_sdat2tif(x$slope_sdat,  x$slope_tif,  "Int16", -32768)
+  # gdal_sdat2tif(x$aspect_sdat, x$aspect_tif, "Int16", -32768)
+  # gdal_sdat2tif(x$cupro_sdat,  x$cupro_tif,  "Int16", -32768)
+  # gdal_sdat2tif(x$cutan_sdat,  x$cutan_tif,  "Int16", -32768)
+  gdal_sdat2tif(x$relief_sdat, x$relief_tif, "Int16", -32768)
   })
 
-subset(g10, office == "11-JUE") ->.;
+subset(g10, office == "11-LOHR") ->.;
 gdal_stack(x = c(.$cupro_tif, .$cutan_tif, .$slope_tif), fname = .$slpslp_tif, "Int16", -32768)
 
 
 # 30-meter derivatives
 split(g30, g30$tile) ->.;
 lapply(., function(x) {
-  # rsaga.d0(x$elev_sgrd, gsub(".sgrd", "5.sgrd", x$elev_sgrd), 5)
-  # rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, 2)
+  rsaga.d0(x$elev_sgrd, gsub(".sgrd", "5.sgrd", x$elev_sgrd), 5)
+  rsaga.d1(x$elev_sgrd, x$slopeD_sgrd, x$aspect_sgrd, 2)
   rsaga.d2(x$elev_sgrd, x$cupro_sgrd,  x$cucon_sgrd, 2)
   rsaga.d3(x$elev_sgrd, x$cumin_sgrd,  x$cumax_sgrd, 2)
 
   # Convert radians to percent, degrees = radians*180/pi, 180/pi = 57.29578 
-  # rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slope_sgrd, "tan(a  *(1 / 57.29578)) * 100")
+  rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slope_sgrd, "tan(a  *(1 / 57.29578)) * 100")
+  rsaga.grid.calculus(x$slopeD_sgrd, x$slopeD_sgrd, x$slopeR_sgrd, "a * (1 / 57.29578)")
   
   # Rescale curvatures so they can be exported as UInt16 to save file size
   rsaga.grid.calculus(x$cupro_sgrd, x$cupro_sgrd,  x$cupro_sgrd,  "10000 * a")
@@ -209,12 +246,16 @@ lapply(., function(x) {
   rsaga.mrvbf(x$elev_sgrd, x$mrvbf_sgrd, x$mrrtf_sgrd)
   })
 
+
+# relief
+rsaga_rov(g30$filled_sgrd, g30$rov_sgrd, 1000)
+
 # mosaic
 r <- lapply(g30$mrvbf_sdat, raster)
 
 
 raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r[[9]], r[[10]], r[[11]], 
-       filename = "M:/geodata/elevation/ned/ned_30m_r11_mrvbf_min.tif", 
+       filename = "D:/geodata/elevation/ned/ned_30m_r11_mrvbf_min.tif", 
        fun = min,
        NAflag = -99999, 
        options = c("BIGTIFF=YES", "TILED=YES", "COMPRESS=DEFLATE"), 
@@ -226,7 +267,7 @@ raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r
 r <- lapply(g30$mrrtf_sdat, raster::raster)
 
 raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r[[9]], r[[10]], r[[11]], 
-       filename = "M:/geodata/elevation/ned/ned_30m_r11_mrrtf.tif", 
+       filename = "D:/geodata/elevation/ned/ned_30m_r11_mrrtf.tif", 
        fun = min,
        NAflag = -99999, 
        options = c("BIGTIFF=YES", "TILED=YES", "COMPRESS=DEFLATE"), 
@@ -236,15 +277,31 @@ raster::mosaic(r[[1]], r[[2]], r[[3]], r[[4]], r[[5]], r[[6]], r[[7]], r[[8]], r
        )
 
 
+# Write SAGA to GTiff
+subset(g30, office == "11-LOHR") ->.;
+split(., .$office) ->.;
+lapply(., function(x) {
+  # gdal_sdat2tif(x$slope_sdat,    x$slope_tif,    "Int16", -32768)
+  # gdal_sdat2tif(x$aspect_sdat,   x$aspect_tif,   "Int16", -32768)
+  # gdal_sdat2tif(x$cupro_sdat,    x$cupro_tif,    "Int16", -32768)
+  # gdal_sdat2tif(x$cutan_sdat,    x$cutan_tif,    "Int16", -32768)
+  gdal_sdat2tif(x$mrrtf_sdat,    x$mrrtf_tif,    "Float32", -99999)
+  gdal_sdat2tif(x$mrvbf_sdat,    x$mrvbf_tif,    "Float32", -99999)
+  })
+
+subset(g30, office == "11-LOHR") ->.;
+gdal_stack(x = c(.$cupro_tif, .$cutan_tif, .$slope_tif), fname = .$slpslp_tif, "Int16", -32768)
 
 ```
 
 
 ## Create a hydrologically correct DEM
+
 ```{r, eval = FALSE}
+
 # Create a regional mosaic
 mosaic(gsub(".sdat", "5.sdat", g30$elev_sdat),
-       "M:/geodata/elevation/ned/ned_30m_r11_elev5.tif", 
+       "D:/geodata/elevation/ned/ned_30m_r11_elev5.tif", 
        nodata = -99999, 
        co = c("BIGTIFF=YES"), 
        datatype = "Float32"
@@ -254,8 +311,8 @@ mosaic(gsub(".sdat", "5.sdat", g30$elev_sdat),
 # Create a copy of elev5 to mask---------------------------------------------------------
 
 gdal_translate(
-  src_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif",
-  dst_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
+  src_dataset = "D:/geodata/project_data/8VIC/ned30m_8VIC_elev5.tif",
+  dst_dataset = "D:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
   overwrite = TRUE,
   verbose = TRUE
 )
@@ -263,8 +320,8 @@ gdal_translate(
 
 # Extract the water bodies into shapefiles and reproject-----------------------------------
 state <- c("CA")
-nhd    <- paste0("M:/geodata/hydrography/NHDH_", state, ".gdb")
-nhd_wb <- paste0("M:/geodata/hydrography/NHDH_", state, "_wb.shp")
+nhd    <- paste0("D:/geodata/hydrography/NHDH_", state, ".gdb")
+nhd_wb <- paste0("D:/geodata/hydrography/NHDH_", state, "_wb.shp")
 
 for(i in seq(nhd)){
   ogr2ogr(
@@ -283,8 +340,8 @@ for(i in seq(nhd)){
 for(i in seq_along(nhd_wb)){
   cat(paste(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "burning", nhd_wb[i], "\n"))
   gdal_rasterize(
-    src_datasource = paste0("M:/geodata/hydrography"),
-    dst_filename = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
+    src_datasource = paste0("D:/geodata/hydrography"),
+    dst_filename = "D:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
     l = paste0("NHDH_", state[i], "_wb"),
     where = "AreaSqKm > 0.04047",
     b = 1,
@@ -296,12 +353,12 @@ for(i in seq_along(nhd_wb)){
 
 # Subset the masked Regional DEM into MLRA office subsets----------------------------------
 dem30.sdat<- paste0(res30, "_elev5_masked.sdat")
-nlcd30m.tif = paste0("M:/geodata/project_data/", office,  "/nlcd30m_", office, "_lulc2011.tif")
-batchSubsetSAGA("M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif", dem30.sdat, nlcd30m.tif)
+nlcd30m.tif = paste0("D:/geodata/project_data/", office,  "/nlcd30m_", office, "_lulc2011.tif")
+batchSubsetSAGA("D:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif", dem30.sdat, nlcd30m.tif)
 
 # gdal_translate(
-#   src_dataset = "M:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
-#   dst_dataset = "M:/geodata/project_data/8VIC/sdat/ned30m_8VIC_elev5_masked.sdat",
+#   src_dataset = "D:/geodata/project_data/8VIC/ned30m_8VIC_elev5_masked.tif",
+#   dst_dataset = "D:/geodata/project_data/8VIC/sdat/ned30m_8VIC_elev5_masked.sdat",
 #   of = "SAGA",
 #   a_nodata = -99999,
 #   overwrite = TRUE,
@@ -309,25 +366,33 @@ batchSubsetSAGA("M:/geodata/project_data/6REGION/ned30m_R6_elev5_masked.tif", de
 # )
 
 # Calculate hydrologcal derivatives (wetness index and relief above streams)---------------
-dem <- paste0(g30$elev, "_masked.sgrd")
+# dem <- paste0(g30$elev, "_masked.sgrd")
+dem <- gsub(".sgrd", ".sgrd", g30$elev_sgrd)
 
 rsaga_fill_slope(dem)
 #rsaga_fill_thr(paste0(g30$elev, ".sgrd"))
 
-demf <- paste0(g30$elev, "_masked_filled.sgrd")
+```
 
-rsaga_ca(demf, caarea, caheight, "4")
-rsaga_twi(slopeR, caarea, wetness)
 
-rsaga_ca(demf, caarea_mdinf, caheight_mdinf, "5")
-rsaga_twi(slopeR, caarea_mdinf, wetness_mdinf)
+
+# Create hydrological LSP
+
+```{r hydro-lsp}
+
+# demf <- paste0(g30$elev, "_masked_filled.sgrd")
+
+rsaga_ca(g30$filled_sgrd, g30$carea_sgrd, "4")
+rsaga_twi(g30$slopeR_sgrd, g30$carea_sgrd, g30$wetness_sgrd)
+
+rsaga_ca(g30$filled_sgrd, g30$carea_mdinf, "5")
+rsaga_twi(g30$slopeR_sgrd, g30$carea_mdinf_sgrd, g30$wetness_mdinf_sgrd)
+
 
 # Does this only work on SAGA 2.1 and above
-rsaga.strahler(demf, strahler, 4)
-rsaga_reclassify(strahler, -3, -1)
-
-channels <- paste0(g30$elev, "_channels.sgrd")
-rsaga_reclassify(caarea, channels, 300000, 1, -99999, 4)
+rsaga.strahler(g30$filled_sgrd, g30$strahler_sgrd, 4)
+rsaga_reclassify(g30$strahler_sgrd, g30$strahler_sgrd, -3, -1, -99999, 1)
+rsaga_reclassify(g30$carea_sgrd, g30$channels_sgrd, 300000, 1, -99999, 4)
 
 
 # channels <- paste0(g30$elev, "_channels.sgrd")
@@ -336,11 +401,19 @@ rsaga_reclassify(caarea, channels, 300000, 1, -99999, 4)
 streams <- paste0(g30$elev, "_strahler_rc0.sgrd")
 streams <- paste0(g30$elev, "_strahler_rc0.sgrd")
 
-rsaga_ofd(demf, channels)
+rsaga_ofd(g30$filled_sgrd, g30$channels_sgrd, g30$z2stream_sgrd)
+rsaga_zheight(g30$filled_sgrd)
 
 
 # Write SAGA to GTiff--------------------------------------------------------------------------
 
+split(g30, g30$office) ->.;
+lapply(., function(x) {
+  # gdal_sdat2tif(x$wetness_sdat,  x$wetness_tif,  "Float32", -99999)
+  # gdal_sdat2tif(x$z2stream_sdat, x$z2stream_tif, "Float32", -99999)
+  gdal_sdat2tif(x$znorm_sdat,    gsub("5_filled", "", x$znorm_tif),    "Float32", -99999)
+  gdal_sdat2tif(x$zhu_sdat,      gsub("5_filled", "", x$zhu_tif),      "Float32", -99999)
+  })
 
 
 int16 <- c("slope", "aspect")
@@ -349,7 +422,7 @@ int16.tif <- sapply(strsplit(int16.sdat, "/sdat"), paste0, collapse = "")
 int16.tif <- paste0(strsplit(int16.tif, ".sdat"), ".tif")
 gdal_SAGA2GTiff(int16.sdat, int16.tif, "Int16", -32768)
 
-slopeshape <- paste0("M:/geodata/project_data/", office, "/ned10m_", office, "_slopeshape.tif")
+slopeshape <- paste0("D:/geodata/project_data/", office, "/ned10m_", office, "_slopeshape.tif")
 int16 <- c("cupro", "cutan", "slope")
 int16.sdat <- lapply(g10[int16], paste0, ".sdat")
 gdal_stack(int16.sdat, slopeshape, "Int16", -32768)
@@ -367,5 +440,5 @@ slope <- lapply(g10$slope, paste0, ".sdat")
 mosaicList(slope, "E:/geodata/project_data/11REGION/ned10m_11R_slope5.tif", "Int16", c("COMPRESS=DEFLATE", "TILED=YES", "BIGTIFF=YES"), -32768)
 
 
-gdal_GTiff2SAGA("M:/geodata/project_data/11REGION/ned30m_11R.tif", "M:/geodata/project_data/11REGION/ned30m_11R.sdat")
+gdal_GTiff2SAGA("D:/geodata/project_data/11REGION/ned30m_11R.tif", "D:/geodata/project_data/11REGION/ned30m_11R.sdat")
 ```
