@@ -490,6 +490,8 @@ def reportSDAgeometryInfoByMUKEY(listOfMUKEYs):
 
         header = "MUKEY" + (" " * 12) + "Polygon Count" + (" " * 12) + "Vertice Count" + (" " * 12) + "Geometry?" + (" " * 12) + "JSON Length" + (" " * 12) + "Request Time"
         AddMsgAndPrint(header,0)
+
+        # You can do a better job here --- LAZY!
         AddMsgAndPrint("-" * 5 + " " * 12 + "-" * 13 + " " * 12 + "-" * 13 + " " * 12 + "-" * 9 +  " " * 12 + "-" * 11 + " " * 12 + "-" * 12,0)
 
         for mukey in listOfMUKEYs:
@@ -1113,7 +1115,11 @@ def getPlanLandUnitsByGeometry(fc):
         pluURL = """https://geoportal.sc.egov.usda.gov/arcgis/rest/services/Hosted/WI_Plan_Land_Units_TEST_copyAllData/FeatureServer/1/query?"""
 
         # Get Object IDs of features within bounding box; No Geometry returned.
-        params = urllib.urlencode({'f': 'json','geometry':extent,'returnGeometry':'false','returnIdsOnly':'true','token': tokenInfo['token']})
+        params = urllib.urlencode({'f': 'json',
+                                   'geometry':extent,
+                                   'returnGeometry':'false',
+                                   'returnIdsOnly':'true',
+                                   'token': tokenInfo['token']})
 
         # Get Record count of bounding box; No Geometry returned.
 ##        params = urllib.urlencode({'f': 'json', 'geometryType': 'esriGeometryEnvelope','geometry':extent,
@@ -1146,7 +1152,10 @@ def getPlanLandUnitsByGeometry(fc):
             landUnitIDsubList = list()  # sublist of land Unit IDs
 
             # Get geometry by OID
-            params = urllib.urlencode({'f': 'json','returnGeometry':'true','objectIds': oids,'token': tokenInfo['token']})
+            params = urllib.urlencode({'f': 'json',
+                                       'returnGeometry':'true',
+                                       'objectIds': oids,
+                                       'token': tokenInfo['token']})
 
             # Send request to feature service
             geometry = submitFSquery(pluURL,params)
